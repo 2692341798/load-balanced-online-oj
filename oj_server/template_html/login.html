@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录 / 注册 - Online OJ</title>
+    <style>
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
+        .container { background: white; padding: 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 380px; }
+        .tabs { display: flex; margin-bottom: 1.5rem; border-bottom: 2px solid #f0f0f0; }
+        .tab { flex: 1; text-align: center; padding-bottom: 0.5rem; cursor: pointer; color: #888; font-weight: 500; transition: all 0.3s; }
+        .tab.active { color: #1890ff; border-bottom: 2px solid #1890ff; margin-bottom: -2px; }
+        .form-group { margin-bottom: 1.2rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500; }
+        input[type="text"], input[type="password"], input[type="email"] { width: 100%; padding: 0.6rem; border: 1px solid #d9d9d9; border-radius: 4px; box-sizing: border-box; transition: all 0.3s; }
+        input:focus { border-color: #40a9ff; outline: none; box-shadow: 0 0 0 2px rgba(24,144,255,0.2); }
+        button { width: 100%; padding: 0.75rem; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background 0.3s; }
+        button:hover { background: #40a9ff; }
+        .error { color: #ff4d4f; font-size: 0.875rem; margin-top: 0.5rem; display: none; }
+        .hidden { display: none; }
+        .links { margin-top: 1rem; text-align: center; font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center; }
+        .links a { color: #1890ff; text-decoration: none; }
+        .links a:hover { text-decoration: underline; }
+        .checkbox-group { display: flex; align-items: center; }
+        .checkbox-group input { margin-right: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">登录</div>
+            <div class="tab" onclick="switchTab('register')">注册</div>
+        </div>
+        
+        <div id="login-form">
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="login-username" placeholder="请输入用户名" required>
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="login-password" placeholder="请输入密码" required>
+            </div>
+            <div class="form-group links">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="remember-me"> <label for="remember-me" style="display:inline; margin:0; font-weight:normal;">记住我</label>
+                </div>
+                <a href="#">忘记密码?</a>
+            </div>
+            <div class="error" id="login-error"></div>
+            <button onclick="handleLogin()">登 录</button>
+        </div>
+
+        <div id="register-form" class="hidden">
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="reg-username" placeholder="设置用户名" required>
+            </div>
+            <div class="form-group">
+                <label>邮箱</label>
+                <input type="email" id="reg-email" placeholder="输入邮箱地址" required>
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="reg-password" placeholder="设置密码" required>
+            </div>
+            <div class="error" id="reg-error"></div>
+            <button onclick="handleRegister()">注 册</button>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            if (tab === 'login') {
+                document.querySelector('.tab:first-child').classList.add('active');
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+            } else {
+                document.querySelector('.tab:last-child').classList.add('active');
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+            }
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const error = document.getElementById('login-error');
+            
+            if(!username || !password) {
+                error.textContent = "请输入用户名和密码";
+                error.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                const data = await res.json();
+                if (data.status === 0) {
+                    window.location.href = '/all_questions';
+                } else {
+                    error.textContent = data.reason;
+                    error.style.display = 'block';
+                }
+            } catch (e) {
+                error.textContent = "网络错误，请稍后重试";
+                error.style.display = 'block';
+            }
+        }
+
+        async function handleRegister() {
+            const username = document.getElementById('reg-username').value;
+            const password = document.getElementById('reg-password').value;
+            const email = document.getElementById('reg-email').value;
+            const error = document.getElementById('reg-error');
+
+            if(!username || !password || !email) {
+                error.textContent = "请填写所有字段";
+                error.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password, email})
+                });
+                const data = await res.json();
+                if (data.status === 0) {
+                    alert('注册成功，请登录');
+                    switchTab('login');
+                } else {
+                    error.textContent = data.reason;
+                    error.style.display = 'block';
+                }
+            } catch (e) {
+                error.textContent = "网络错误，请稍后重试";
+                error.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

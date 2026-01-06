@@ -8,6 +8,8 @@
 #include <mutex>
 #include <cassert>
 #include <json/json.h>
+#include <unordered_map>
+#include <ctime>
 
 #include "../comm/util.hpp"
 #include "../comm/log.hpp"
@@ -24,6 +26,12 @@ namespace ns_control
     using namespace ns_model;
     using namespace ns_view;
     using namespace httplib;
+
+    // Session Management
+    struct Session {
+        User user;
+        time_t expire_time;
+    };
 
     // 提供服务的主机
     class Machine
@@ -226,6 +234,10 @@ namespace ns_control
         Model model_; //提供后台数据
         View view_;   //提供html渲染功能
         LoadBlance load_blance_; //核心负载均衡器
+        
+        std::unordered_map<std::string, Session> sessions_;
+        std::mutex session_mtx_;
+
     public:
         Control()
         {
@@ -239,10 +251,65 @@ namespace ns_control
         {
             load_blance_.OnlineMachine();
         }
+        
+        // Auth Logic
+        std::string GenerateToken() {
+            char buf[64];
+            snprintf(buf, sizeof(buf), "%lx%lx", (unsigned long)time(nullptr), (unsigned long)rand());
+            return std::string(buf);
+        }
+
+        bool Register(const std::string &username, const std::string &password, const std::string &email) {
+            return model_.RegisterUser(username, password, email);
+        }
+
+        bool Login(const std::string &username, const std::string &password, std::string *token) {
+            User user;
+            if (model_.LoginUser(username, password, &user)) {
+                *token = GenerateToken();
+                Session s;
+                s.user = user;
+                s.expire_time = time(nullptr) + 86400; // 1 day
+                
+                std::unique_lock<std::mutex> lock(session_mtx_);
+                sessions_[*token] = s;
+                return true;
+            }
+            return false;
+        }
+
+        bool AuthCheck(const Request &req, User *user) {
+            if (req.has_header("Cookie")) {
+                std::string cookie = req.get_header_value("Cookie");
+                std::string key = "session_id=";
+                size_t pos = cookie.find(key);
+                if (pos != std::string::npos) {
+                    std::string token = cookie.substr(pos + key.size());
+                    size_t end = token.find(';');
+                    if (end != std::string::npos) token = token.substr(0, end);
+                    
+                    std::unique_lock<std::mutex> lock(session_mtx_);
+                    auto it = sessions_.find(token);
+                    if (it != sessions_.end()) {
+                        if (it->second.expire_time > time(nullptr)) {
+                            *user = it->second.user;
+                            return true;
+                        } else {
+                            sessions_.erase(it);
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         //根据题目数据构建网页
         // html: 输出型参数
-        bool AllQuestions(string *html)
+        bool AllQuestions(const Request &req, string *html)
         {
+            User user;
+            AuthCheck(req, &user);
+
             bool ret = true;
             vector<struct Question> all;
             if (model_.GetAllQuestions(&all))
@@ -251,7 +318,7 @@ namespace ns_control
                     return atoi(q1.number.c_str()) < atoi(q2.number.c_str());
                 });
                 // 获取题目信息成功，将所有的题目数据构建成网页
-                view_.AllExpandHtml(all, html);
+                view_.AllExpandHtml(all, html, &user);
             }
             else
             {
@@ -260,14 +327,17 @@ namespace ns_control
             }
             return ret;
         }
-        bool Question(const string &number, string *html)
+        bool Question(const string &number, const Request &req, string *html)
         {
+            User user;
+            AuthCheck(req, &user);
+
             bool ret = true;
             struct Question q;
             if (model_.GetOneQuestion(number, &q))
             {
                 // 获取指定题目信息成功，将所有的题目数据构建成网页
-                view_.OneExpandHtml(q, html);
+                view_.OneExpandHtml(q, html, &user);
             }
             else
             {

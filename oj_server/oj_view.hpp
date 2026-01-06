@@ -19,7 +19,7 @@ namespace ns_view
         View(){}
         ~View(){}
     public:
-        void AllExpandHtml(const vector<struct Question> &questions, std::string *html)
+        void AllExpandHtml(const vector<struct Question> &questions, std::string *html, const User *u = nullptr)
         {
             // 题目的编号 题目的标题 题目的难度
             // 推荐使用表格显示
@@ -27,6 +27,14 @@ namespace ns_view
             std::string src_html = template_path + "all_questions.html";
             // 2. 形成数字典
             ctemplate::TemplateDictionary root("all_questions");
+            
+            if (u && !u->username.empty()) {
+                root.ShowSection("user_logged_in");
+                root.SetValue("username", u->username);
+            } else {
+                root.ShowSection("user_not_logged_in");
+            }
+
             for (const auto& q : questions)
             {
                 ctemplate::TemplateDictionary *sub = root.AddSectionDictionary("question_list");
@@ -41,13 +49,21 @@ namespace ns_view
             //4. 开始完成渲染功能
             tpl->Expand(html, &root);
         }
-        void OneExpandHtml(const struct Question &q, std::string *html)
+        void OneExpandHtml(const struct Question &q, std::string *html, const User *u = nullptr)
         {
             // 1. 形成路径
             std::string src_html = template_path + "one_question.html";
 
             // 2. 形成数字典
             ctemplate::TemplateDictionary root("one_question");
+            
+            if (u && !u->username.empty()) {
+                root.ShowSection("user_logged_in");
+                root.SetValue("username", u->username);
+            } else {
+                root.ShowSection("user_not_logged_in");
+            }
+
             root.SetValue("number", q.number);
             root.SetValue("title", q.title);
             root.SetValue("star", q.star);

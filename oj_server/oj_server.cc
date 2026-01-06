@@ -29,7 +29,7 @@ int main()
     svr.Get("/all_questions", [&ctrl](const Request &req, Response &resp){
         //返回一张包含有所有题目的html网页
         std::string html;
-        ctrl.AllQuestions(&html);
+        ctrl.AllQuestions(req, &html);
         //用户看到的是什么呢？？网页数据 + 拼上了题目相关的数据
         resp.set_content(html, "text/html; charset=utf-8");
     });
@@ -40,7 +40,7 @@ int main()
     svr.Get(R"(/question/(\d+))", [&ctrl](const Request &req, Response &resp){
         std::string number = req.matches[1];
         std::string html;
-        ctrl.Question(number, &html);
+        ctrl.Question(number, req, &html);
         resp.set_content(html, "text/html; charset=utf-8");
     });
 
@@ -64,6 +64,61 @@ int main()
             Json::FastWriter w;
             resp.set_content(w.write(err), "application/json;charset=utf-8");
         }
+    });
+
+    // Login Page
+    svr.Get("/login", [](const Request &req, Response &resp){
+        std::ifstream in("./template_html/login.html");
+        if(in.is_open()) {
+            std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+            resp.set_content(content, "text/html; charset=utf-8");
+            in.close();
+        } else {
+            resp.set_content("Login Page Not Found", "text/plain");
+        }
+    });
+
+    // API Login
+    svr.Post("/api/login", [&ctrl](const Request &req, Response &resp){
+        Json::Reader reader;
+        Json::Value root;
+        reader.parse(req.body, root);
+        std::string username = root["username"].asString();
+        std::string password = root["password"].asString();
+        std::string token;
+        
+        Json::Value res_json;
+        if(ctrl.Login(username, password, &token)) {
+            res_json["status"] = 0;
+            res_json["reason"] = "success";
+            resp.set_header("Set-Cookie", "session_id=" + token + "; Path=/; Max-Age=86400; HttpOnly");
+        } else {
+            res_json["status"] = 1;
+            res_json["reason"] = "用户名或密码错误";
+        }
+        Json::FastWriter w;
+        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+    });
+
+    // API Register
+    svr.Post("/api/register", [&ctrl](const Request &req, Response &resp){
+        Json::Reader reader;
+        Json::Value root;
+        reader.parse(req.body, root);
+        std::string username = root["username"].asString();
+        std::string password = root["password"].asString();
+        std::string email = root["email"].asString();
+        
+        Json::Value res_json;
+        if(ctrl.Register(username, password, email)) {
+             res_json["status"] = 0;
+             res_json["reason"] = "success";
+        } else {
+             res_json["status"] = 1;
+             res_json["reason"] = "注册失败：用户名已存在";
+        }
+        Json::FastWriter w;
+        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
     });
     
     svr.set_base_dir("./wwwroot");

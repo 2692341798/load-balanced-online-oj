@@ -109,7 +109,12 @@
             <a href="#">竞赛</a>
             <a href="#">讨论</a>
             <a href="#">求职</a>
-            <a class="login" href="#">登录</a>
+            {{#user_logged_in}}
+            <a class="login" href="#">{{username}}</a>
+            {{/user_logged_in}}
+            {{#user_not_logged_in}}
+            <a class="login" href="/login">登录</a>
+            {{/user_not_logged_in}}
         </div>
         <div class="question_list">
             <h1>OnlineJuge题目列表</h1>
