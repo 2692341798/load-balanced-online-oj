@@ -6,6 +6,24 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>这是我的个人OJ系统</title>
+    <script>
+        // 检查登录状态
+        window.onload = function() {
+            fetch('/api/user')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.username) {
+                        // 已登录，替换登录按钮为欢迎信息
+                        const loginLink = document.querySelector('.login');
+                        loginLink.href = '#';
+                        loginLink.textContent = '欢迎，' + data.username;
+                    }
+                })
+                .catch(() => {
+                    // 未登录或请求失败，保持原样
+                });
+        };
+    </script>
     <style>
         /* 起手式, 100%保证我们的样式设置可以不受默认影响 */
         * {
@@ -56,6 +74,7 @@
         .container .content {
             /* 设置标签的宽度 */
             width: 800px;
+            max-width: 90%;
             /* 用来调试 */
             /* background-color: #ccc; */
             /* 整体居中 */
@@ -64,6 +83,37 @@
             text-align: center;
             /* 设置上外边距 */
             margin-top: 200px;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .container .content {
+                width: 95%;
+                margin-top: 100px;
+            }
+            .container .content h1 {
+                font-size: 1.8rem;
+            }
+            .container .content p {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container .content {
+                width: 90%;
+                margin-top: 80px;
+            }
+            .container .content h1 {
+                font-size: 1.5rem;
+            }
+            .container .content p {
+                font-size: 0.9rem;
+            }
+            .container .navbar a {
+                width: 60px;
+                font-size: medium;
+            }
         }
 
         .container .content .font_ {

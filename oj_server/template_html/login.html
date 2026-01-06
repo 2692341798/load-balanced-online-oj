@@ -4,8 +4,37 @@
     <meta charset="UTF-8">
     <title>登录 / 注册 - Online OJ</title>
     <style>
-        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
-        .container { background: white; padding: 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 380px; }
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f2f5; margin: 0; padding: 1rem; }
+        .container { background: white; padding: 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 380px; max-width: 100%; box-sizing: border-box; }
+        
+        /* 移动端适配 */
+        @media (max-width: 480px) {
+            body { padding: 0.5rem; }
+            .container { 
+                padding: 1.5rem; 
+                border-radius: 0; 
+                box-shadow: none; 
+                width: 100%; 
+                height: 100vh; 
+                display: flex; 
+                flex-direction: column; 
+                justify-content: center; 
+            }
+            .tabs { margin-bottom: 1rem; }
+            .form-group { margin-bottom: 1rem; }
+        }
+        
+        @media (max-width: 320px) {
+            .container { padding: 1rem; }
+            input[type="text"], input[type="password"], input[type="email"], input[type="tel"] { 
+                padding: 0.5rem; 
+                font-size: 14px; 
+            }
+            button { 
+                padding: 0.6rem; 
+                font-size: 0.9rem; 
+            }
+        }
         .tabs { display: flex; margin-bottom: 1.5rem; border-bottom: 2px solid #f0f0f0; }
         .tab { flex: 1; text-align: center; padding-bottom: 0.5rem; cursor: pointer; color: #888; font-weight: 500; transition: all 0.3s; }
         .tab.active { color: #1890ff; border-bottom: 2px solid #1890ff; margin-bottom: -2px; }
@@ -22,6 +51,19 @@
         .links a:hover { text-decoration: underline; }
         .checkbox-group { display: flex; align-items: center; }
         .checkbox-group input { margin-right: 0.5rem; }
+        .form-validation { font-size: 0.75rem; margin-top: 0.25rem; }
+        .form-validation.error { color: #ff4d4f; }
+        .form-validation.success { color: #52c41a; }
+        .loading { display: none; text-align: center; margin-top: 1rem; }
+        .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #1890ff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading p { margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #666; }
+        .additional-fields { margin-top: 1rem; }
+        .password-strength { height: 4px; background: #f0f0f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden; }
+        .password-strength-bar { height: 100%; width: 0%; transition: width 0.3s; }
+        .password-strength-bar.weak { width: 33%; background: #ff4d4f; }
+        .password-strength-bar.medium { width: 66%; background: #faad14; }
+        .password-strength-bar.strong { width: 100%; background: #52c41a; }
     </style>
 </head>
 <body>
@@ -32,39 +74,71 @@
         </div>
         
         <div id="login-form">
-            <div class="form-group">
-                <label>用户名</label>
-                <input type="text" id="login-username" placeholder="请输入用户名" required>
-            </div>
-            <div class="form-group">
-                <label>密码</label>
-                <input type="password" id="login-password" placeholder="请输入密码" required>
-            </div>
-            <div class="form-group links">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="remember-me"> <label for="remember-me" style="display:inline; margin:0; font-weight:normal;">记住我</label>
+            <form id="login-form-element">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="login-username" placeholder="请输入用户名" required>
                 </div>
-                <a href="#">忘记密码?</a>
-            </div>
-            <div class="error" id="login-error"></div>
-            <button onclick="handleLogin()">登 录</button>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="login-password" placeholder="请输入密码" required>
+                </div>
+                <div class="form-group links">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="remember-me"> <label for="remember-me" style="display:inline; margin:0; font-weight:normal;">记住我</label>
+                    </div>
+                    <a href="#">忘记密码?</a>
+                </div>
+                <div class="error" id="login-error"></div>
+                <button type="submit" id="login-submit-btn">登 录</button>
+                <div class="loading" id="login-loading">
+                    <div class="spinner"></div>
+                    <p>登录中...</p>
+                </div>
+            </form>
         </div>
 
         <div id="register-form" class="hidden">
             <div class="form-group">
                 <label>用户名</label>
                 <input type="text" id="reg-username" placeholder="设置用户名" required>
+                <div class="form-validation" id="reg-username-validation"></div>
             </div>
             <div class="form-group">
                 <label>邮箱</label>
                 <input type="email" id="reg-email" placeholder="输入邮箱地址" required>
+                <div class="form-validation" id="reg-email-validation"></div>
             </div>
             <div class="form-group">
                 <label>密码</label>
-                <input type="password" id="reg-password" placeholder="设置密码" required>
+                <input type="password" id="reg-password" placeholder="设置密码" required oninput="checkPasswordStrength()">
+                <div class="password-strength">
+                    <div class="password-strength-bar" id="password-strength-bar"></div>
+                </div>
+                <div class="form-validation" id="reg-password-validation"></div>
+            </div>
+            <div class="form-group">
+                <label>确认密码</label>
+                <input type="password" id="reg-confirm-password" placeholder="再次输入密码" required>
+                <div class="form-validation" id="reg-confirm-validation"></div>
+            </div>
+            <div class="additional-fields">
+                <div class="form-group">
+                    <label>昵称（可选）</label>
+                    <input type="text" id="reg-nickname" placeholder="设置昵称">
+                </div>
+                <div class="form-group">
+                    <label>手机号（可选）</label>
+                    <input type="tel" id="reg-phone" placeholder="输入手机号">
+                    <div class="form-validation" id="reg-phone-validation"></div>
+                </div>
             </div>
             <div class="error" id="reg-error"></div>
-            <button onclick="handleRegister()">注 册</button>
+            <button onclick="handleRegister()" id="reg-submit-btn">注 册</button>
+            <div class="loading" id="reg-loading">
+                <div class="spinner"></div>
+                <p>注册中...</p>
+            </div>
         </div>
     </div>
 
@@ -82,10 +156,20 @@
             }
         }
 
-        async function handleLogin() {
-            const username = document.getElementById('login-username').value;
+        async function handleLogin(event) {
+            // 阻止表单默认提交行为
+            if (event) {
+                event.preventDefault();
+            }
+            
+            const username = document.getElementById('login-username').value.trim();
             const password = document.getElementById('login-password').value;
             const error = document.getElementById('login-error');
+            const submitBtn = document.getElementById('login-submit-btn');
+            const loading = document.getElementById('login-loading');
+            
+            // 清除之前的错误信息
+            error.style.display = 'none';
             
             if(!username || !password) {
                 error.textContent = "请输入用户名和密码";
@@ -93,52 +177,260 @@
                 return;
             }
 
+            // 显示加载状态
+            submitBtn.style.display = 'none';
+            loading.style.display = 'block';
+
             try {
                 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({username, password})
                 });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                
                 const data = await res.json();
+                
+                // 隐藏加载状态
+                submitBtn.style.display = 'block';
+                loading.style.display = 'none';
+                
                 if (data.status === 0) {
+                    // 登录成功，跳转到题目列表页面
                     window.location.href = '/all_questions';
                 } else {
-                    error.textContent = data.reason;
+                    error.textContent = data.reason || "登录失败";
                     error.style.display = 'block';
                 }
             } catch (e) {
+                // 隐藏加载状态
+                submitBtn.style.display = 'block';
+                loading.style.display = 'none';
                 error.textContent = "网络错误，请稍后重试";
                 error.style.display = 'block';
+                console.error('Login error:', e);
             }
         }
+
+        // 表单验证函数
+        function validateUsername(username) {
+            const validation = document.getElementById('reg-username-validation');
+            if (username.length < 3) {
+                validation.textContent = '用户名至少需要3个字符';
+                validation.className = 'form-validation error';
+                return false;
+            } else if (username.length > 20) {
+                validation.textContent = '用户名不能超过20个字符';
+                validation.className = 'form-validation error';
+                return false;
+            } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                validation.textContent = '用户名只能包含字母、数字和下划线';
+                validation.className = 'form-validation error';
+                return false;
+            } else {
+                validation.textContent = '用户名格式正确';
+                validation.className = 'form-validation success';
+                return true;
+            }
+        }
+
+        function validateEmail(email) {
+            const validation = document.getElementById('reg-email-validation');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                validation.textContent = '请输入有效的邮箱地址';
+                validation.className = 'form-validation error';
+                return false;
+            } else {
+                validation.textContent = '邮箱格式正确';
+                validation.className = 'form-validation success';
+                return true;
+            }
+        }
+
+        function validatePassword(password) {
+            const validation = document.getElementById('reg-password-validation');
+            if (password.length < 6) {
+                validation.textContent = '密码至少需要6个字符';
+                validation.className = 'form-validation error';
+                return false;
+            } else if (password.length > 30) {
+                validation.textContent = '密码不能超过30个字符';
+                validation.className = 'form-validation error';
+                return false;
+            } else {
+                validation.textContent = '密码强度：' + getPasswordStrengthText(password);
+                validation.className = 'form-validation success';
+                return true;
+            }
+        }
+
+        function getPasswordStrengthText(password) {
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^\w\s]/.test(password)) strength++;
+            
+            if (strength < 2) return '弱';
+            if (strength < 4) return '中';
+            return '强';
+        }
+
+        function checkPasswordStrength() {
+            const password = document.getElementById('reg-password').value;
+            const strengthBar = document.getElementById('password-strength-bar');
+            
+            if (password.length === 0) {
+                strengthBar.className = 'password-strength-bar';
+                return;
+            }
+            
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^\w\s]/.test(password)) strength++;
+            
+            strengthBar.className = 'password-strength-bar';
+            if (strength <= 2) {
+                strengthBar.classList.add('weak');
+            } else if (strength <= 4) {
+                strengthBar.classList.add('medium');
+            } else {
+                strengthBar.classList.add('strong');
+            }
+            
+            validatePassword(password);
+        }
+
+        function validateConfirmPassword() {
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('reg-confirm-password').value;
+            const validation = document.getElementById('reg-confirm-validation');
+            
+            if (confirmPassword && password !== confirmPassword) {
+                validation.textContent = '两次输入的密码不一致';
+                validation.className = 'form-validation error';
+                return false;
+            } else if (confirmPassword && password === confirmPassword) {
+                validation.textContent = '密码确认正确';
+                validation.className = 'form-validation success';
+                return true;
+            }
+            return true;
+        }
+
+        function validatePhone(phone) {
+            const validation = document.getElementById('reg-phone-validation');
+            if (phone && !/^1[3-9]\d{9}$/.test(phone)) {
+                validation.textContent = '请输入有效的手机号码';
+                validation.className = 'form-validation error';
+                return false;
+            } else if (phone) {
+                validation.textContent = '手机号码格式正确';
+                validation.className = 'form-validation success';
+                return true;
+            }
+            return true;
+        }
+
+        // 添加实时验证事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            // 登录表单事件监听
+            const loginForm = document.getElementById('login-form-element');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+            
+            // 注册表单事件监听
+            document.getElementById('reg-username').addEventListener('input', function() {
+                validateUsername(this.value);
+            });
+            
+            document.getElementById('reg-email').addEventListener('input', function() {
+                validateEmail(this.value);
+            });
+            
+            document.getElementById('reg-password').addEventListener('input', function() {
+                validatePassword(this.value);
+                validateConfirmPassword();
+            });
+            
+            document.getElementById('reg-confirm-password').addEventListener('input', validateConfirmPassword);
+            
+            document.getElementById('reg-phone').addEventListener('input', function() {
+                validatePhone(this.value);
+            });
+        });
 
         async function handleRegister() {
             const username = document.getElementById('reg-username').value;
             const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('reg-confirm-password').value;
             const email = document.getElementById('reg-email').value;
+            const nickname = document.getElementById('reg-nickname').value;
+            const phone = document.getElementById('reg-phone').value;
             const error = document.getElementById('reg-error');
+            const submitBtn = document.getElementById('reg-submit-btn');
+            const loading = document.getElementById('reg-loading');
 
-            if(!username || !password || !email) {
-                error.textContent = "请填写所有字段";
+            // 验证所有字段
+            if (!validateUsername(username) || !validateEmail(email) || 
+                !validatePassword(password) || !validateConfirmPassword() || 
+                !validatePhone(phone)) {
+                error.textContent = '请修正表单中的错误';
                 error.style.display = 'block';
                 return;
             }
+
+            if (password !== confirmPassword) {
+                error.textContent = '两次输入的密码不一致';
+                error.style.display = 'block';
+                return;
+            }
+
+            // 显示加载状态
+            submitBtn.style.display = 'none';
+            loading.style.display = 'block';
+            error.style.display = 'none';
 
             try {
                 const res = await fetch('/api/register', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({username, password, email})
+                    body: JSON.stringify({
+                        username, 
+                        password, 
+                        email,
+                        nickname,
+                        phone
+                    })
                 });
                 const data = await res.json();
+                
+                // 隐藏加载状态
+                submitBtn.style.display = 'block';
+                loading.style.display = 'none';
+                
                 if (data.status === 0) {
-                    alert('注册成功，请登录');
+                    // 注册成功，自动填充登录表单并跳转
+                    document.getElementById('login-username').value = username;
+                    alert('注册成功！请登录');
                     switchTab('login');
                 } else {
                     error.textContent = data.reason;
                     error.style.display = 'block';
                 }
             } catch (e) {
+                // 隐藏加载状态
+                submitBtn.style.display = 'block';
+                loading.style.display = 'none';
                 error.textContent = "网络错误，请稍后重试";
                 error.style.display = 'block';
             }

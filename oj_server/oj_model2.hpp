@@ -68,6 +68,8 @@ namespace ns_model
                               "`username` varchar(50) NOT NULL UNIQUE,"
                               "`password` varchar(128) NOT NULL,"
                               "`email` varchar(100) DEFAULT NULL,"
+                              "`nickname` varchar(100) DEFAULT NULL,"
+                              "`phone` varchar(20) DEFAULT NULL,"
                               "PRIMARY KEY (`id`)"
                               ") ENGINE=InnoDB DEFAULT CHARSET=utf8;";
             ExecuteSql(sql);
@@ -219,7 +221,7 @@ namespace ns_model
              return ss.str();
         }
 
-        bool RegisterUser(const std::string &username, const std::string &password, const std::string &email) {
+        bool RegisterUser(const std::string &username, const std::string &password, const std::string &email, const std::string &nickname = "", const std::string &phone = "") {
             // Check if exists
             std::string sql_check = "select * from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
@@ -229,8 +231,8 @@ namespace ns_model
 
             // Insert
             std::string pwd_hash = SHA256Hash(password);
-            std::string sql_insert = "insert into " + oj_users + " (username, password, email) values ('" 
-                                     + username + "', '" + pwd_hash + "', '" + email + "')";
+            std::string sql_insert = "insert into " + oj_users + " (username, password, email, nickname, phone) values ('" 
+                                     + username + "', '" + pwd_hash + "', '" + email + "', '" + nickname + "', '" + phone + "')";
             return ExecuteSql(sql_insert);
         }
 

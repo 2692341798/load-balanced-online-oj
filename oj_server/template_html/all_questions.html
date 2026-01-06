@@ -6,6 +6,28 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线OJ-题目列表</title>
+    <script>
+        // 检查登录状态，未登录则重定向到登录页面
+        window.onload = function() {
+            fetch('/api/user')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 0) {
+                        // 未登录，重定向到登录页面
+                        window.location.href = '/login';
+                    } else {
+                        // 已登录，更新用户名显示
+                        const loginLink = document.querySelector('.login');
+                        loginLink.href = '#';
+                        loginLink.textContent = '欢迎，' + data.username;
+                    }
+                })
+                .catch(() => {
+                    // 请求失败，也重定向到登录页面
+                    window.location.href = '/login';
+                });
+        };
+    </script>
     <style>
         /* 起手式, 100%保证我们的样式设置可以不受默认影响 */
         * {

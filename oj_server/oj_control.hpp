@@ -259,8 +259,8 @@ namespace ns_control
             return std::string(buf);
         }
 
-        bool Register(const std::string &username, const std::string &password, const std::string &email) {
-            return model_.RegisterUser(username, password, email);
+        bool Register(const std::string &username, const std::string &password, const std::string &email, const std::string &nickname = "", const std::string &phone = "") {
+            return model_.RegisterUser(username, password, email, nickname, phone);
         }
 
         bool Login(const std::string &username, const std::string &password, std::string *token) {

@@ -6,6 +6,28 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{number}}.{{title}}</title>
+    <script>
+        // 检查登录状态，未登录则重定向到登录页面
+        window.onload = function() {
+            fetch('/api/user')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 0) {
+                        // 未登录，重定向到登录页面
+                        window.location.href = '/login';
+                    } else {
+                        // 已登录，更新用户名显示
+                        const loginLink = document.querySelector('.login');
+                        loginLink.href = '#';
+                        loginLink.textContent = '欢迎，' + data.username;
+                    }
+                })
+                .catch(() => {
+                    // 请求失败，也重定向到登录页面
+                    window.location.href = '/login';
+                });
+        };
+    </script>
     <!-- 引入ACE插件 -->
     <!-- 官网链接：https://ace.c9.io/ -->
     <!-- CDN链接：https://cdnjs.com/libraries/ace -->

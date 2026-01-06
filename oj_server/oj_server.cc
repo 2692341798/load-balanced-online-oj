@@ -108,14 +108,32 @@ int main()
         std::string username = root["username"].asString();
         std::string password = root["password"].asString();
         std::string email = root["email"].asString();
+        std::string nickname = root.get("nickname", "").asString();
+        std::string phone = root.get("phone", "").asString();
         
         Json::Value res_json;
-        if(ctrl.Register(username, password, email)) {
+        if(ctrl.Register(username, password, email, nickname, phone)) {
              res_json["status"] = 0;
              res_json["reason"] = "success";
         } else {
              res_json["status"] = 1;
              res_json["reason"] = "注册失败：用户名已存在";
+        }
+        Json::FastWriter w;
+        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+    });
+
+    // API Check User Status
+    svr.Get("/api/user", [&ctrl](const Request &req, Response &resp){
+        Json::Value res_json;
+        User user;
+        if (ctrl.AuthCheck(req, &user)) {
+            res_json["status"] = 0;
+            res_json["username"] = user.username;
+            res_json["email"] = user.email;
+        } else {
+            res_json["status"] = 1;
+            res_json["reason"] = "未登录";
         }
         Json::FastWriter w;
         resp.set_content(w.write(res_json), "application/json;charset=utf-8");
