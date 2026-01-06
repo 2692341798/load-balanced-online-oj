@@ -63,6 +63,7 @@ namespace ns_model
         }
 
         void InitUserTable() {
+            // 创建完整的表结构
             std::string sql = "CREATE TABLE IF NOT EXISTS `users` ("
                               "`id` int(11) NOT NULL AUTO_INCREMENT,"
                               "`username` varchar(50) NOT NULL UNIQUE,"
@@ -225,7 +226,13 @@ namespace ns_model
             // Check if exists
             std::string sql_check = "select * from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
-            if (QueryUserMySql(sql_check, &users) && !users.empty()) {
+            if (!QueryUserMySql(sql_check, &users)) {
+                LOG(ERROR) << "查询用户失败，数据库错误: " << username << "\n";
+                return false; // Database error
+            }
+            
+            if (!users.empty()) {
+                LOG(INFO) << "用户名已存在: " << username << "\n";
                 return false; // User exists
             }
 
@@ -233,7 +240,13 @@ namespace ns_model
             std::string pwd_hash = SHA256Hash(password);
             std::string sql_insert = "insert into " + oj_users + " (username, password, email, nickname, phone) values ('" 
                                      + username + "', '" + pwd_hash + "', '" + email + "', '" + nickname + "', '" + phone + "')";
-            return ExecuteSql(sql_insert);
+            bool result = ExecuteSql(sql_insert);
+            if (result) {
+                LOG(INFO) << "用户注册成功: " << username << "\n";
+            } else {
+                LOG(ERROR) << "用户注册失败，数据库插入错误: " << username << "\n";
+            }
+            return result;
         }
 
         bool LoginUser(const std::string &username, const std::string &password, User *user) {

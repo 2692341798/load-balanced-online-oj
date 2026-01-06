@@ -112,13 +112,28 @@ int main()
         std::string phone = root.get("phone", "").asString();
         
         Json::Value res_json;
-        if(ctrl.Register(username, password, email, nickname, phone)) {
-             res_json["status"] = 0;
-             res_json["reason"] = "success";
+        
+        // 参数验证
+        if(username.empty() || password.empty() || email.empty()) {
+            res_json["status"] = 1;
+            res_json["reason"] = "注册失败：用户名、密码和邮箱不能为空";
+        } else if(username.length() < 3 || username.length() > 20) {
+            res_json["status"] = 1;
+            res_json["reason"] = "注册失败：用户名长度必须在3-20个字符之间";
+        } else if(password.length() < 6 || password.length() > 30) {
+            res_json["status"] = 1;
+            res_json["reason"] = "注册失败：密码长度必须在6-30个字符之间";
+        } else if(!ctrl.CheckUserExists(username) && ctrl.Register(username, password, email, nickname, phone)) {
+            res_json["status"] = 0;
+            res_json["reason"] = "success";
+        } else if(ctrl.CheckUserExists(username)) {
+            res_json["status"] = 1;
+            res_json["reason"] = "注册失败：用户名已存在";
         } else {
-             res_json["status"] = 1;
-             res_json["reason"] = "注册失败：用户名已存在";
+            res_json["status"] = 1;
+            res_json["reason"] = "注册失败：数据库错误";
         }
+        
         Json::FastWriter w;
         resp.set_content(w.write(res_json), "application/json;charset=utf-8");
     });

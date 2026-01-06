@@ -259,8 +259,29 @@ namespace ns_control
             return std::string(buf);
         }
 
+        bool CheckUserExists(const std::string &username) {
+            std::string sql_check = "select * from " + oj_users + " where username='" + username + "'";
+            std::vector<User> users;
+            if (!model_.QueryUserMySql(sql_check, &users)) {
+                LOG(ERROR) << "检查用户是否存在时查询失败: " << username << "\n";
+                return true; // 保守策略：查询失败时认为用户存在，避免重复注册
+            }
+            return !users.empty();
+        }
+
         bool Register(const std::string &username, const std::string &password, const std::string &email, const std::string &nickname = "", const std::string &phone = "") {
-            return model_.RegisterUser(username, password, email, nickname, phone);
+            // 检查用户名是否已存在
+            if (CheckUserExists(username)) {
+                LOG(INFO) << "注册失败，用户名已存在: " << username << "\n";
+                return false; // 用户已存在
+            }
+            
+            // 执行注册
+            bool result = model_.RegisterUser(username, password, email, nickname, phone);
+            if (!result) {
+                LOG(ERROR) << "注册失败，数据库错误: " << username << "\n";
+            }
+            return result;
         }
 
         bool Login(const std::string &username, const std::string &password, std::string *token) {

@@ -7,51 +7,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>这是我的个人OJ系统</title>
     <script>
+        // XSS防护函数 - 转义HTML特殊字符
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // 显示加载状态
+        function showLoadingState() {
+            const loginLink = document.querySelector('.login');
+            loginLink.href = '#';
+            loginLink.textContent = '加载中...';
+            loginLink.style.opacity = '0.7';
+            loginLink.style.pointerEvents = 'none';
+        }
+
+        // 显示用户名
+        function showUsername(username) {
+            const loginLink = document.querySelector('.login');
+            loginLink.href = '#';
+            loginLink.textContent = '欢迎，' + escapeHtml(username);
+            loginLink.style.opacity = '1';
+            loginLink.style.pointerEvents = 'auto';
+            loginLink.classList.add('user-logged-in');
+        }
+
+        // 显示登录按钮
+        function showLoginButton() {
+            const loginLink = document.querySelector('.login');
+            loginLink.href = '/login';
+            loginLink.textContent = '登录/注册';
+            loginLink.style.opacity = '1';
+            loginLink.style.pointerEvents = 'auto';
+            loginLink.classList.remove('user-logged-in');
+        }
+
         // 检查登录状态
         window.onload = function() {
+            showLoadingState();
+            
             fetch('/api/user')
                 .then(res => res.json())
                 .then(data => {
-                    if (data.username) {
-                        // 已登录，替换登录按钮为欢迎信息
-                        const loginLink = document.querySelector('.login');
-                        loginLink.href = '#';
-                        loginLink.textContent = '欢迎，' + data.username;
+                    if (data.status === 0 && data.username) {
+                        // 已登录，显示用户名
+                        showUsername(data.username);
+                    } else {
+                        // 未登录，显示登录按钮
+                        showLoginButton();
                     }
                 })
                 .catch(() => {
-                    // 未登录或请求失败，保持原样
+                    // 请求失败，显示登录按钮
+                    showLoginButton();
                 });
         };
     </script>
     <style>
         /* 起手式, 100%保证我们的样式设置可以不受默认影响 */
-        * {
+        *, *::before, *::after {
             /* 消除网页的默认外边距 */
             margin: 0px;
             /* 消除网页的默认内边距 */
             padding: 0px;
+            /* 统一盒模型，避免宽高计算问题 */
+            box-sizing: border-box;
         }
 
         html,
         body {
             width: 100%;
             height: 100%;
+            /* 防止内容被裁剪，纵向可滚动 */
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .container .navbar {
             width: 100%;
             height: 50px;
             background-color: black;
-            /* 给父级标签设置overflow，取消后续float带来的影响 */
-            overflow: hidden;
+            /* 使用flex进行布局，避免浮动导致裁剪 */
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
         }
 
         .container .navbar a {
-            /* 设置a标签是行内块元素，允许你设置宽度 */
-            display: inline-block;
-            /* 设置a标签的宽度,a标签默认行内元素，无法设置宽度 */
-            width: 80px;
+            /* 使用自适应宽度 */
+            display: inline-flex;
+            align-items: center;
+            padding: 0 12px;
             /* 设置字体颜色 */
             color: white;
             /* 设置字体的大小 */
@@ -68,28 +127,46 @@
             background-color: green;
         }
         .container .navbar .login {
-            float: right;
+            margin-left: auto;
+            transition: opacity 0.3s ease;
+            /* 防止超长用户名撑破布局，但尽量完整显示 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .container .navbar .login.user-logged-in {
+            background-color: #2c3e50;
+            font-weight: bold;
+        }
+        
+        .container .navbar .login.user-logged-in:hover {
+            background-color: #34495e;
         }
 
         .container .content {
-            /* 设置标签的宽度 */
-            width: 800px;
-            max-width: 90%;
+            /* 自适应宽度且居中 */
+            width: 100%;
+            max-width: 960px;
             /* 用来调试 */
             /* background-color: #ccc; */
             /* 整体居中 */
             margin: 0px auto;
             /* 设置文字居中 */
             text-align: center;
-            /* 设置上外边距 */
-            margin-top: 200px;
+            /* 使内容区域覆盖可视区域（除导航栏） */
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
         }
         
         /* 移动端适配 */
         @media (max-width: 768px) {
             .container .content {
                 width: 95%;
-                margin-top: 100px;
             }
             .container .content h1 {
                 font-size: 1.8rem;
@@ -97,12 +174,13 @@
             .container .content p {
                 font-size: 1rem;
             }
+            .container .navbar a { font-size: medium; }
+            .container .navbar .login { font-size: small; }
         }
         
         @media (max-width: 480px) {
             .container .content {
-                width: 90%;
-                margin-top: 80px;
+                width: 92%;
             }
             .container .content h1 {
                 font-size: 1.5rem;
@@ -110,10 +188,13 @@
             .container .content p {
                 font-size: 0.9rem;
             }
-            .container .navbar a {
-                width: 60px;
-                font-size: medium;
-            }
+            .container .navbar a { font-size: small; }
+            .container .navbar .login { font-size: x-small; }
+        }
+        
+        /* 平板设备适配 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container .navbar a { font-size: large; }
         }
 
         .container .content .font_ {
