@@ -1,13 +1,263 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>这是我的个人OJ系统</title>
+    <title>Online Judge - 开启你的编程之旅</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-main: #ffffff;
+            --text-secondary: #8c8c8c;
+            --accent-color: #ffa116; /* LeetCode orange-ish */
+            --accent-hover: #e69114;
+            --nav-bg: #282828;
+            --card-bg: #282828;
+            --success: #2cbb5d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: color 0.3s;
+        }
+
+        /* Navbar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 50px;
+            height: 60px;
+            background-color: var(--bg-color); /* Transparent/same as bg */
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        .navbar-brand span {
+            color: var(--accent-color);
+            margin-right: 5px;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .navbar-links a {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .navbar-links a:hover, .navbar-links a.active {
+            color: var(--text-main);
+        }
+
+        .navbar-auth {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        .btn-text:hover {
+            color: var(--text-main);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* Hero Section */
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 100vh;
+            padding: 80px 50px 0;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .hero-content {
+            flex: 1;
+            padding-right: 50px;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 20px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            max-width: 500px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background-color: #2cbb5d; /* Greenish like LeetCode new style or keep orange */
+            /* Let's stick to a nice teal/green like the reference image button */
+            background-color: #17a2b8; /* Or customized */
+            background: linear-gradient(90deg, #2cbb5d 0%, #1e8e3e 100%); /* Green gradient */
+            color: white;
+            padding: 12px 32px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(44, 187, 93, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(44, 187, 93, 0.4);
+        }
+
+        /* Abstract Graphic - Right Side */
+        .hero-graphic {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .graphic-card {
+            background: #2b2b2b;
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);
+            border: 1px solid #444;
+        }
+
+        .code-block {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            color: #d4d4d4;
+        }
+        
+        .code-line {
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .keyword { color: #569cd6; }
+        .string { color: #ce9178; }
+        .function { color: #dcdcaa; }
+        .comment { color: #6a9955; }
+
+        /* Background Elements */
+        .bg-shape {
+            position: absolute;
+            z-index: -1;
+            filter: blur(80px);
+            opacity: 0.4;
+        }
+        
+        .shape-1 {
+            top: 20%;
+            left: 10%;
+            width: 300px;
+            height: 300px;
+            background: var(--accent-color);
+            border-radius: 50%;
+        }
+        
+        .shape-2 {
+            bottom: 10%;
+            right: 10%;
+            width: 400px;
+            height: 400px;
+            background: #2cbb5d;
+            border-radius: 50%;
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .hero {
+                flex-direction: column-reverse;
+                text-align: center;
+                justify-content: center;
+                padding-top: 100px;
+            }
+            
+            .hero-content {
+                padding-right: 0;
+                margin-top: 50px;
+            }
+            
+            .hero-subtitle {
+                margin: 0 auto 40px;
+            }
+
+            .navbar {
+                padding: 0 20px;
+            }
+            
+            .navbar-links {
+                display: none; /* Mobile menu needed ideally, but hiding for simplicity */
+            }
+        }
+    </style>
     <script>
-        // XSS防护函数 - 转义HTML特殊字符
+        // XSS防护函数
         function escapeHtml(text) {
             const map = {
                 '&': '&amp;',
@@ -16,218 +266,105 @@
                 '"': '&quot;',
                 "'": '&#039;'
             };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+            return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
         }
 
-        // 显示加载状态
-        function showLoadingState() {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '#';
-            loginLink.textContent = '加载中...';
-            loginLink.style.opacity = '0.7';
-            loginLink.style.pointerEvents = 'none';
-        }
-
-        // 显示用户名
-        function showUsername(username) {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '#';
-            loginLink.textContent = '欢迎，' + escapeHtml(username);
-            loginLink.style.opacity = '1';
-            loginLink.style.pointerEvents = 'auto';
-            loginLink.classList.add('user-logged-in');
-        }
-
-        // 显示登录按钮
-        function showLoginButton() {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '/login';
-            loginLink.textContent = '登录/注册';
-            loginLink.style.opacity = '1';
-            loginLink.style.pointerEvents = 'auto';
-            loginLink.classList.remove('user-logged-in');
-        }
-
-        // 检查登录状态
-        window.onload = function() {
-            showLoadingState();
+        // 更新UI状态
+        function updateAuthUI(isLoggedIn, username = '') {
+            const authContainer = document.getElementById('auth-container');
             
+            if (isLoggedIn) {
+                authContainer.innerHTML = `
+                    <div class="user-profile" title="个人中心">
+                        <div class="user-avatar">${username.charAt(0).toUpperCase()}</div>
+                        <span>${escapeHtml(username)}</span>
+                    </div>
+                `;
+            } else {
+                authContainer.innerHTML = `
+                    <a href="/login" class="btn-text" id="login-btn">登录 / 注册</a>
+                `;
+            }
+        }
+
+        // 初始化
+        window.onload = function() {
+            // 初始显示加载状态（可选，或者默认为未登录）
+            const authContainer = document.getElementById('auth-container');
+            authContainer.innerHTML = '<span class="btn-text" style="opacity:0.7">加载中...</span>';
+
             fetch('/api/user')
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 0 && data.username) {
-                        // 已登录，显示用户名
-                        showUsername(data.username);
+                        updateAuthUI(true, data.username);
                     } else {
-                        // 未登录，显示登录按钮
-                        showLoginButton();
+                        updateAuthUI(false);
                     }
                 })
                 .catch(() => {
-                    // 请求失败，显示登录按钮
-                    showLoginButton();
+                    updateAuthUI(false);
                 });
         };
     </script>
-    <style>
-        /* 起手式, 100%保证我们的样式设置可以不受默认影响 */
-        *, *::before, *::after {
-            /* 消除网页的默认外边距 */
-            margin: 0px;
-            /* 消除网页的默认内边距 */
-            padding: 0px;
-            /* 统一盒模型，避免宽高计算问题 */
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            /* 防止内容被裁剪，纵向可滚动 */
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-
-        .container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .container .navbar {
-            width: 100%;
-            height: 50px;
-            background-color: black;
-            /* 使用flex进行布局，避免浮动导致裁剪 */
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 0 12px;
-        }
-
-        .container .navbar a {
-            /* 使用自适应宽度 */
-            display: inline-flex;
-            align-items: center;
-            padding: 0 12px;
-            /* 设置字体颜色 */
-            color: white;
-            /* 设置字体的大小 */
-            font-size: large;
-            /* 设置文字的高度和导航栏一样的高度 */
-            line-height: 50px;
-            /* 去掉a标签的下划线 */
-            text-decoration: none;
-            /* 设置a标签中的文字居中 */
-            text-align: center;
-        }
-        /* 设置鼠标事件 */
-        .container .navbar a:hover {
-            background-color: green;
-        }
-        .container .navbar .login {
-            margin-left: auto;
-            transition: opacity 0.3s ease;
-            /* 防止超长用户名撑破布局，但尽量完整显示 */
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .container .navbar .login.user-logged-in {
-            background-color: #2c3e50;
-            font-weight: bold;
-        }
-        
-        .container .navbar .login.user-logged-in:hover {
-            background-color: #34495e;
-        }
-
-        .container .content {
-            /* 自适应宽度且居中 */
-            width: 100%;
-            max-width: 960px;
-            /* 用来调试 */
-            /* background-color: #ccc; */
-            /* 整体居中 */
-            margin: 0px auto;
-            /* 设置文字居中 */
-            text-align: center;
-            /* 使内容区域覆盖可视区域（除导航栏） */
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-        }
-        
-        /* 移动端适配 */
-        @media (max-width: 768px) {
-            .container .content {
-                width: 95%;
-            }
-            .container .content h1 {
-                font-size: 1.8rem;
-            }
-            .container .content p {
-                font-size: 1rem;
-            }
-            .container .navbar a { font-size: medium; }
-            .container .navbar .login { font-size: small; }
-        }
-        
-        @media (max-width: 480px) {
-            .container .content {
-                width: 92%;
-            }
-            .container .content h1 {
-                font-size: 1.5rem;
-            }
-            .container .content p {
-                font-size: 0.9rem;
-            }
-            .container .navbar a { font-size: small; }
-            .container .navbar .login { font-size: x-small; }
-        }
-        
-        /* 平板设备适配 */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .container .navbar a { font-size: large; }
-        }
-
-        .container .content .font_ {
-            /* 设置标签为块级元素，独占一行，可以设置高度宽度等属性 */
-            display: block;
-            /* 设置每个文字的上外边距 */
-            margin-top: 20px;
-            /* 去掉a标签的下划线 */
-            text-decoration: none;
-            /* 设置字体大小
-            font-size: larger; */
-        }
-    </style>
 </head>
-
 <body>
-    <div class="container">
-        <!-- 导航栏， 功能不实现-->
-        <div class="navbar">
-            <a href="/">首页</a>
+    <!-- Background Shapes -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="/">
+                <span>&lt;/&gt;</span> OJ Platform
+            </a>
+        </div>
+        <div class="navbar-links">
+            <a href="/" class="active">首页</a>
             <a href="/all_questions">题库</a>
             <a href="#">竞赛</a>
             <a href="#">讨论</a>
             <a href="#">求职</a>
-            <a class="login" href="/login">登录/注册</a>
         </div>
-        <!-- 网页的内容 -->
-        <div class="content">
-            <h1 class="font_">欢迎来到我的OnlineJudge平台</h1>
-            <p class="font_">这个我个人独立开发的一个在线OJ平台</p>
-            <a class="font_" href="/all_questions">点击我开始编程啦!</a>
+        <div class="navbar-auth" id="auth-container">
+            <!-- Will be populated by JS -->
+            <a href="/login" class="btn-text">登录</a>
         </div>
-    </div>
-</body>
+    </nav>
 
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">探索代码的<br>无限可能</h1>
+            <p class="hero-subtitle">
+                加入我们的在线编程社区，提升你的算法技能，
+                为技术面试做好准备。这里有海量题目等你来挑战。
+            </p>
+            <a href="/all_questions" class="btn-primary">开始刷题 ></a>
+        </div>
+        
+        <div class="hero-graphic">
+            <div class="graphic-card">
+                <div class="code-block">
+                    <span class="code-line"><span class="keyword">class</span> <span class="function">Solution</span> {</span>
+                    <span class="code-line">&nbsp;&nbsp;<span class="keyword">public</span>:</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="function">twoSum</span>(<span class="keyword">vector</span>&lt;<span class="keyword">int</span>&gt;& nums, <span class="keyword">int</span> target) {</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 寻找数组中和为目标值的两个数</span></span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; map;</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> (<span class="keyword">int</span> i = 0; i < nums.size(); i++) {</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (map.count(target - nums[i])) {</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> {map[target - nums[i]], i};</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;map[nums[i]] = i;</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> {};</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;}</span>
+                    <span class="code-line">};</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</body>
 </html>
