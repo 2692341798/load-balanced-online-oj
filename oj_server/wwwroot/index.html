@@ -18,15 +18,18 @@
             return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
         }
 
-        // 更新UI状态
         function updateAuthUI(isLoggedIn, username = '') {
             const authContainer = document.getElementById('auth-container');
             
             if (isLoggedIn) {
                 authContainer.innerHTML = `
-                    <div class="user-profile" title="个人中心">
+                    <div class="user-profile" title="个人中心" onclick="toggleUserMenu(event)">
                         <div class="user-avatar">${username.charAt(0).toUpperCase()}</div>
                         <span>${escapeHtml(username)}</span>
+                    </div>
+                    <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
+                    <div class="user-menu" id="user-menu">
+                        <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
                     </div>
                 `;
             } else {
@@ -36,25 +39,88 @@
             }
         }
 
-        // 初始化
-        window.onload = function() {
-            // 初始显示加载状态（可选，或者默认为未登录）
+        function hideUserMenu() {
+            const menu = document.getElementById('user-menu');
+            const backdrop = document.getElementById('user-menu-backdrop');
+            if (menu) menu.classList.remove('visible');
+            if (backdrop) backdrop.classList.remove('visible');
+            document.removeEventListener('click', onUserMenuDocumentClick);
+        }
+
+        function onUserMenuDocumentClick(event) {
+            const profile = document.querySelector('.user-profile');
+            const menu = document.getElementById('user-menu');
+            if (!profile || !menu) {
+                hideUserMenu();
+                return;
+            }
+            if (!profile.contains(event.target) && !menu.contains(event.target)) {
+                hideUserMenu();
+            }
+        }
+
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            console.log('[toggleUserMenu] called');
+            const menu = document.getElementById('user-menu');
+            const backdrop = document.getElementById('user-menu-backdrop');
+            if (!menu || !backdrop) {
+                console.warn('[toggleUserMenu] menu or backdrop not found');
+                return;
+            }
+            const isVisible = menu.classList.contains('visible');
+            console.log('[toggleUserMenu] isVisible =', isVisible);
+            if (isVisible) {
+                hideUserMenu();
+            } else {
+                menu.classList.add('visible');
+                backdrop.classList.add('visible');
+                document.addEventListener('click', onUserMenuDocumentClick);
+                console.log('[toggleUserMenu] menu opened');
+            }
+        }
+
+        async function handleLogout(event) {
+            event.stopPropagation();
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'GET'
+                });
+                const data = await response.json();
+                if (data.status === 0) {
+                    window.location.reload();
+                } else {
+                    alert('登出失败：' + (data.reason || '未知错误'));
+                }
+            } catch (e) {
+                alert('登出请求失败，请稍后重试');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('[index] DOMContentLoaded');
             const authContainer = document.getElementById('auth-container');
+            if (!authContainer) {
+                console.error('[index] #auth-container not found');
+                return;
+            }
             authContainer.innerHTML = '<span class="btn-text loading">加载中...</span>';
 
             fetch('/api/user')
                 .then(res => res.json())
                 .then(data => {
+                    console.log('[index] /api/user response', data);
                     if (data.status === 0 && data.username) {
                         updateAuthUI(true, data.username);
                     } else {
                         updateAuthUI(false);
                     }
                 })
-                .catch(() => {
+                .catch(err => {
+                    console.error('[index] /api/user error', err);
                     updateAuthUI(false);
                 });
-        };
+        });
     </script>
 </head>
 <body>

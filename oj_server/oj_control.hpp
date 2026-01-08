@@ -324,6 +324,27 @@ namespace ns_control
             return false;
         }
 
+        bool Logout(const Request &req) {
+            if (req.has_header("Cookie")) {
+                std::string cookie = req.get_header_value("Cookie");
+                std::string key = "session_id=";
+                size_t pos = cookie.find(key);
+                if (pos != std::string::npos) {
+                    std::string token = cookie.substr(pos + key.size());
+                    size_t end = token.find(';');
+                    if (end != std::string::npos) token = token.substr(0, end);
+                    
+                    std::unique_lock<std::mutex> lock(session_mtx_);
+                    auto it = sessions_.find(token);
+                    if (it != sessions_.end()) {
+                        sessions_.erase(it);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         //根据题目数据构建网页
         // html: 输出型参数
         bool AllQuestions(const Request &req, string *html)

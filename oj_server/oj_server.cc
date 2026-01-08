@@ -184,6 +184,17 @@ int main()
         Json::FastWriter w;
         resp.set_content(w.write(res_json), "application/json;charset=utf-8");
     });
+
+    // API Logout
+    svr.Get("/api/logout", [&ctrl](const Request &req, Response &resp){
+        ctrl.Logout(req);
+        Json::Value res_json;
+        res_json["status"] = 0;
+        res_json["reason"] = "success";
+        resp.set_header("Set-Cookie", "session_id=; Path=/; Max-Age=0; HttpOnly");
+        Json::FastWriter w;
+        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+    });
     
     
     svr.set_base_dir("./wwwroot");

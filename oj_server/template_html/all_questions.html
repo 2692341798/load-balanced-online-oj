@@ -13,14 +13,75 @@
             return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
         }
 
-        // 更新导航栏状态
+        function hideUserMenu() {
+            const menu = document.getElementById('user-menu');
+            const backdrop = document.getElementById('user-menu-backdrop');
+            if (menu) menu.classList.remove('visible');
+            if (backdrop) backdrop.classList.remove('visible');
+            document.removeEventListener('click', onUserMenuDocumentClick);
+        }
+
+        function onUserMenuDocumentClick(event) {
+            const profile = document.querySelector('.user-profile');
+            const menu = document.getElementById('user-menu');
+            if (!profile || !menu) {
+                hideUserMenu();
+                return;
+            }
+            if (!profile.contains(event.target) && !menu.contains(event.target)) {
+                hideUserMenu();
+            }
+        }
+
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            console.log('[all_questions toggleUserMenu] called');
+            const menu = document.getElementById('user-menu');
+            const backdrop = document.getElementById('user-menu-backdrop');
+            if (!menu || !backdrop) {
+                console.warn('[all_questions toggleUserMenu] menu or backdrop not found');
+                return;
+            }
+            const isVisible = menu.classList.contains('visible');
+            console.log('[all_questions toggleUserMenu] isVisible =', isVisible);
+            if (isVisible) {
+                hideUserMenu();
+            } else {
+                menu.classList.add('visible');
+                backdrop.classList.add('visible');
+                document.addEventListener('click', onUserMenuDocumentClick);
+                console.log('[all_questions toggleUserMenu] menu opened');
+            }
+        }
+
+        async function handleLogout(event) {
+            event.stopPropagation();
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'GET'
+                });
+                const data = await response.json();
+                if (data.status === 0) {
+                    window.location.reload();
+                } else {
+                    alert('登出失败：' + (data.reason || '未知错误'));
+                }
+            } catch (e) {
+                alert('登出请求失败，请稍后重试');
+            }
+        }
+
         function updateNavAuth(data) {
             const authContainer = document.getElementById('auth-container');
             if (data.status === 0 && data.username) {
                 authContainer.innerHTML = `
-                    <div class="user-profile">
+                    <div class="user-profile" onclick="toggleUserMenu(event)">
                         <div class="user-avatar">${data.username.charAt(0).toUpperCase()}</div>
                         <span>${escapeHtml(data.username)}</span>
+                    </div>
+                    <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
+                    <div class="user-menu" id="user-menu">
+                        <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
                     </div>
                 `;
             } else {
@@ -28,13 +89,26 @@
             }
         }
 
-        window.onload = function() {
-            // 获取用户信息
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('[all_questions] DOMContentLoaded');
+            const authContainer = document.getElementById('auth-container');
+            if (!authContainer) {
+                console.error('[all_questions] #auth-container not found');
+                return;
+            }
+            authContainer.innerHTML = '<span class="btn-text loading">加载中...</span>';
+
             fetch('/api/user')
                 .then(res => res.json())
-                .then(data => updateNavAuth(data))
-                .catch(() => updateNavAuth({status: -1}));
-        };
+                .then(data => {
+                    console.log('[all_questions] /api/user response', data);
+                    updateNavAuth(data);
+                })
+                .catch(err => {
+                    console.error('[all_questions] /api/user error', err);
+                    updateNavAuth({status: -1});
+                });
+        });
     </script>
 </head>
 <body>
