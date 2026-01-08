@@ -1,205 +1,156 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{number}}.{{title}}</title>
+    <title>{{number}}. {{title}} - 冻梨OJ</title>
+    <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/css/one_question.css">
-    <script>
-        // XSS防护函数 - 转义HTML特殊字符
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-        }
-
-        // 显示加载状态
-        function showLoadingState() {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '#';
-            loginLink.textContent = '加载中...';
-            loginLink.classList.add('loading');
-        }
-
-        // 显示用户名
-        function showUsername(username) {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '#';
-            loginLink.textContent = '欢迎，' + escapeHtml(username);
-            loginLink.classList.remove('loading');
-            loginLink.classList.add('user-logged-in');
-        }
-
-        // 显示登录按钮
-        function showLoginButton() {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '/login';
-            loginLink.textContent = '登录/注册';
-            loginLink.classList.remove('loading');
-            loginLink.classList.remove('user-logged-in');
-        }
-
-        // 检查登录状态，未登录则重定向到登录页面
-        window.onload = function() {
-            showLoadingState();
-            
-            fetch('/api/user')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status !== 0) {
-                        // 未登录，重定向到登录页面
-                        window.location.href = '/login';
-                    } else {
-                        // 已登录，更新用户名显示
-                        showUsername(data.username);
-                    }
-                })
-                .catch(() => {
-                    // 请求失败，也重定向到登录页面
-                    window.location.href = '/login';
-                });
-        };
-    </script>
-    <!-- 引入ACE插件 -->
-    <!-- 官网链接：https://ace.c9.io/ -->
-    <!-- CDN链接：https://cdnjs.com/libraries/ace -->
-    <!-- 使用介绍：https://www.iteye.com/blog/ybc77107-2296261 -->
-    <!-- https://justcode.ikeepstudying.com/2016/05/ace-editor-%E5%9C%A8%E7%BA%BF%E4%BB%A3%E7%A0%81%E7%BC%96%E8%BE%91%E6%9E%81%E5%85%B6%E9%AB%98%E4%BA%AE/ -->
-    <!-- 引入ACE CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ace.js" type="text/javascript"
-        charset="utf-8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.6/ext-language_tools.js" type="text/javascript"
-        charset="utf-8"></script>
-    <!-- 引入jquery CDN -->
+    
+    <!-- ACE Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-language_tools.js"></script>
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
 
-</head>
+    <script>
+        // XSS防护
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
+        }
 
+        function updateNavAuth(data) {
+            const authContainer = document.getElementById('auth-container');
+            if (data.status === 0 && data.username) {
+                authContainer.innerHTML = `
+                    <div class="user-profile">
+                        <div class="user-avatar">${data.username.charAt(0).toUpperCase()}</div>
+                        <span>${escapeHtml(data.username)}</span>
+                    </div>
+                `;
+            } else {
+                authContainer.innerHTML = `<a href="/login" class="btn-text">登录 / 注册</a>`;
+            }
+        }
+
+        // 页面初始化
+        $(document).ready(function() {
+            // 获取用户信息
+            fetch('/api/user')
+                .then(res => res.json())
+                .then(data => updateNavAuth(data))
+                .catch(() => updateNavAuth({status: -1}));
+
+            // 初始化 ACE 编辑器
+            var editor = ace.edit("code");
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/c_cpp");
+            editor.setFontSize(16);
+            editor.getSession().setTabSize(4);
+            editor.setOptions({
+                enableBasicAutocompletion: true,
+                enableSnippets: true,
+                enableLiveAutocompletion: true
+            });
+        });
+    </script>
+</head>
 <body>
-    <div class="container">
-        <!-- 导航栏， 功能不实现-->
-        <div class="navbar">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="/">
+                <span>&lt;/&gt;</span> 冻梨OJ
+            </a>
+        </div>
+        <div class="navbar-links">
             <a href="/">首页</a>
             <a href="/all_questions">题库</a>
             <a href="#">竞赛</a>
             <a href="#">讨论</a>
             <a href="#">求职</a>
-            <a class="login" href="/login">登录/注册</a>
         </div>
-        <!-- 左右呈现，题目描述和预设代码 -->
-        <div class="part1">
-            <div class="left_desc">
-                <h3><span id="number">{{number}}</span>.{{title}}_{{star}}</h3>
+        <div class="navbar-auth" id="auth-container">
+            <span class="btn-text loading">加载中...</span>
+        </div>
+    </nav>
+
+    <div class="problem-container">
+        <!-- Left: Problem Description -->
+        <div class="problem-desc">
+            <div class="problem-header">
+                <h1 class="problem-title"><span id="number">{{number}}</span>. {{title}}</h1>
+                <div class="problem-meta">
+                    <span class="difficulty-badge">{{star}}</span>
+                    <!-- 可以添加更多元数据，如通过率等 -->
+                </div>
+            </div>
+            <div class="problem-content">
                 <pre>{{desc}}</pre>
             </div>
-            <div class="right_code">
-                <pre id="code" class="ace_editor"><textarea class="ace_text-input">{{pre_code}}</textarea></pre>
+        </div>
+
+        <!-- Right: Code Editor -->
+        <div class="problem-editor">
+            <div class="editor-container">
+                <div id="code">{{pre_code}}</div>
+            </div>
+            <div class="editor-footer">
+                <div class="result-area" id="result-area">
+                    <!-- 运行结果将显示在这里 -->
+                </div>
+                <button class="btn-submit" onclick="submitCode()">提交运行</button>
             </div>
         </div>
-        <!-- 提交并且得到结果，并显示 -->
-        <div class="part2">
-            <div class="result"></div>
-            <button class="btn-submit" onclick="submit()">提交代码</button>
-        </div>
     </div>
+
     <script>
-        //初始化对象
-        editor = ace.edit("code");
-
-        //设置风格和语言（更多风格和语言，请到github上相应目录查看）
-        // 主题大全：http://www.manongjc.com/detail/25-cfpdrwkkivkikmk.html
-        editor.setTheme("ace/theme/monokai");
-        editor.session.setMode("ace/mode/c_cpp");
-
-        // 字体大小
-        editor.setFontSize(16);
-        // 设置默认制表符的大小:
-        editor.getSession().setTabSize(4);
-
-        // 设置只读（true时只读，用于展示代码）
-        editor.setReadOnly(false);
-
-        // 启用提示菜单
-        ace.require("ace/ext/language_tools");
-        editor.setOptions({
-            enableBasicAutocompletion: true,
-            enableSnippets: true,
-            enableLiveAutocompletion: true
-        });
-
-        function submit(){
-            // alert("嘿嘿!");
-            // 1. 收集当前页面的有关数据, 1. 题号 2.代码
+        function submitCode() {
+            var editor = ace.edit("code");
             var code = editor.getSession().getValue();
-            // console.log(code);
-            var number = $(".container .part1 .left_desc h3 #number").text();
-            // console.log(number);
+            var number = $("#number").text();
             var judge_url = "/judge/" + number;
-            // console.log(judge_url);
-            // 2. 构建json，并通过ajax向后台发起基于http的json请求
+            var resultArea = $("#result-area");
+            var submitBtn = $(".btn-submit");
+
+            // UI Loading State
+            submitBtn.prop("disabled", true).text("评测中...");
+            resultArea.html('<span style="color: var(--accent-color);">正在提交评测...</span>');
+
             $.ajax({
-                method: 'Post',   // 向后端发起请求的方式
-                url: judge_url,   // 向后端指定的url发起请求
-                dataType: 'json', // 告知server，我需要什么格式
-                contentType: 'application/json;charset=utf-8',  // 告知server，我给你的是什么格式
+                method: 'Post',
+                url: judge_url,
+                dataType: 'json',
+                contentType: 'application/json;charset=utf-8',
                 data: JSON.stringify({
-                    'code':code,
+                    'code': code,
                     'input': ''
                 }),
-                success: function(data){
-                    //成功得到结果
-                    // console.log(data);
-                    show_result(data);
+                success: function(data) {
+                    submitBtn.prop("disabled", false).text("提交运行");
+                    
+                    if (data.status === 0) {
+                        // 编译运行成功，显示输出
+                        if(data.reason) {
+                             // 有 reason 通常意味着逻辑上有问题，或者特殊的返回
+                             resultArea.html(`<span style="color: var(--accent-color);">${escapeHtml(data.reason)}</span>`);
+                        } else {
+                             // 假设 status 0 是成功运行
+                             resultArea.html(`<span style="color: var(--success);">运行成功</span>`);
+                             // 详细输出可以用弹窗或展开查看，这里简单显示
+                             console.log("Stdout:", data.stdout);
+                        }
+                    } else {
+                        // 编译错误或其他错误
+                        resultArea.html(`<span style="color: #ff4d4f;">${escapeHtml(data.reason)}</span>`);
+                    }
+                },
+                error: function() {
+                    submitBtn.prop("disabled", false).text("提交运行");
+                    resultArea.html('<span style="color: #ff4d4f;">网络请求失败</span>');
                 }
             });
-            // 3. 得到结果，解析并显示到 result中
-            function show_result(data)
-            {
-                // console.log(data.status);
-                // console.log(data.reason);
-                // 拿到result结果标签
-                var result_div = $(".container .part2 .result");
-                // 清空上一次的运行结果
-                result_div.empty();
-
-                // 首先拿到结果的状态码和原因结果
-                var _status = data.status;
-                var _reason = data.reason;
-
-                var reason_lable = $( "<p>",{
-                       text: _reason
-                });
-                reason_lable.appendTo(result_div);
-
-                if(status == 0){
-                    // 请求是成功的，编译运行过程没出问题，但是结果是否通过看测试用例的结果
-                    var _stdout = data.stdout;
-                    var _stderr = data.stderr;
-
-                    var stdout_lable = $("<pre>", {
-                        text: _stdout
-                    });
-
-                    var stderr_lable = $("<pre>", {
-                        text: _stderr
-                    })
-
-                    stdout_lable.appendTo(result_div);
-                    stderr_lable.appendTo(result_div);
-                }
-                else{
-                    // 编译运行出错,do nothing
-                }
-            }
         }
     </script>
 </body>
-
 </html>

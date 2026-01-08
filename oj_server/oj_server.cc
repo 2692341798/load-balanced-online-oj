@@ -155,19 +155,19 @@ int main()
     });
     
     // Serve CSS files from ./css directory under /css/*
-    svr.Get(R"(/css/(.*))", [](const Request &req, Response &resp){
-        std::string rel = req.matches[1];
-        std::string path = "./css/" + rel;
-        std::ifstream in(path, std::ios::binary);
-        if (in.is_open()) {
-            std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-            resp.set_content(content, "text/css; charset=utf-8");
-            in.close();
-        } else {
-            resp.status = 404;
-            resp.set_content("CSS Not Found", "text/plain");
-        }
-    });
+    // svr.Get(R"(/css/(.*))", [](const Request &req, Response &resp){
+    //     std::string rel = req.matches[1];
+    //     std::string path = "./css/" + rel;
+    //     std::ifstream in(path, std::ios::binary);
+    //     if (in.is_open()) {
+    //         std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    //         resp.set_content(content, "text/css; charset=utf-8");
+    //         in.close();
+    //     } else {
+    //         resp.status = 404;
+    //         resp.set_content("CSS Not Found", "text/plain");
+    //     }
+    // });
     
     svr.set_base_dir("./wwwroot");
     svr.set_mount_point("/css", "./css");

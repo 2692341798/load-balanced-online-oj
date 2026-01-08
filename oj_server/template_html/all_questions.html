@@ -1,113 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>在线OJ-题目列表</title>
+    <title>题库 - 冻梨OJ</title>
+    <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/css/all_questions.css">
     <script>
-        // XSS防护函数 - 转义HTML特殊字符
+        // XSS防护
         function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
         }
 
-        // 显示加载状态
-        function showLoadingState() {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '#';
-            loginLink.textContent = '加载中...';
-            loginLink.classList.add('loading');
+        // 更新导航栏状态
+        function updateNavAuth(data) {
+            const authContainer = document.getElementById('auth-container');
+            if (data.status === 0 && data.username) {
+                authContainer.innerHTML = `
+                    <div class="user-profile">
+                        <div class="user-avatar">${data.username.charAt(0).toUpperCase()}</div>
+                        <span>${escapeHtml(data.username)}</span>
+                    </div>
+                `;
+            } else {
+                authContainer.innerHTML = `<a href="/login" class="btn-text">登录 / 注册</a>`;
+            }
         }
 
-        // 显示用户名
-        function showUsername(username) {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '#';
-            loginLink.textContent = '欢迎，' + escapeHtml(username);
-            loginLink.classList.remove('loading');
-            loginLink.classList.add('user-logged-in');
-        }
-
-        // 显示登录按钮
-        function showLoginButton() {
-            const loginLink = document.querySelector('.login');
-            loginLink.href = '/login';
-            loginLink.textContent = '登录/注册';
-            loginLink.classList.remove('loading');
-            loginLink.classList.remove('user-logged-in');
-        }
-
-        // 检查登录状态，未登录则重定向到登录页面
         window.onload = function() {
-            showLoadingState();
-            
+            // 获取用户信息
             fetch('/api/user')
                 .then(res => res.json())
-                .then(data => {
-                    if (data.status !== 0) {
-                        // 未登录，重定向到登录页面
-                        window.location.href = '/login';
-                    } else {
-                        // 已登录，更新用户名显示
-                        showUsername(data.username);
-                    }
-                })
-                .catch(() => {
-                    // 请求失败，也重定向到登录页面
-                    window.location.href = '/login';
-                });
+                .then(data => updateNavAuth(data))
+                .catch(() => updateNavAuth({status: -1}));
         };
     </script>
 </head>
-
 <body>
-    <div class="container">
-        <!-- 导航栏， 功能不实现-->
-        <div class="navbar">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="/">
+                <span>&lt;/&gt;</span> 冻梨OJ
+            </a>
+        </div>
+        <div class="navbar-links">
             <a href="/">首页</a>
-            <a href="/all_questions">题库</a>
+            <a href="/all_questions" class="active">题库</a>
             <a href="#">竞赛</a>
             <a href="#">讨论</a>
             <a href="#">求职</a>
-            {{#user_logged_in}}
-            <a class="login" href="#">{{username}}</a>
-            {{/user_logged_in}}
-            {{#user_not_logged_in}}
-            <a class="login" href="/login">登录</a>
-            {{/user_not_logged_in}}
         </div>
-        <div class="question_list">
-            <h1>OnlineJuge题目列表</h1>
-            <table>
+        <div class="navbar-auth" id="auth-container">
+            <span class="btn-text loading">加载中...</span>
+        </div>
+    </nav>
+
+    <div class="question-list-container">
+        <div class="question-list-header">
+            <h1>题库列表</h1>
+            <p style="color: var(--text-secondary);">挑选适合你的题目进行挑战</p>
+        </div>
+
+        <table class="question-table">
+            <thead>
                 <tr>
-                    <th class="item">编号</th>
-                    <th class="item">标题</th>
-                    <th class="item">难度</th>
+                    <th style="width: 80px;">编号</th>
+                    <th>标题</th>
+                    <th style="width: 100px;">难度</th>
                 </tr>
+            </thead>
+            <tbody>
                 {{#question_list}}
                 <tr>
-                    <td class="item">{{number}}</td>
-                    <td class="item"><a href="/question/{{number}}">{{title}}</a></td>
-                    <td class="item">{{star}}</td>
+                    <td>{{number}}</td>
+                    <td><a href="/question/{{number}}" class="question-link">{{title}}</a></td>
+                    <td><span class="difficulty-badge difficulty-{{star}}">{{star}}</span></td>
                 </tr>
                 {{/question_list}}
-            </table>
-        </div>
+            </tbody>
+        </table>
+
         <div class="footer">
-            <!-- <hr> -->
-            <h4>冻梨在线判题平台</h4>
+            &copy; 2026 冻梨在线判题平台
         </div>
     </div>
-
 </body>
-
 </html>

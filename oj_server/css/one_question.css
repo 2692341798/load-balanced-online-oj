@@ -1,189 +1,135 @@
-*, *::before, *::after {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* 依赖 index.css */
+
+.problem-container {
+    display: flex;
+    height: calc(100vh - 60px); /* 减去 Navbar 高度 */
+    margin-top: 60px;
+    overflow: hidden;
 }
 
-html,
-body {
-    width: 100%;
-    height: 100%;
-    overflow-x: hidden;
+/* 左侧题目描述区 */
+.problem-desc {
+    flex: 1;
+    padding: 20px;
     overflow-y: auto;
+    background-color: var(--bg-color);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
 }
 
-.container {
-    min-height: 100vh;
+.problem-header {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.problem-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--text-main);
+}
+
+.problem-meta {
+    display: flex;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.problem-content {
+    line-height: 1.6;
+    font-size: 1rem;
+}
+
+.problem-content pre {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Consolas', monospace;
+    margin: 15px 0;
+}
+
+/* 右侧代码编辑区 */
+.problem-editor {
+    flex: 1;
     display: flex;
     flex-direction: column;
+    background-color: #1e1e1e; /* Ace editor monokai bg match */
 }
 
-.container .navbar {
-    width: 100%;
-    height: 50px;
-    background-color: black;
+.editor-container {
+    flex: 1;
+    position: relative;
+}
+
+#code {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    font-size: 16px;
+}
+
+.editor-footer {
+    height: 60px;
+    background-color: var(--card-bg);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 12px;
+    justify-content: space-between;
+    padding: 0 20px;
 }
 
-.container .navbar a {
-    display: inline-flex;
-    align-items: center;
-    padding: 0 12px;
-    color: white;
-    font-size: large;
-    line-height: 50px;
-    text-decoration: none;
-    text-align: center;
-}
-
-.container .navbar a:hover {
-    background-color: green;
-}
-
-.container .navbar .login {
-    margin-left: auto;
-    transition: opacity 0.3s ease;
+.result-area {
+    flex: 1;
+    margin-right: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.container .navbar .login.user-logged-in {
-    background-color: #2c3e50;
-    font-weight: bold;
+.result-area pre {
+    margin: 0;
+    display: inline;
+    font-family: inherit;
 }
 
-.container .navbar .login.user-logged-in:hover {
-    background-color: #34495e;
+.btn-submit {
+    background: var(--success);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.container .navbar .login.loading {
-    opacity: 0.7;
-    pointer-events: none;
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(44, 187, 93, 0.3);
+    background-color: #26a552;
 }
 
-.container .part1 {
-    width: 100%;
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-}
-
-.container .part1 .left_desc {
-    width: 50%;
-    height: 100%;
-    overflow: auto;
-}
-
-.container .part1 .left_desc h3 {
-    padding-top: 10px;
-    padding-left: 10px;
-}
-
-.container .part1 .left_desc pre {
-    padding-top: 10px;
-    padding-left: 10px;
-    font-size: medium;
-    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-}
-
-.container .part1 .right_code {
-    width: 50%;
-    display: flex;
-    flex-direction: column;
-}
-
-.container .part1 .right_code .ace_editor {
-    flex: 1;
-    height: auto;
-}
-.container .part2 {
-    width: 100%;
-    overflow: hidden;
-    padding: 8px 12px;
-}
-
-.container .part2 .result {
-    width: 300px;
-    float: left;
-}
-
-.container .part2 .btn-submit {
-    width: 120px;
-    height: 50px;
-    font-size: large;
-    float: right;
-    background-color: #26bb9c;
-    color: #FFF;
-    border: 0px;
-    margin-top: 10px;
-    margin-right: 10px;
-}
-.container .part2 button:hover {
-    color:green;
-}
-
-.container .part2 .result {
-    margin-top: 15px;
-    margin-left: 15px;
-}
-
-.container .part2 .result pre {
-    font-size: large;
-}
-
+/* 响应式调整 */
 @media (max-width: 768px) {
-    .container .navbar a {
-        width: 70px;
-        font-size: medium;
-    }
-    .container .navbar .login {
-        width: 100px;
-        font-size: small;
-    }
-    .container .part1 {
+    .problem-container {
+        flex-direction: column;
         height: auto;
     }
-    .container .part1 .left_desc,
-    .container .part1 .right_code {
-        width: 100%;
-        float: none;
-        height: auto;
+    
+    .problem-desc {
+        height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .container .part1 .right_code .ace_editor {
-        height: 400px;
-    }
-}
-
-@media (max-width: 480px) {
-    .container .navbar a {
-        width: 50px;
-        font-size: small;
-    }
-    .container .navbar .login {
-        width: 90px;
-        font-size: x-small;
-    }
-    .container .part1 .right_code .ace_editor {
-        height: 300px;
-    }
-    .container .part2 .btn-submit {
-        width: 100px;
-        height: 40px;
-        font-size: medium;
+    
+    .problem-editor {
+        height: 80vh;
     }
 }
-
-@media (min-width: 769px) and (max-width: 1024px) {
-    .container .navbar a {
-        width: 75px;
-        font-size: large;
-    }
-    .container .navbar .login {
-        width: 110px;
-    }
-}
-
