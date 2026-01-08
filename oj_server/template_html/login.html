@@ -3,68 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>登录 / 注册 - Online OJ</title>
-    <style>
-        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f2f5; margin: 0; padding: 1rem; }
-        .container { background: white; padding: 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 380px; max-width: 100%; box-sizing: border-box; }
-        
-        /* 移动端适配 */
-        @media (max-width: 480px) {
-            body { padding: 0.5rem; }
-            .container { 
-                padding: 1.5rem; 
-                border-radius: 0; 
-                box-shadow: none; 
-                width: 100%; 
-                height: 100vh; 
-                display: flex; 
-                flex-direction: column; 
-                justify-content: center; 
-            }
-            .tabs { margin-bottom: 1rem; }
-            .form-group { margin-bottom: 1rem; }
-        }
-        
-        @media (max-width: 320px) {
-            .container { padding: 1rem; }
-            input[type="text"], input[type="password"], input[type="email"], input[type="tel"] { 
-                padding: 0.5rem; 
-                font-size: 14px; 
-            }
-            button { 
-                padding: 0.6rem; 
-                font-size: 0.9rem; 
-            }
-        }
-        .tabs { display: flex; margin-bottom: 1.5rem; border-bottom: 2px solid #f0f0f0; }
-        .tab { flex: 1; text-align: center; padding-bottom: 0.5rem; cursor: pointer; color: #888; font-weight: 500; transition: all 0.3s; }
-        .tab.active { color: #1890ff; border-bottom: 2px solid #1890ff; margin-bottom: -2px; }
-        .form-group { margin-bottom: 1.2rem; }
-        label { display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500; }
-        input[type="text"], input[type="password"], input[type="email"] { width: 100%; padding: 0.6rem; border: 1px solid #d9d9d9; border-radius: 4px; box-sizing: border-box; transition: all 0.3s; }
-        input:focus { border-color: #40a9ff; outline: none; box-shadow: 0 0 0 2px rgba(24,144,255,0.2); }
-        button { width: 100%; padding: 0.75rem; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background 0.3s; }
-        button:hover { background: #40a9ff; }
-        .error { color: #ff4d4f; font-size: 0.875rem; margin-top: 0.5rem; display: none; }
-        .hidden { display: none; }
-        .links { margin-top: 1rem; text-align: center; font-size: 0.875rem; display: flex; justify-content: space-between; align-items: center; }
-        .links a { color: #1890ff; text-decoration: none; }
-        .links a:hover { text-decoration: underline; }
-        .checkbox-group { display: flex; align-items: center; }
-        .checkbox-group input { margin-right: 0.5rem; }
-        .form-validation { font-size: 0.75rem; margin-top: 0.25rem; }
-        .form-validation.error { color: #ff4d4f; }
-        .form-validation.success { color: #52c41a; }
-        .loading { display: none; text-align: center; margin-top: 1rem; }
-        .spinner { border: 2px solid #f3f3f3; border-top: 2px solid #1890ff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; margin: 0 auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .loading p { margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #666; }
-        .additional-fields { margin-top: 1rem; }
-        .password-strength { height: 4px; background: #f0f0f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden; }
-        .password-strength-bar { height: 100%; width: 0%; transition: width 0.3s; }
-        .password-strength-bar.weak { width: 33%; background: #ff4d4f; }
-        .password-strength-bar.medium { width: 66%; background: #faad14; }
-        .password-strength-bar.strong { width: 100%; background: #52c41a; }
-    </style>
+    <link rel="stylesheet" href="/css/login.css">
 </head>
 <body>
     <div class="container">
@@ -85,7 +24,7 @@
                 </div>
                 <div class="form-group links">
                     <div class="checkbox-group">
-                        <input type="checkbox" id="remember-me"> <label for="remember-me" style="display:inline; margin:0; font-weight:normal;">记住我</label>
+                        <input type="checkbox" id="remember-me"> <label for="remember-me" class="inline-label">记住我</label>
                     </div>
                     <a href="#">忘记密码?</a>
                 </div>
@@ -169,17 +108,17 @@
             const loading = document.getElementById('login-loading');
             
             // 清除之前的错误信息
-            error.style.display = 'none';
+            error.classList.remove('visible');
             
             if(!username || !password) {
                 error.textContent = "请输入用户名和密码";
-                error.style.display = 'block';
+                error.classList.add('visible');
                 return;
             }
 
             // 显示加载状态
-            submitBtn.style.display = 'none';
-            loading.style.display = 'block';
+            submitBtn.classList.add('hidden');
+            loading.classList.add('visible');
 
             try {
                 const res = await fetch('/api/login', {
@@ -195,22 +134,22 @@
                 const data = await res.json();
                 
                 // 隐藏加载状态
-                submitBtn.style.display = 'block';
-                loading.style.display = 'none';
+                submitBtn.classList.remove('hidden');
+                loading.classList.remove('visible');
                 
                 if (data.status === 0) {
                     // 登录成功，跳转到题目列表页面
                     window.location.href = '/all_questions';
                 } else {
                     error.textContent = data.reason || "登录失败";
-                    error.style.display = 'block';
+                    error.classList.add('visible');
                 }
             } catch (e) {
                 // 隐藏加载状态
-                submitBtn.style.display = 'block';
-                loading.style.display = 'none';
+                submitBtn.classList.remove('hidden');
+                loading.classList.remove('visible');
                 error.textContent = "网络错误，请稍后重试";
-                error.style.display = 'block';
+                error.classList.add('visible');
                 console.error('Login error:', e);
             }
         }
@@ -385,20 +324,20 @@
                 !validatePassword(password) || !validateConfirmPassword() || 
                 !validatePhone(phone)) {
                 error.textContent = '请修正表单中的错误';
-                error.style.display = 'block';
+                error.classList.add('visible');
                 return;
             }
 
             if (password !== confirmPassword) {
                 error.textContent = '两次输入的密码不一致';
-                error.style.display = 'block';
+                error.classList.add('visible');
                 return;
             }
 
             // 显示加载状态
-            submitBtn.style.display = 'none';
-            loading.style.display = 'block';
-            error.style.display = 'none';
+            submitBtn.classList.add('hidden');
+            loading.classList.add('visible');
+            error.classList.remove('visible');
 
             try {
                 const res = await fetch('/api/register', {
@@ -415,8 +354,8 @@
                 const data = await res.json();
                 
                 // 隐藏加载状态
-                submitBtn.style.display = 'block';
-                loading.style.display = 'none';
+                submitBtn.classList.remove('hidden');
+                loading.classList.remove('visible');
                 
                 if (data.status === 0) {
                     // 注册成功，自动填充登录表单并跳转
@@ -425,14 +364,14 @@
                     switchTab('login');
                 } else {
                     error.textContent = data.reason;
-                    error.style.display = 'block';
+                    error.classList.add('visible');
                 }
             } catch (e) {
                 // 隐藏加载状态
-                submitBtn.style.display = 'block';
-                loading.style.display = 'none';
+                submitBtn.classList.remove('hidden');
+                loading.classList.remove('visible');
                 error.textContent = "网络错误，请稍后重试";
-                error.style.display = 'block';
+                error.classList.add('visible');
             }
         }
     </script>

@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{number}}.{{title}}</title>
+    <link rel="stylesheet" href="/css/one_question.css">
     <script>
         // XSS防护函数 - 转义HTML特殊字符
         function escapeHtml(text) {
@@ -24,8 +25,7 @@
             const loginLink = document.querySelector('.login');
             loginLink.href = '#';
             loginLink.textContent = '加载中...';
-            loginLink.style.opacity = '0.7';
-            loginLink.style.pointerEvents = 'none';
+            loginLink.classList.add('loading');
         }
 
         // 显示用户名
@@ -33,8 +33,7 @@
             const loginLink = document.querySelector('.login');
             loginLink.href = '#';
             loginLink.textContent = '欢迎，' + escapeHtml(username);
-            loginLink.style.opacity = '1';
-            loginLink.style.pointerEvents = 'auto';
+            loginLink.classList.remove('loading');
             loginLink.classList.add('user-logged-in');
         }
 
@@ -43,8 +42,7 @@
             const loginLink = document.querySelector('.login');
             loginLink.href = '/login';
             loginLink.textContent = '登录/注册';
-            loginLink.style.opacity = '1';
-            loginLink.style.pointerEvents = 'auto';
+            loginLink.classList.remove('loading');
             loginLink.classList.remove('user-logged-in');
         }
 
@@ -82,204 +80,6 @@
     <!-- 引入jquery CDN -->
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
 
-    <style>
-        *, *::before, *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-
-        .container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .container .navbar {
-            width: 100%;
-            height: 50px;
-            background-color: black;
-            /* 使用flex进行布局，避免浮动导致裁剪 */
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 0 12px;
-        }
-
-        .container .navbar a {
-            /* 使用自适应宽度 */
-            display: inline-flex;
-            align-items: center;
-            padding: 0 12px;
-            /* 设置字体颜色 */
-            color: white;
-            /* 设置字体的大小 */
-            font-size: large;
-            /* 设置文字的高度和导航栏一样的高度 */
-            line-height: 50px;
-            /* 去掉a标签的下划线 */
-            text-decoration: none;
-            /* 设置a标签中的文字居中 */
-            text-align: center;
-        }
-
-        /* 设置鼠标事件 */
-        .container .navbar a:hover {
-            background-color: green;
-        }
-
-        .container .navbar .login {
-            margin-left: auto;
-            transition: opacity 0.3s ease;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .container .navbar .login.user-logged-in {
-            background-color: #2c3e50;
-            font-weight: bold;
-        }
-        
-        .container .navbar .login.user-logged-in:hover {
-            background-color: #34495e;
-        }
-        
-        /* 题目区域占满视窗剩余空间 */
-        .container .part1 {
-            width: 100%;
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-
-        .container .part1 .left_desc {
-            width: 50%;
-            height: 100%;
-            overflow: auto;
-        }
-
-        .container .part1 .left_desc h3 {
-            padding-top: 10px;
-            padding-left: 10px;
-        }
-
-        .container .part1 .left_desc pre {
-            padding-top: 10px;
-            padding-left: 10px;
-            font-size: medium;
-            font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-        }
-
-        .container .part1 .right_code {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .container .part1 .right_code .ace_editor {
-            flex: 1;
-            height: auto;
-        }
-        .container .part2 {
-            width: 100%;
-            overflow: hidden;
-            padding: 8px 12px;
-        }
-
-        .container .part2 .result {
-            width: 300px;
-            float: left;
-        }
-
-        .container .part2 .btn-submit {
-            width: 120px;
-            height: 50px;
-            font-size: large;
-            float: right;
-            background-color: #26bb9c;
-            color: #FFF;
-            /* 给按钮带上圆角 */
-            /* border-radius: 1ch; */
-            border: 0px;
-            margin-top: 10px;
-            margin-right: 10px;
-        }
-        .container .part2 button:hover {
-            color:green;
-        }
-
-        .container .part2 .result {
-            margin-top: 15px;
-            margin-left: 15px;
-        }
-
-        .container .part2 .result pre {
-            font-size: large;
-        }
-        
-        /* 移动端适配 */
-        @media (max-width: 768px) {
-            .container .navbar a {
-                width: 70px;
-                font-size: medium;
-            }
-            .container .navbar .login {
-                width: 100px;
-                font-size: small;
-            }
-            .container .part1 {
-                height: auto;
-            }
-            .container .part1 .left_desc,
-            .container .part1 .right_code {
-                width: 100%;
-                float: none;
-                height: auto;
-            }
-            .container .part1 .right_code .ace_editor {
-                height: 400px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .container .navbar a {
-                width: 50px;
-                font-size: small;
-            }
-            .container .navbar .login {
-                width: 90px;
-                font-size: x-small;
-            }
-            .container .part1 .right_code .ace_editor {
-                height: 300px;
-            }
-            .container .part2 .btn-submit {
-                width: 100px;
-                height: 40px;
-                font-size: medium;
-            }
-        }
-        
-        /* 平板设备适配 */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .container .navbar a {
-                width: 75px;
-                font-size: large;
-            }
-            .container .navbar .login {
-                width: 110px;
-            }
-        }
-    </style>
 </head>
 
 <body>

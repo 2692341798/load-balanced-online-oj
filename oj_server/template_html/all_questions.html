@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线OJ-题目列表</title>
+    <link rel="stylesheet" href="/css/all_questions.css">
     <script>
         // XSS防护函数 - 转义HTML特殊字符
         function escapeHtml(text) {
@@ -24,8 +25,7 @@
             const loginLink = document.querySelector('.login');
             loginLink.href = '#';
             loginLink.textContent = '加载中...';
-            loginLink.style.opacity = '0.7';
-            loginLink.style.pointerEvents = 'none';
+            loginLink.classList.add('loading');
         }
 
         // 显示用户名
@@ -33,8 +33,7 @@
             const loginLink = document.querySelector('.login');
             loginLink.href = '#';
             loginLink.textContent = '欢迎，' + escapeHtml(username);
-            loginLink.style.opacity = '1';
-            loginLink.style.pointerEvents = 'auto';
+            loginLink.classList.remove('loading');
             loginLink.classList.add('user-logged-in');
         }
 
@@ -43,8 +42,7 @@
             const loginLink = document.querySelector('.login');
             loginLink.href = '/login';
             loginLink.textContent = '登录/注册';
-            loginLink.style.opacity = '1';
-            loginLink.style.pointerEvents = 'auto';
+            loginLink.classList.remove('loading');
             loginLink.classList.remove('user-logged-in');
         }
 
@@ -69,162 +67,6 @@
                 });
         };
     </script>
-    <style>
-        /* 起手式, 100%保证我们的样式设置可以不受默认影响 */
-        *, *::before, *::after {
-            /* 消除网页的默认外边距 */
-            margin: 0px;
-            /* 消除网页的默认内边距 */
-            padding: 0px;
-            /* 统一盒模型，避免宽高计算问题 */
-            box-sizing: border-box;
-        }
-
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow-x: hidden;
-            overflow-y: auto;
-        }
-
-        .container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .container .navbar {
-            width: 100%;
-            height: 50px;
-            background-color: black;
-            /* 使用flex进行布局，避免浮动导致裁剪 */
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 0 12px;
-        }
-
-        .container .navbar a {
-            /* 自适应宽度 */
-            display: inline-flex;
-            align-items: center;
-            padding: 0 12px;
-            /* 设置字体颜色 */
-            color: white;
-            /* 设置字体的大小 */
-            font-size: large;
-            /* 设置文字的高度和导航栏一样的高度 */
-            line-height: 50px;
-            /* 去掉a标签的下划线 */
-            text-decoration: none;
-            /* 设置a标签中的文字居中 */
-            text-align: center;
-        }
-
-        /* 设置鼠标事件 */
-        .container .navbar a:hover {
-            background-color: green;
-        }
-
-        .container .navbar .login {
-            margin-left: auto;
-            transition: opacity 0.3s ease;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .container .navbar .login.user-logged-in {
-            background-color: #2c3e50;
-            font-weight: bold;
-        }
-        
-        .container .navbar .login.user-logged-in:hover {
-            background-color: #34495e;
-        }
-
-        .container .question_list {
-            padding-top: 24px;
-            width: 100%;
-            max-width: 960px;
-            /* 占满剩余空间，覆盖视窗 */
-            flex: 1;
-            margin: 0px auto;
-            /* background-color: #ccc; */
-            text-align: center;
-            overflow-y: auto;
-        }
-
-        .container .question_list table {
-            width: 100%;
-            font-size: large;
-            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
-            margin-top: 24px;
-            background-color: rgb(243, 248, 246);
-        }
-
-        .container .question_list h1 {
-            color: green;
-        }
-        .container .question_list table .item {
-            width: 100px;
-            height: 40px;
-            font-size: large;
-            font-family:'Times New Roman', Times, serif;
-        }
-        .container .question_list table .item a {
-            text-decoration: none;
-            color: black;
-        }
-        .container .question_list table .item a:hover {
-            color: blue;
-            text-decoration:underline;
-        }
-        .container .footer {
-            width: 100%;
-            height: 50px;
-            text-align: center;
-            line-height: 50px;
-            color: #ccc;
-            margin-top: 15px;
-        }
-        
-        /* 移动端适配 */
-        @media (max-width: 768px) {
-            .container .question_list {
-                width: 95%;
-                padding-top: 20px;
-            }
-            .container .question_list table {
-                font-size: medium;
-                margin-top: 20px;
-            }
-            .container .navbar a { font-size: medium; }
-            .container .navbar .login { font-size: small; }
-        }
-        
-        @media (max-width: 480px) {
-            .container .question_list {
-                width: 90%;
-                padding-top: 15px;
-            }
-            .container .question_list table {
-                font-size: small;
-                margin-top: 15px;
-            }
-            .container .question_list h1 {
-                font-size: 1.5rem;
-            }
-            .container .navbar a { font-size: small; }
-            .container .navbar .login { font-size: x-small; }
-        }
-        
-        /* 平板设备适配 */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .container .navbar a { font-size: large; }
-        }
-    </style>
 </head>
 
 <body>
@@ -262,7 +104,7 @@
         </div>
         <div class="footer">
             <!-- <hr> -->
-            <h4>@比特就业课</h4>
+            <h4>冻梨在线判题平台</h4>
         </div>
     </div>
 
