@@ -56,7 +56,7 @@ namespace ns_compile_and_run
                 desc = "提交的代码是空";
                 break;
             case -2:
-                desc = "未知错误";
+                desc = "系统错误";
                 break;
             case -3:
                 // desc = "代码编译的时候发生了错误";
@@ -77,6 +77,18 @@ namespace ns_compile_and_run
             }
 
             return desc;
+        }
+        static std::string CodeToCategory(int code)
+        {
+            if (code == 0) return "成功";
+            if (code == -1) return "提交错误";
+            if (code == -2) return "系统错误";
+            if (code == -3) return "编译错误";
+            if (code == SIGABRT) return "内存超限";
+            if (code == SIGXCPU) return "时间超限";
+            if (code == SIGFPE) return "浮点溢出";
+            if (code > 0) return "运行时错误";
+            return "未知错误";
         }
 
         /***************************************
@@ -139,7 +151,7 @@ namespace ns_compile_and_run
             run_result = Runner::Run(file_name, cpu_limit, mem_limit);
             if (run_result < 0)
             {
-                status_code = -2; //未知错误
+                status_code = -2; //系统错误
             }
             else if (run_result > 0)
             {
@@ -154,6 +166,17 @@ namespace ns_compile_and_run
         END:
             out_value["status"] = status_code;
             out_value["reason"] = CodeToDesc(status_code, file_name);
+            out_value["category"] = CodeToCategory(status_code);
+            if (status_code == -2)
+            {
+                if (run_result == -1) out_value["error_detail"] = "运行时打开标准文件失败";
+                else if (run_result == -2) out_value["error_detail"] = "运行时创建子进程失败";
+                else out_value["error_detail"] = "未知系统错误";
+            }
+            if (status_code > 0)
+            {
+                out_value["signal"] = status_code;
+            }
             if (status_code == 0)
             {
                 // 整个过程全部成功

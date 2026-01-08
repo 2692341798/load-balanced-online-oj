@@ -1,8 +1,11 @@
 #include "compile_run.hpp"
 #include "../comm/httplib.h"
+#include <sys/stat.h>
+#include <unistd.h>
 
 using namespace ns_compile_and_run;
 using namespace httplib;
+using namespace ns_util;
 
 void Usage(std::string proc)
 {
@@ -17,6 +20,23 @@ int main(int argc, char *argv[])
     if(argc != 2){
         Usage(argv[0]);
         return 1;
+    }
+
+    // 统一工作目录到可执行文件所在目录，避免相对路径错误
+    {
+        std::string exe_path = argv[0];
+        size_t pos = exe_path.find_last_of('/');
+        if (pos != std::string::npos) {
+            std::string dir = exe_path.substr(0, pos);
+            if (!dir.empty()) {
+                chdir(dir.c_str());
+            }
+        }
+        // 确保临时目录存在
+        struct stat st;
+        if (stat(temp_path.c_str(), &st) != 0) {
+            mkdir(temp_path.c_str(), 0755);
+        }
     }
 
     Server svr;
