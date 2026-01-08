@@ -68,7 +68,23 @@ namespace ns_view
             root.SetValue("title", q.title);
             root.SetValue("star", q.star);
             root.SetValue("desc", q.desc);
-            root.SetValue("pre_code", q.header);
+            
+            // 手动进行HTML转义，防止#include <iostream>被浏览器解析为标签
+            std::string escaped_header = q.header;
+            // 简单的HTML转义
+            std::string buffer;
+            buffer.reserve(escaped_header.size());
+            for(char c : escaped_header) {
+                switch(c) {
+                    case '&':  buffer.append("&amp;");       break;
+                    case '\"': buffer.append("&quot;");      break;
+                    case '\'': buffer.append("&apos;");      break;
+                    case '<':  buffer.append("&lt;");        break;
+                    case '>':  buffer.append("&gt;");        break;
+                    default:   buffer.push_back(c);          break;
+                }
+            }
+            root.SetValue("pre_code", buffer);
 
             //3. 获取被渲染的html
             ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);

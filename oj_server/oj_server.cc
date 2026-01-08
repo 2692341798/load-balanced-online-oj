@@ -25,8 +25,21 @@ int main()
     Control ctrl;
     ctrl_ptr = &ctrl;
 
+    // 4. 配置路由
+    // 4.1 首页
+    svr.Get("/", [&ctrl](const Request &req, Response &resp){
+        resp.set_redirect("/all_questions");
+    });
+
     // 获取所有的题目列表
     svr.Get("/all_questions", [&ctrl](const Request &req, Response &resp){
+        // 权限检查
+        User user;
+        if (!ctrl.AuthCheck(req, &user)) {
+            resp.set_redirect("/login");
+            return;
+        }
+
         //返回一张包含有所有题目的html网页
         std::string html;
         ctrl.AllQuestions(req, &html);
@@ -38,6 +51,13 @@ int main()
     // /question/100 -> 正则匹配
     // R"()", 原始字符串raw string,保持字符串内容的原貌，不用做相关的转义
     svr.Get(R"(/question/(\d+))", [&ctrl](const Request &req, Response &resp){
+        // 权限检查
+        User user;
+        if (!ctrl.AuthCheck(req, &user)) {
+            resp.set_redirect("/login");
+            return;
+        }
+
         std::string number = req.matches[1];
         std::string html;
         ctrl.Question(number, req, &html);
@@ -46,6 +66,17 @@ int main()
 
     // 用户提交代码，使用我们的判题功能(1. 每道题的测试用例 2. compile_and_run)
     svr.Post(R"(/judge/(\d+))", [&ctrl](const Request &req, Response &resp){
+        // 权限检查
+        User user;
+        if (!ctrl.AuthCheck(req, &user)) {
+             Json::Value err;
+             err["status"] = -1;
+             err["reason"] = "请先登录";
+             Json::FastWriter w;
+             resp.set_content(w.write(err), "application/json;charset=utf-8");
+             return;
+        }
+
         std::string number = req.matches[1];
         std::string result_json;
         try {

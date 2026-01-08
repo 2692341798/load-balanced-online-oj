@@ -52,6 +52,15 @@
                 enableSnippets: true,
                 enableLiveAutocompletion: true
             });
+            
+            // 从隐藏的 textarea 获取初始代码
+            var codeHidden = document.getElementById("code-hidden");
+            if (codeHidden) {
+                console.log("Loading code from hidden area..."); // Debug log
+                editor.setValue(codeHidden.value);
+                editor.clearSelection();
+                editor.moveCursorTo(0, 0);
+            }
         });
     </script>
 </head>
@@ -93,7 +102,8 @@
         <!-- Right: Code Editor -->
         <div class="problem-editor">
             <div class="editor-container">
-                <div id="code">{{pre_code}}</div>
+                <textarea id="code-hidden" style="display:none;">{{pre_code}}</textarea>
+                <div id="code"></div>
             </div>
             <div class="editor-footer">
                 <div class="result-area" id="result-area">
