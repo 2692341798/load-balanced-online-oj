@@ -275,6 +275,23 @@ int main()
         resp.set_content(w.write(res_json), "application/json;charset=utf-8");
     });
     
+    // API Search Submissions
+    svr.Get("/api/submissions", [&ctrl](const Request &req, Response &resp){
+        User user;
+        Json::Value res_json;
+        if (!ctrl.AuthCheck(req, &user)) {
+             res_json["status"] = 401;
+             res_json["reason"] = "Unauthorized";
+             Json::FastWriter w;
+             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             return;
+        }
+        
+        std::string json_out;
+        ctrl.SearchSubmissions(req, &json_out);
+        resp.set_content(json_out, "application/json;charset=utf-8");
+    });
+    
     
     svr.set_base_dir("./wwwroot");
     svr.set_mount_point("/css", "./css");

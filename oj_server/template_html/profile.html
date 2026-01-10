@@ -254,13 +254,19 @@
 
         // Fetch Submissions
         const userId = "{{user_id}}";
+        let currentPage = 1;
+        const pageSize = 10; // Page size set to 10
         
-        async function fetchSubmissions() {
+        async function fetchSubmissions(page = 1) {
+            currentPage = page;
             try {
-                const response = await fetch(`/api/submissions?user_id=${userId}&page=1&page_size=5`);
+                // Show loading
+                document.getElementById('submissions-list').innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-secondary);">加载中...</div>`;
+                
+                const response = await fetch(`/api/submissions?user_id=${userId}&page=${page}&page_size=${pageSize}`);
                 const result = await response.json();
                 if (result.status === 0) {
-                    renderSubmissions(result.data);
+                    renderSubmissions(result.data, result.total);
                 } else {
                     document.getElementById('submissions-list').innerHTML = `<div style="text-align: center; padding: 10px; color: var(--danger-color);">加载失败: ${result.reason}</div>`;
                 }
@@ -270,7 +276,7 @@
             }
         }
         
-        function renderSubmissions(list) {
+        function renderSubmissions(list, total) {
             const container = document.getElementById('submissions-list');
             if (!list || list.length === 0) {
                 container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-secondary);">暂无提交记录</div>`;
@@ -311,11 +317,30 @@
             });
             
             html += `</tbody></table>`;
+
+            // Pagination Controls
+            const totalPages = Math.ceil(total / pageSize);
+            if (totalPages > 1) {
+                html += `<div style="display: flex; justify-content: center; margin-top: 15px; gap: 10px;">`;
+                
+                if (currentPage > 1) {
+                    html += `<button onclick="fetchSubmissions(${currentPage - 1})" style="padding: 5px 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer; border-radius: 4px;">上一页</button>`;
+                }
+                
+                html += `<span style="display: flex; align-items: center; color: var(--text-secondary);">第 ${currentPage} / ${totalPages} 页</span>`;
+                
+                if (currentPage < totalPages) {
+                    html += `<button onclick="fetchSubmissions(${currentPage + 1})" style="padding: 5px 10px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-color); cursor: pointer; border-radius: 4px;">下一页</button>`;
+                }
+                
+                html += `</div>`;
+            }
+
             container.innerHTML = html;
         }
         
         if (userId) {
-            fetchSubmissions();
+            fetchSubmissions(1);
         }
     </script>
 </body>

@@ -110,7 +110,17 @@ namespace ns_runner
                 waitpid(pid, &status, 0);
                 // 程序运行异常，一定是因为因为收到了信号！
                 LOG(INFO) << "运行完毕, info: " << (status & 0x7F) << "\n"; 
-                return status & 0x7F;
+                // return status & 0x7F;
+                // Fix: Check exit code as well
+                if (WIFEXITED(status)) {
+                    int exit_code = WEXITSTATUS(status);
+                    LOG(INFO) << "Program exited with code: " << exit_code << "\n";
+                    if (exit_code == 0) return 0;
+                    return -4; // Non-zero exit code
+                } else {
+                    LOG(INFO) << "Program terminated by signal: " << (status & 0x7F) << "\n";
+                    return status & 0x7F;
+                }
             }
         }
     };

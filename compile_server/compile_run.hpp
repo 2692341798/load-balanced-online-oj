@@ -62,6 +62,9 @@ namespace ns_compile_and_run
                 // desc = "代码编译的时候发生了错误";
                 FileUtil::ReadFile(PathUtil::CompilerError(file_name), &desc, true);
                 break;
+            case -4:
+                desc = "测试用例未通过";
+                break;
             case SIGABRT: // 6
                 desc = "内存超过范围";
                 break;
@@ -84,6 +87,7 @@ namespace ns_compile_and_run
             if (code == -1) return "提交错误";
             if (code == -2) return "系统错误";
             if (code == -3) return "编译错误";
+            if (code == -4) return "答案错误";
             if (code == SIGABRT) return "内存超限";
             if (code == SIGXCPU) return "时间超限";
             if (code == SIGFPE) return "浮点溢出";
@@ -151,7 +155,11 @@ namespace ns_compile_and_run
             run_result = Runner::Run(file_name, cpu_limit, mem_limit);
             if (run_result < 0)
             {
-                status_code = -2; //系统错误
+                if (run_result == -4) {
+                    status_code = -4; // Runtime Error (Non-zero exit)
+                } else {
+                    status_code = -2; //系统错误
+                }
             }
             else if (run_result > 0)
             {

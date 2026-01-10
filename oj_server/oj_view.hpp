@@ -98,6 +98,7 @@ namespace ns_view
             std::string src_html = template_path + "profile.html";
             ctemplate::TemplateDictionary root("profile");
             
+            root.SetValue("user_id", u.id);
             root.SetValue("username", u.username);
             root.SetValue("email", u.email);
             root.SetValue("nickname", u.nickname.empty() ? u.username : u.nickname);
