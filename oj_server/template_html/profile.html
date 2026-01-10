@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - {{nickname}} - 冻梨OJ</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/profile.css">
+    <script>
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
+        }
+
+        function hideUserMenu() {
+            const menu = document.getElementById('user-menu');
+            const backdrop = document.getElementById('user-menu-backdrop');
+            if (menu) menu.classList.remove('visible');
+            if (backdrop) backdrop.classList.remove('visible');
+            document.removeEventListener('click', onUserMenuDocumentClick);
+        }
+
+        function onUserMenuDocumentClick(event) {
+            const profile = document.querySelector('.user-profile');
+            const menu = document.getElementById('user-menu');
+            if (!profile || !menu) {
+                hideUserMenu();
+                return;
+            }
+            if (!profile.contains(event.target) && !menu.contains(event.target)) {
+                hideUserMenu();
+            }
+        }
+
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('user-menu');
+            const backdrop = document.getElementById('user-menu-backdrop');
+            if (!menu || !backdrop) return;
+            const isVisible = menu.classList.contains('visible');
+            if (isVisible) {
+                hideUserMenu();
+            } else {
+                menu.classList.add('visible');
+                backdrop.classList.add('visible');
+                document.addEventListener('click', onUserMenuDocumentClick);
+            }
+        }
+
+        async function handleLogout(event) {
+            event.stopPropagation();
+            try {
+                const response = await fetch('/api/logout', { method: 'GET' });
+                const data = await response.json();
+                if (data.status === 0) {
+                    window.location.href = '/';
+                } else {
+                    alert('登出失败：' + (data.reason || '未知错误'));
+                }
+            } catch (e) {
+                alert('登出请求失败，请稍后重试');
+            }
+        }
+
+        function handleEditProfile() {
+            alert("个人资料编辑功能开发中...");
+        }
+    </script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="/">
+                <span>&lt;/&gt;</span> 冻梨OJ
+            </a>
+        </div>
+        <div class="navbar-links">
+            <a href="/">首页</a>
+            <a href="/all_questions">题库</a>
+            <a href="#">竞赛</a>
+            <a href="#">讨论</a>
+            <a href="#">求职</a>
+        </div>
+        <div class="navbar-auth" id="auth-container">
+            <!-- Already logged in, rendered by template -->
+            <div class="user-profile" onclick="toggleUserMenu(event)">
+                <div class="user-avatar">{{username}}</div>
+                <!-- Hack: use first char of username via CSS/JS or just show full -->
+                <!-- Actually template expands {{username}} -->
+                <!-- We can use JS to take first char or just show full name next to it -->
+                <span>{{username}}</span>
+            </div>
+            <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
+            <div class="user-menu" id="user-menu">
+                <a href="/profile" class="user-menu-item">个人中心</a>
+                <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
+            </div>
+        </div>
+    </nav>
+    <script>
+        // Update avatar text
+        document.querySelector('.user-avatar').innerText = "{{username}}".charAt(0).toUpperCase();
+    </script>
+
+    <div class="profile-container">
+        <!-- Left Column: User Info -->
+        <div class="user-card">
+            <div class="profile-avatar">{{username}}</div>
+            <div class="profile-name">{{nickname}}</div>
+            <div class="profile-username">@{{username}}</div>
+            
+            <div class="profile-info-item">
+                <span>邮箱</span>
+                <span>{{email}}</span>
+            </div>
+            <div class="profile-info-item">
+                <span>手机</span>
+                <span>{{phone}}</span>
+            </div>
+            <div class="profile-info-item">
+                <span>注册时间</span>
+                <span title="{{created_at}}">{{created_at}}</span>
+            </div>
+            
+            <button class="btn-edit" onclick="handleEditProfile()">编辑个人资料</button>
+        </div>
+
+        <!-- Right Column: Stats -->
+        <div class="content-column">
+            <div class="stats-card">
+                <div class="stats-header">做题进度</div>
+                <div class="stats-grid">
+                    <div class="stat-box stat-easy">
+                        <div class="stat-value">{{easy_solved}}</div>
+                        <div class="stat-label">简单</div>
+                    </div>
+                    <div class="stat-box stat-medium">
+                        <div class="stat-value">{{medium_solved}}</div>
+                        <div class="stat-label">中等</div>
+                    </div>
+                    <div class="stat-box stat-hard">
+                        <div class="stat-value">{{hard_solved}}</div>
+                        <div class="stat-label">困难</div>
+                    </div>
+                    <div class="stat-box stat-total">
+                        <div class="stat-value">{{total_solved}}</div>
+                        <div class="stat-label">总计通过</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity (Placeholder) -->
+            <div class="stats-card" style="margin-top: 24px;">
+                <div class="stats-header">最近提交</div>
+                <div style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                    暂无提交记录 (功能开发中)
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Update avatar text again for the profile card
+        document.querySelectorAll('.profile-avatar').forEach(el => {
+            el.innerText = "{{username}}".charAt(0).toUpperCase();
+        });
+        
+        // Format date
+        const dateStr = "{{created_at}}";
+        if(dateStr) {
+            const date = new Date(dateStr);
+            if(!isNaN(date.getTime())) {
+                 const formatted = date.getFullYear() + '-' + 
+                                   String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                                   String(date.getDate()).padStart(2, '0');
+                 document.querySelectorAll('.profile-info-item span[title]').forEach(el => {
+                     el.innerText = formatted;
+                 });
+            }
+        }
+    </script>
+</body>
+</html>

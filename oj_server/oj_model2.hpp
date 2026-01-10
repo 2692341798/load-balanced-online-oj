@@ -43,10 +43,25 @@ namespace ns_model
         std::string username;
         std::string password; // Hashed
         std::string email;
+        std::string nickname;
+        std::string phone;
+        std::string created_at;
+    };
+
+    struct Submission
+    {
+        std::string id;
+        std::string user_id;
+        std::string question_id;
+        std::string result; // "0": Success, "-1": Empty, "-3": Compile Error, etc.
+        int cpu_time;
+        int mem_usage;
+        std::string created_at;
     };
 
     const std::string oj_questions = "oj_questions";
     const std::string oj_users = "users";
+    const std::string oj_submissions = "submissions";
     const std::string host = "127.0.0.1";
     const std::string user = "oj_client";
     const std::string passwd = "123456";
@@ -60,6 +75,7 @@ namespace ns_model
         {
             // Try to create users table if not exists
             InitUserTable();
+            InitSubmissionTable();
         }
 
         void InitUserTable() {
@@ -71,8 +87,26 @@ namespace ns_model
                               "`email` varchar(100) DEFAULT NULL,"
                               "`nickname` varchar(100) DEFAULT NULL,"
                               "`phone` varchar(20) DEFAULT NULL,"
+                              "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+                              "`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
                               "PRIMARY KEY (`id`)"
-                              ") ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                              ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+            ExecuteSql(sql);
+        }
+
+        void InitSubmissionTable() {
+            std::string sql = "CREATE TABLE IF NOT EXISTS `submissions` ("
+                              "`id` int(11) NOT NULL AUTO_INCREMENT,"
+                              "`user_id` int(11) NOT NULL,"
+                              "`question_id` int(11) NOT NULL,"
+                              "`result` varchar(10) NOT NULL,"
+                              "`cpu_time` int(11) DEFAULT 0,"
+                              "`mem_usage` int(11) DEFAULT 0,"
+                              "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+                              "PRIMARY KEY (`id`),"
+                              "INDEX `idx_user_id` (`user_id`),"
+                              "INDEX `idx_question_id` (`question_id`)"
+                              ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
             ExecuteSql(sql);
         }
 
@@ -166,6 +200,7 @@ namespace ns_model
             }
             MYSQL_RES *res = mysql_store_result(my);
             int rows = mysql_num_rows(res);
+            int fields = mysql_num_fields(res);
             
             User u;
             for(int i = 0; i < rows; i++)
@@ -176,8 +211,62 @@ namespace ns_model
                 u.username = row[1] ? row[1] : "";
                 u.password = row[2] ? row[2] : "";
                 u.email = row[3] ? row[3] : "";
+                if(fields > 4) u.nickname = row[4] ? row[4] : "";
+                if(fields > 5) u.phone = row[5] ? row[5] : "";
+                if(fields > 6) u.created_at = row[6] ? row[6] : "";
                 out->push_back(u);
             }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        bool AddSubmission(const Submission &sub)
+        {
+            std::string sql = "INSERT INTO " + oj_submissions + " (user_id, question_id, result, cpu_time, mem_usage) VALUES (";
+            sql += "'" + sub.user_id + "', ";
+            sql += "'" + sub.question_id + "', ";
+            sql += "'" + sub.result + "', ";
+            sql += std::to_string(sub.cpu_time) + ", ";
+            sql += std::to_string(sub.mem_usage) + ")";
+            return ExecuteSql(sql);
+        }
+
+        // Return map: Difficulty -> Count
+        bool GetUserSolvedStats(const std::string &user_id, std::unordered_map<std::string, int> *stats)
+        {
+            // Join submissions and questions to get difficulty of solved problems
+            // Distinct question_id to count each problem once
+            std::string sql = "SELECT q.star, COUNT(DISTINCT s.question_id) FROM " + oj_submissions + " s "
+                              "JOIN " + oj_questions + " q ON s.question_id = q.number "
+                              "WHERE s.user_id='" + user_id + "' AND s.result='0' "
+                              "GROUP BY q.star";
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            mysql_set_character_set(my, "utf8");
+
+            if(0 != mysql_query(my, sql.c_str()))
+            {
+                LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
+                mysql_close(my);
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            
+            for(int i = 0; i < rows; i++)
+            {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                std::string difficulty = row[0] ? row[0] : "Unknown";
+                int count = row[1] ? atoi(row[1]) : 0;
+                (*stats)[difficulty] = count;
+            }
+            
             mysql_free_result(res);
             mysql_close(my);
             return true;

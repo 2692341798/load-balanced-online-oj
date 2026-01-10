@@ -80,7 +80,7 @@ int main()
         std::string number = req.matches[1];
         std::string result_json;
         try {
-            ctrl.Judge(number, req.body, &result_json);
+            ctrl.Judge(number, req.body, &result_json, user.id);
             resp.set_content(result_json, "application/json;charset=utf-8");
         } catch (const std::exception &e) {
             Json::Value err;
@@ -177,6 +177,44 @@ int main()
             res_json["status"] = 0;
             res_json["username"] = user.username;
             res_json["email"] = user.email;
+        } else {
+            res_json["status"] = 1;
+            res_json["reason"] = "未登录";
+        }
+        Json::FastWriter w;
+        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+    });
+
+    // User Profile Page
+    svr.Get("/profile", [&ctrl](const Request &req, Response &resp){
+        // 权限检查
+        User user;
+        if (!ctrl.AuthCheck(req, &user)) {
+            resp.set_redirect("/login");
+            return;
+        }
+
+        std::string html;
+        if (ctrl.GetProfile(user, &html)) {
+            resp.set_content(html, "text/html; charset=utf-8");
+        } else {
+            resp.set_content("获取个人中心失败", "text/plain; charset=utf-8");
+        }
+    });
+
+    // API User Profile
+    svr.Get("/api/profile", [&ctrl](const Request &req, Response &resp){
+        User user;
+        Json::Value res_json;
+        if (ctrl.AuthCheck(req, &user)) {
+             std::string data;
+             if(ctrl.GetProfileData(user, &data)) {
+                 resp.set_content(data, "application/json;charset=utf-8");
+                 return;
+             } else {
+                 res_json["status"] = 1;
+                 res_json["reason"] = "获取数据失败";
+             }
         } else {
             res_json["status"] = 1;
             res_json["reason"] = "未登录";

@@ -390,7 +390,7 @@ namespace ns_control
         }
         // code: #include...
         // input: ""
-        void Judge(const std::string &number, const std::string in_json, std::string *out_json)
+        void Judge(const std::string &number, const std::string in_json, std::string *out_json, const std::string &user_id = "")
         {
             // LOG(DEBUG) << in_json << " \nnumber:" << number << "\n";
             
@@ -436,6 +436,20 @@ namespace ns_control
                         *out_json = res->body;
                         m->DecLoad();
                         LOG(INFO) << "请求编译和运行服务成功..." << "\n";
+                        
+                        // Record Submission
+                        if (!user_id.empty()) {
+                             Json::Reader resp_reader;
+                             Json::Value resp_val;
+                             resp_reader.parse(res->body, resp_val);
+                             Submission sub;
+                             sub.user_id = user_id;
+                             sub.question_id = number;
+                             sub.result = std::to_string(resp_val["status"].asInt());
+                             // Note: cpu_time and mem_usage are not currently returned by compile_server
+                             model_.AddSubmission(sub);
+                        }
+                        
                         break;
                     }
                     m->DecLoad();
@@ -449,5 +463,44 @@ namespace ns_control
                 }
             }
         }
+
+        bool GetProfile(const User &user, string *html)
+        {
+            std::unordered_map<std::string, int> stats;
+            // Ensure we have full user details (AuthCheck might only populate basic info depending on implementation)
+            // But AuthCheck gets user from Session, which gets it from LoginUser, which calls QueryUserMySql.
+            // And I updated QueryUserMySql to fetch all fields. So 'user' should be complete.
+            
+            if (model_.GetUserSolvedStats(user.id, &stats)) {
+                view_.ProfileExpandHtml(user, stats, html);
+                return true;
+            }
+            return false;
+        }
+
+        bool GetProfileData(const User &user, std::string *json)
+        {
+            std::unordered_map<std::string, int> stats;
+            model_.GetUserSolvedStats(user.id, &stats);
+            
+            Json::Value root;
+            root["status"] = 0;
+            root["reason"] = "success";
+            root["username"] = user.username;
+            root["email"] = user.email;
+            root["nickname"] = user.nickname;
+            root["phone"] = user.phone;
+            root["created_at"] = user.created_at;
+            
+            Json::Value stats_json;
+            for(auto &kv : stats) {
+                stats_json[kv.first] = kv.second;
+            }
+            root["stats"] = stats_json;
+            
+            Json::FastWriter w;
+            *json = w.write(root);
+            return true;
+        }
     };
-} // namespace name
+} // namespace ns_control
