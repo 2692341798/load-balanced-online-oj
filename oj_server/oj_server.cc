@@ -223,6 +223,47 @@ int main()
         resp.set_content(w.write(res_json), "application/json;charset=utf-8");
     });
 
+    // API Update User Profile
+    svr.Post("/api/user/update", [&ctrl](const Request &req, Response &resp){
+        // 1. 验证登录
+        User user;
+        Json::Value res_json;
+        if (!ctrl.AuthCheck(req, &user)) {
+            res_json["status"] = 401;
+            res_json["reason"] = "Unauthorized";
+            Json::FastWriter w;
+            resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+            return;
+        }
+        
+        // 2. 解析参数
+        std::string nickname, email, phone;
+        if (req.has_header("Content-Type") && req.get_header_value("Content-Type").find("application/json") != std::string::npos) {
+             Json::Reader reader;
+             Json::Value val;
+             reader.parse(req.body, val);
+             nickname = val.get("nickname", "").asString();
+             email = val.get("email", "").asString();
+             phone = val.get("phone", "").asString();
+        } else {
+             // Fallback
+             if (req.has_param("nickname")) nickname = req.get_param_value("nickname");
+             if (req.has_param("email")) email = req.get_param_value("email");
+             if (req.has_param("phone")) phone = req.get_param_value("phone");
+        }
+        
+        // 3. 调用 Control 更新
+        if (ctrl.UpdateUserInfo(user.id, nickname, email, phone)) {
+            res_json["status"] = 0;
+            res_json["reason"] = "Success";
+        } else {
+            res_json["status"] = 500;
+            res_json["reason"] = "Internal Server Error";
+        }
+        Json::FastWriter w;
+        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+    });
+
     // API Logout
     svr.Get("/api/logout", [&ctrl](const Request &req, Response &resp){
         ctrl.Logout(req);

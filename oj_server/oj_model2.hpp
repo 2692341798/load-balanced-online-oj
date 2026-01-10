@@ -351,6 +351,32 @@ namespace ns_model
             return false;
         }
 
+        bool UpdateUser(const User &user) {
+            std::string sql = "UPDATE " + oj_users + " SET ";
+            bool first = true;
+            if (!user.nickname.empty()) {
+                sql += "nickname='" + user.nickname + "'";
+                first = false;
+            }
+            if (!user.email.empty()) {
+                if (!first) sql += ", ";
+                sql += "email='" + user.email + "'";
+                first = false;
+            }
+            if (!user.phone.empty()) {
+                if (!first) sql += ", ";
+                sql += "phone='" + user.phone + "'";
+                first = false;
+            }
+            
+            
+            sql += " WHERE id='" + user.id + "'";
+            
+            if (first) return true; // No fields to update
+            
+            return ExecuteSql(sql);
+        }
+
         ~Model()
         {}
     };

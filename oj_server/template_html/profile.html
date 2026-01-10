@@ -63,7 +63,50 @@
         }
 
         function handleEditProfile() {
-            alert("个人资料编辑功能开发中...");
+            const modal = document.getElementById('edit-profile-modal');
+            if (modal) modal.classList.add('visible');
+        }
+
+        function closeEditModal() {
+            const modal = document.getElementById('edit-profile-modal');
+            if (modal) modal.classList.remove('visible');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('edit-profile-modal');
+            if (event.target == modal) {
+                closeEditModal();
+            }
+        }
+
+        async function submitEditProfile(event) {
+            event.preventDefault();
+            const form = event.target;
+            const data = {
+                nickname: form.querySelector('#edit-nickname').value,
+                email: form.querySelector('#edit-email').value,
+                phone: form.querySelector('#edit-phone').value
+            };
+
+            try {
+                const response = await fetch('/api/user/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.status === 0) {
+                    alert('保存成功');
+                    window.location.reload();
+                } else {
+                    alert('保存失败：' + (result.reason || '未知错误'));
+                }
+            } catch (e) {
+                alert('请求失败，请稍后重试');
+            }
         }
     </script>
 </head>
@@ -157,6 +200,32 @@
                     暂无提交记录 (功能开发中)
                 </div>
             </div>
+        </div>
+    </div>
+    
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeEditModal()">&times;</span>
+            <h2>编辑个人资料</h2>
+            <form id="edit-profile-form" onsubmit="submitEditProfile(event)">
+                <div class="form-group">
+                    <label for="edit-nickname">昵称</label>
+                    <input type="text" id="edit-nickname" name="nickname" value="{{nickname}}">
+                </div>
+                <div class="form-group">
+                    <label for="edit-email">邮箱</label>
+                    <input type="email" id="edit-email" name="email" value="{{email}}">
+                </div>
+                <div class="form-group">
+                    <label for="edit-phone">手机</label>
+                    <input type="tel" id="edit-phone" name="phone" value="{{phone}}">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">取消</button>
+                    <button type="submit" class="btn-save">保存</button>
+                </div>
+            </form>
         </div>
     </div>
     

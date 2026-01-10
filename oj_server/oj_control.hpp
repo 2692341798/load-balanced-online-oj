@@ -502,5 +502,29 @@ namespace ns_control
             *json = w.write(root);
             return true;
         }
+
+        bool UpdateUserInfo(const std::string &user_id, const std::string &nickname, const std::string &email, const std::string &phone) {
+            User u;
+            u.id = user_id;
+            u.nickname = nickname;
+            u.email = email;
+            u.phone = phone;
+            
+            // 更新数据库
+            if (model_.UpdateUser(u)) {
+                // 更新内存中的 Session (如果存在)
+                std::unique_lock<std::mutex> lock(session_mtx_);
+                for (auto &kv : sessions_) {
+                    if (kv.second.user.id == user_id) {
+                        if (!nickname.empty()) kv.second.user.nickname = nickname;
+                        if (!email.empty()) kv.second.user.email = email;
+                        if (!phone.empty()) kv.second.user.phone = phone;
+                        break;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
     };
 } // namespace ns_control

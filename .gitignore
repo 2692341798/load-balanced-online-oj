@@ -39,5 +39,5 @@ compile_server/compile_server
 .vscode/
 
 # Project specific
-# document目录包含项目文档，需要提交
-# document/
+# 忽略document目录（包含项目文档，不提交到代码仓库）
+document/
