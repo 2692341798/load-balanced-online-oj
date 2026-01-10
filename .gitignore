@@ -37,7 +37,6 @@ compile_server/compile_server
 # System files
 .DS_Store
 .vscode/
+output/
 
-# Project specific
-# 忽略document目录（包含项目文档，不提交到代码仓库）
-document/
+

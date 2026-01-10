@@ -33,6 +33,20 @@
 - **操作系统**：Linux/macOS
 - **测试框架**：Playwright（端到端测试）
 
+## 📚 详细文档
+
+本项目包含完整的技术文档，请参考以下指南：
+
+| 文档类型 | 文件名称 | 描述 |
+|---------|---------|------|
+| 🏗️ **架构设计** | [架构设计文档](document/architecture.md) | 系统整体架构、核心模块设计与通信机制 |
+| 💾 **数据库** | [数据库设计](document/database.md) | 数据库表结构、索引策略与ER关系 |
+| 🔌 **接口规范** | [API接口文档](document/api_reference.md) | 详细的后端接口定义与调用示例 |
+| 💻 **开发规范** | [开发标准规范](document/development_standards.md) | 代码风格、命名规范与最佳实践 |
+| 🤝 **协作规则** | [项目开发规则](document/rule.md) | 团队协作、安全规范与工作流 |
+| 🎨 **前端指南** | [前端样式指南](document/frontend_style_guide.md) | 视觉设计系统、组件库与CSS变量 |
+| 📝 **变更日志** | [综合开发日志](document/comprehensive_dev_log.md) | 版本迭代记录与技术变更日志 |
+
 ## 📋 环境要求
 
 ### 开发环境
@@ -173,11 +187,13 @@ load-balanced-online-oj/
 │   │   ├── index.css             # 主页样式
 │   │   ├── all_questions.css     # 题目列表样式
 │   │   ├── one_question.css      # 题目详情样式
-│   │   └── login.css             # 登录页面样式
+│   │   ├── login.css             # 登录页面样式
+│   │   └── profile.css           # 个人中心样式
 │   ├── template_html/            # HTML模板
 │   │   ├── all_questions.html    # 题目列表模板
 │   │   ├── one_question.html     # 题目详情模板
-│   │   └── login.html            # 登录页面模板
+│   │   ├── login.html            # 登录页面模板
+│   │   └── profile.html          # 个人中心模板
 │   ├── wwwroot/                  # 静态资源
 │   │   └── index.html            # 主页
 │   └── makefile                  # 编译配置

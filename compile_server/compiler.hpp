@@ -31,8 +31,10 @@ namespace ns_compiler
         //1234 -> ./temp/1234.cpp
         //1234 -> ./temp/1234.exe
         //1234 -> ./temp/1234.stderr
-        static bool Compile(const std::string &file_name)
+        static bool Compile(const std::string &file_name, const std::string &language = "C++")
         {
+            if (language == "Python") return true;
+
             pid_t pid = fork();
             if(pid < 0)
             {
@@ -52,17 +54,23 @@ namespace ns_compiler
                 
                 //程序替换，并不影响进程的文件描述符表
                 //子进程: 调用编译器，完成对代码的编译工作
-                //g++ -o target src -std=c++11
-                execlp("g++", "g++", "-o", PathUtil::Exe(file_name).c_str(),\
-                PathUtil::Src(file_name).c_str(), "-D", "COMPILER_ONLINE","-std=c++11",  nullptr/*不要忘记*/);
-                LOG(ERROR) << "启动编译器g++失败，可能是参数错误" << "\n";
+                if (language == "C++") {
+                    //g++ -o target src -std=c++11
+                    execlp("g++", "g++", "-o", PathUtil::Exe(file_name, language).c_str(),\
+                    PathUtil::Src(file_name, language).c_str(), "-D", "COMPILER_ONLINE","-std=c++11",  nullptr/*不要忘记*/);
+                } else if (language == "Java") {
+                    // javac src
+                    execlp("javac", "javac", PathUtil::Src(file_name, language).c_str(), "-encoding", "UTF-8", nullptr);
+                }
+                
+                LOG(ERROR) << "启动编译器失败，可能是参数错误" << "\n";
                 exit(2);
             }
             else{
                 waitpid(pid, nullptr, 0);
                 //编译是否成功,就看有没有形成对应的可执行程序
-                if(FileUtil::IsFileExists(PathUtil::Exe(file_name))){
-                    LOG(INFO) << PathUtil::Src(file_name) << " 编译成功!" << "\n";
+                if(FileUtil::IsFileExists(PathUtil::Exe(file_name, language))){
+                    LOG(INFO) << PathUtil::Src(file_name, language) << " 编译成功!" << "\n";
                     return true;
                 }
             }

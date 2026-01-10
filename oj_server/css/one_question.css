@@ -59,6 +59,51 @@
     background-color: #1e1e1e; /* Ace editor monokai bg match */
 }
 
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #252526; /* VS Code style header bg */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.language-select {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid #3c3c3c;
+    background-color: #3c3c3c;
+    color: #cccccc;
+    font-size: 0.9rem;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    appearance: none; /* Remove default arrow for cleaner look on some browsers, or keep it */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cccccc%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7em top 50%;
+    background-size: 0.65em auto;
+    padding-right: 2.5em;
+}
+
+.language-select:hover {
+    border-color: var(--accent-color);
+    color: #ffffff;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+}
+
+.language-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(255, 161, 22, 0.2);
+}
+
+.language-select option {
+    background-color: #252526;
+    color: #cccccc;
+}
+
 .editor-container {
     flex: 1;
     position: relative;
@@ -80,21 +125,130 @@
     display: flex;
     flex-direction: column;
     padding: 15px;
+    position: relative; /* For absolute positioning of tooltip */
 }
 
 .result-area {
     flex: 1;
     width: 100%;
     overflow-y: auto;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: #252526;
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 4px;
-    padding: 10px;
+    padding: 20px;
     margin-bottom: 10px;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    position: relative;
+}
+
+/* Result Header */
+.result-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.status-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.status-passed { color: var(--success); }
+.status-failed { color: #ff4d4f; }
+
+.time-text {
     color: var(--text-secondary);
     font-size: 0.9rem;
+    margin-left: 10px;
+}
+
+/* Case Tabs */
+.case-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.case-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.case-tab:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+}
+
+.case-tab.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+.case-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+}
+
+.case-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.text-success { color: var(--success); }
+.text-error { color: #ff4d4f; }
+
+/* Case Detail */
+.case-detail {
+    display: none;
+    animation: fadeIn 0.2s ease;
+}
+
+.case-detail.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.detail-block {
+    margin-bottom: 20px;
+}
+
+.detail-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.detail-content {
+    background-color: #333333;
+    padding: 12px 15px;
+    border-radius: 8px;
     font-family: 'Consolas', monospace;
+    font-size: 0.95rem;
+    color: var(--text-main);
     white-space: pre-wrap;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    line-height: 1.5;
 }
 
 .result-area pre {
@@ -137,4 +291,100 @@
     .problem-editor {
         height: 80vh;
     }
+}
+
+/* 新增交互功能样式 */
+.result-interaction-container {
+    position: relative;
+    height: 100%;
+}
+
+.case-buttons {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.case-btn-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-box {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background-color: #555; /* Default Gray */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.status-box.passed {
+    background-color: var(--success);
+}
+
+.status-box.failed {
+    background-color: #ff4d4f;
+}
+
+.status-box svg {
+    width: 16px;
+    height: 16px;
+    color: white;
+}
+
+.btn-case {
+    padding: 6px 16px;
+    background-color: #3c3c3c;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #eee;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-case:hover {
+    background-color: #4c4c4c;
+}
+
+.draggable-tooltip {
+    position: absolute;
+    top: 50px;
+    left: 20px;
+    width: 300px;
+    background-color: #2d2d2d;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tooltip-header {
+    padding: 10px 15px;
+    background-color: #383838;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: grab;
+    font-weight: 600;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tooltip-header:active {
+    cursor: grabbing;
+}
+
+.tooltip-content {
+    padding: 15px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    line-height: 1.5;
 }

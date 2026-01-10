@@ -188,6 +188,61 @@ Cookie: session_id=abc123def456
 }
 ```
 
+### 2.5 获取提交记录
+
+**接口描述**: 查询用户的提交历史记录（需要登录）
+
+**请求信息**:
+```http
+GET /api/submissions?user_id=1&page=1&page_size=20
+Cookie: session_id=abc123def456
+```
+
+**请求参数**:
+
+| 参数名 | 类型 | 必需 | 描述 |
+|--------|------|------|------|
+| user_id | string | 否 | 用户ID筛选 |
+| question_id | string | 否 | 题目ID筛选 |
+| status | string | 否 | 状态筛选 |
+| start_time | string | 否 | 开始时间 |
+| end_time | string | 否 | 结束时间 |
+| keyword | string | 否 | 关键词搜索 |
+| page | int | 否 | 页码 (默认1) |
+| page_size | int | 否 | 每页数量 (默认20) |
+
+**响应信息**:
+
+**成功响应** (200 OK):
+```json
+{
+    "status": 0,
+    "total": 100,
+    "page": 1,
+    "page_size": 20,
+    "data": [
+        {
+            "id": "1",
+            "user_id": "1",
+            "question_id": "1",
+            "result": "0",
+            "cpu_time": 10,
+            "mem_usage": 1024,
+            "created_at": "2026-01-10 10:00:00",
+            "content": "#include..."
+        }
+    ]
+}
+```
+
+**错误响应** (200 OK):
+```json
+{
+    "status": 1,
+    "reason": "Database Error"
+}
+```
+
 ## 3. 题目接口
 
 ### 3.1 获取题目列表

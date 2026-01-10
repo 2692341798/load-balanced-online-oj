@@ -40,19 +40,25 @@ namespace ns_util
         {
             std::string path_name = temp_path;
             path_name += file_name;
+            path_name += "/Main";
             path_name += suffix;
             return path_name;
         }
         // 编译时需要有的临时文件
         // 构建源文件路径+后缀的完整文件名
-        // 1234 -> ./temp/1234.cpp
-        static std::string Src(const std::string &file_name)
+        // 1234 -> ./temp/1234/Main.cpp
+        static std::string Src(const std::string &file_name, const std::string &language = "C++")
         {
-            return AddSuffix(file_name, ".cpp");
+            std::string ext = ".cpp";
+            if (language == "Java") ext = ".java";
+            else if (language == "Python") ext = ".py";
+            return AddSuffix(file_name, ext);
         }
         // 构建可执行程序的完整路径+后缀名
-        static std::string Exe(const std::string &file_name)
+        static std::string Exe(const std::string &file_name, const std::string &language = "C++")
         {
+            if (language == "Java") return AddSuffix(file_name, ".class");
+            if (language == "Python") return AddSuffix(file_name, ".py");
             return AddSuffix(file_name, ".exe");
         }
         static std::string CompilerError(const std::string &file_name)

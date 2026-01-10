@@ -19,16 +19,16 @@ namespace ns_compile_and_run
     class CompileAndRun
     {
     public:
-        static void RemoveTempFile(const std::string &file_name)
+        static void RemoveTempFile(const std::string &file_name, const std::string &language = "C++")
         {
             //清理文件的个数是不确定的，但是有哪些我们是知道的
-            std::string _src = PathUtil::Src(file_name);
+            std::string _src = PathUtil::Src(file_name, language);
             if(FileUtil::IsFileExists(_src)) unlink(_src.c_str());
 
             std::string _compiler_error = PathUtil::CompilerError(file_name);
             if(FileUtil::IsFileExists(_compiler_error)) unlink(_compiler_error.c_str());
 
-            std::string _execute = PathUtil::Exe(file_name);
+            std::string _execute = PathUtil::Exe(file_name, language);
             if(FileUtil::IsFileExists(_execute)) unlink(_execute.c_str());
 
             std::string _stdin = PathUtil::Stdin(file_name);
@@ -39,6 +39,9 @@ namespace ns_compile_and_run
 
             std::string _stderr = PathUtil::Stderr(file_name);
             if(FileUtil::IsFileExists(_stderr)) unlink(_stderr.c_str());
+            
+            std::string dir = ns_util::temp_path + file_name;
+            rmdir(dir.c_str());
         }
         // code > 0 : 进程收到了信号导致异常奔溃
         // code < 0 : 整个过程非运行报错(代码为空，编译报错等)
@@ -124,11 +127,13 @@ namespace ns_compile_and_run
             std::string input = in_value["input"].asString();
             int cpu_limit = in_value["cpu_limit"].asInt();
             int mem_limit = in_value["mem_limit"].asInt();
+            std::string language = in_value.isMember("language") ? in_value["language"].asString() : "C++";
 
             int status_code = 0;
             Json::Value out_value;
             int run_result = 0;
             std::string file_name; //需要内部形成的唯一文件名
+            std::string dir;
 
             if (code.size() == 0)
             {
@@ -138,21 +143,39 @@ namespace ns_compile_and_run
             // 形成的文件名只具有唯一性，没有目录没有后缀
             // 毫秒级时间戳+原子性递增唯一值: 来保证唯一性
             file_name = FileUtil::UniqFileName();
+            // Create directory
+            dir = ns_util::temp_path + file_name;
+            if (mkdir(dir.c_str(), 0755) != 0) {
+                LOG(ERROR) << "创建临时目录失败: " << dir << " errno: " << errno << "\n";
+                status_code = -2;
+                goto END;
+            }
+            
             //形成临时src文件
-            if (!FileUtil::WriteFile(PathUtil::Src(file_name), code))
+            if (!FileUtil::WriteFile(PathUtil::Src(file_name, language), code))
             {
+                LOG(ERROR) << "写入源文件失败: " << PathUtil::Src(file_name, language) << "\n";
                 status_code = -2; //未知错误
                 goto END;
             }
 
-            if (!Compiler::Compile(file_name))
+            // 写入输入数据到 stdin 文件
+            LOG(INFO) << "Writing input to stdin, size: " << input.size() << " Content: " << input << "\n";
+            if (!FileUtil::WriteFile(PathUtil::Stdin(file_name), input)) {
+                LOG(ERROR) << "写入Stdin文件失败: " << PathUtil::Stdin(file_name) << "\n";
+                status_code = -2;
+                goto END;
+            }
+            chmod(PathUtil::Stdin(file_name).c_str(), 0644); // Ensure permissions
+
+            if (!Compiler::Compile(file_name, language))
             {
                 //编译失败
                 status_code = -3; //代码编译的时候发生了错误
                 goto END;
             }
 
-            run_result = Runner::Run(file_name, cpu_limit, mem_limit);
+            run_result = Runner::Run(file_name, cpu_limit, mem_limit, language);
             if (run_result < 0)
             {
                 if (run_result == -4) {
@@ -185,22 +208,20 @@ namespace ns_compile_and_run
             {
                 out_value["signal"] = status_code;
             }
-            if (status_code == 0)
-            {
-                // 整个过程全部成功
-                std::string _stdout;
-                FileUtil::ReadFile(PathUtil::Stdout(file_name), &_stdout, true);
-                out_value["stdout"] = _stdout;
+            
+            // Always try to read stdout/stderr to provide more info
+            std::string _stdout;
+            FileUtil::ReadFile(PathUtil::Stdout(file_name), &_stdout, true);
+            out_value["stdout"] = _stdout;
 
-                std::string _stderr;
-                FileUtil::ReadFile(PathUtil::Stderr(file_name), &_stderr, true);
-                out_value["stderr"] = _stderr;
-            }
+            std::string _stderr;
+            FileUtil::ReadFile(PathUtil::Stderr(file_name), &_stderr, true);
+            out_value["stderr"] = _stderr;
 
             Json::StyledWriter writer;
             *out_json = writer.write(out_value);
 
-            RemoveTempFile(file_name);
+            RemoveTempFile(file_name, language);
         }
     };
 }

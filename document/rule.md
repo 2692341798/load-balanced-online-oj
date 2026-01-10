@@ -2,10 +2,10 @@
 
 ## 1. 代码开发前准备
 - **必须完整阅读核心文档**：
-  * 架构文档 [`/Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/architecture.md`](file:///Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/architecture.md)
-  * 数据库设计 [`/Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/database.md`](file:///Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/database.md)
-  * API规范 [`/Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/api_reference.md`](file:///Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/api_reference.md)
-  * 前端样式指南 [`/Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/frontend_style_guide.md`](file:///Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/frontend_style_guide.md)
+  * 架构文档 [`architecture.md`](architecture.md)
+  * 数据库设计 [`database.md`](database.md)
+  * API规范 [`api_reference.md`](api_reference.md)
+  * 前端样式指南 [`frontend_style_guide.md`](frontend_style_guide.md)
 - **理解系统架构**：主服务器+编译服务器集群的分布式架构，负载均衡机制
 - **熟悉技术栈**：C++11、MySQL、httplib、CTemplate、深色主题前端
 
@@ -21,7 +21,8 @@
 2. **小步迭代**：单功能开发，及时测试验证
 3. **测试驱动**：功能完成后立即编写单元测试
 4. **质量保证**：所有测试通过后才提交代码
-5. **日志更新**：同步更新开发日志 [`/Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/comprehensive_dev_log.md`](file:///Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/document/comprehensive_dev_log.md) 并推送到GitHub
+5. **日志更新**：同步更新开发日志 [`comprehensive_dev_log.md`](comprehensive_dev_log.md) 并推送到GitHub
+
 
 ## 4. 代码质量要求
 - **命名规范**：全拼命名，见名知意（循环变量i除外）

@@ -392,76 +392,139 @@ namespace ns_control
         // input: ""
         void Judge(const std::string &number, const std::string in_json, std::string *out_json, const std::string &user_id = "")
         {
-            // LOG(DEBUG) << in_json << " \nnumber:" << number << "\n";
-            
             // 0. 根据题目编号，直接拿到对应的题目细节
             struct Question q;
             model_.GetOneQuestion(number, &q);
 
-            // 1. in_json进行反序列化，得到题目的id，得到用户提交源代码，input
+            // 1. in_json进行反序列化
             Json::Reader reader;
             Json::Value in_value;
             reader.parse(in_json, in_value);
             std::string code = in_value["code"].asString();
+            std::string language = in_value.isMember("language") ? in_value["language"].asString() : "C++";
 
-            // 2. 重新拼接用户代码+测试用例代码，形成新的代码
-            Json::Value compile_value;
-            compile_value["input"] = in_value["input"].asString();
-            compile_value["code"] = code + "\n" + q.tail;
-            compile_value["cpu_limit"] = q.cpu_limit;
-            compile_value["mem_limit"] = q.mem_limit;
-            Json::FastWriter writer;
-            std::string compile_string = writer.write(compile_value);
+            // 2. Parse test cases from q.tail (JSON format)
+            Json::Reader tail_reader;
+            Json::Value cases;
+            bool has_cases = tail_reader.parse(q.tail, cases) && cases.isArray();
+            
+            if (!has_cases) {
+                 Json::Value single_case;
+                 single_case["input"] = in_value["input"].asString(); 
+                 single_case["expect"] = ""; // No expectation if not provided
+                 cases = Json::Value(Json::arrayValue);
+                 cases.append(single_case);
+            }
 
-            // 3. 选择负载最低的主机(差错处理)
-            // 规则: 一直选择，直到主机可用，否则，就是全部挂掉
-            while(true)
-            {
-                int id = 0;
-                Machine *m = nullptr;
-                if(!load_blance_.SmartChoice(&id, &m))
-                {
-                    break;
-                }
+            Json::Value result_cases(Json::arrayValue);
+            bool all_passed = true;
+            
+            for (unsigned int i = 0; i < cases.size(); ++i) {
+                Json::Value &one_case = cases[i];
+                std::string input_data = one_case.isMember("input") ? one_case["input"].asString() : "";
+                std::string expected_output = one_case.isMember("expect") ? one_case["expect"].asString() : "";
 
-                // 4. 然后发起http请求，得到结果
-                Client cli(m->ip, m->port);
-                m->IncLoad();
-                LOG(INFO) << " 选择主机成功, 主机id: " << id << " 详情: " << m->ip << ":" << m->port << " 当前主机的负载是: " << m->Load() << "\n";
-                if(auto res = cli.Post("/compile_and_run", compile_string, "application/json;charset=utf-8"))
-                {
-                    // 5. 将结果赋值给out_json
-                    if(res->status == 200)
-                    {
-                        *out_json = res->body;
-                        m->DecLoad();
-                        LOG(INFO) << "请求编译和运行服务成功..." << "\n";
-                        
-                        // Record Submission
-                        if (!user_id.empty()) {
-                             Json::Reader resp_reader;
-                             Json::Value resp_val;
-                             resp_reader.parse(res->body, resp_val);
-                             Submission sub;
-                             sub.user_id = user_id;
-                             sub.question_id = number;
-                             sub.result = std::to_string(resp_val["status"].asInt());
-                             sub.content = code;
-                             // Note: cpu_time and mem_usage are not currently returned by compile_server
-                             model_.AddSubmission(sub);
-                        }
-                        
-                        break;
+                Json::Value compile_value;
+                compile_value["input"] = input_data;
+                compile_value["code"] = code;
+                compile_value["language"] = language;
+                compile_value["cpu_limit"] = q.cpu_limit;
+                compile_value["mem_limit"] = q.mem_limit;
+                
+                Json::FastWriter writer;
+                std::string compile_string = writer.write(compile_value);
+
+                // 3. Load Balance & Request
+                while(true) {
+                    int id = 0;
+                    Machine *m = nullptr;
+                    if(!load_blance_.SmartChoice(&id, &m)) {
+                         // System Error
+                         Json::Value err_res;
+                         err_res["status"] = -2;
+                         err_res["reason"] = "No available compile server";
+                         Json::FastWriter w;
+                         *out_json = w.write(err_res);
+                         return;
                     }
+                    
+                    Client cli(m->ip, m->port);
+                    m->IncLoad();
+                    auto res = cli.Post("/compile_and_run", compile_string, "application/json;charset=utf-8");
                     m->DecLoad();
+                    
+                    if(res) {
+                        if(res->status == 200) {
+                            Json::Reader resp_reader;
+                            Json::Value resp_val;
+                            resp_reader.parse(res->body, resp_val);
+                            
+                            // Check if compile error or runtime error
+                            if (resp_val["status"].asInt() != 0) {
+                                *out_json = res->body; // Return error immediately
+                                return;
+                            }
+                            
+                            // Check output
+                            std::string stdout_str = resp_val["stdout"].asString();
+                            std::string trim_stdout = stdout_str; 
+                            while(!trim_stdout.empty() && isspace(trim_stdout.back())) trim_stdout.pop_back();
+                            std::string trim_expect = expected_output;
+                            while(!trim_expect.empty() && isspace(trim_expect.back())) trim_expect.pop_back();
+                            
+                            bool pass = (trim_stdout == trim_expect);
+                            if (!pass) all_passed = false;
+                            
+                            Json::Value case_res;
+                            case_res["name"] = "Case " + std::to_string(i+1);
+                            case_res["pass"] = pass;
+                            case_res["output"] = trim_stdout;
+                            case_res["expected"] = trim_expect;
+                            // Add time/mem if available in future
+                            
+                            result_cases.append(case_res);
+                            break; // Success for this case
+                        }
+                    } else {
+                        load_blance_.OfflineMachine(id);
+                    }
                 }
-                else
-                {
-                    //请求失败
-                    LOG(ERROR) << " 当前请求的主机id: " << id << " 详情: " << m->ip << ":" << m->port << " 可能已经离线"<< "\n";
-                    load_blance_.OfflineMachine(id);
-                    load_blance_.ShowMachines(); //仅仅是为了用来调试
-                }
+            }
+            
+            // 4. Aggregate results
+            Json::Value final_res;
+            final_res["status"] = 0; 
+            final_res["reason"] = "";
+            
+            Json::Value stdout_json;
+            stdout_json["cases"] = result_cases;
+            
+            // Summary
+            Json::Value summary;
+            summary["total"] = cases.size();
+            int passed_cnt = 0;
+            for(const auto& c : result_cases) if(c["pass"].asBool()) passed_cnt++;
+            summary["passed"] = passed_cnt;
+            if (passed_cnt == cases.size()) summary["overall"] = "All Passed";
+            else summary["overall"] = std::to_string(passed_cnt) + "/" + std::to_string(cases.size()) + " Passed";
+            
+            stdout_json["summary"] = summary;
+            
+            Json::FastWriter w;
+            final_res["stdout"] = w.write(stdout_json);
+            final_res["stderr"] = "";
+            
+            *out_json = w.write(final_res);
+            
+            // Record Submission
+             if (!user_id.empty()) {
+                 Submission sub;
+                 sub.user_id = user_id;
+                 sub.question_id = number;
+                 sub.result = (passed_cnt == cases.size()) ? "0" : "-1"; 
+                 sub.content = code;
+                 sub.language = language;
+                 model_.AddSubmission(sub);
             }
         }
 

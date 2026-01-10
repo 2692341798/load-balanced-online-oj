@@ -101,7 +101,7 @@
             // 初始化 ACE 编辑器
             var editor = ace.edit("code");
             editor.setTheme("ace/theme/monokai");
-            editor.session.setMode("ace/mode/c_cpp");
+            // Mode set by changeLanguage
             editor.setFontSize(16);
             editor.getSession().setTabSize(4);
             editor.setOptions({
@@ -110,6 +110,14 @@
                 enableLiveAutocompletion: true
             });
             
+            // Restore language selection
+            var savedLang = localStorage.getItem("selected_language") || "C++";
+            var select = document.getElementById("language-select");
+            if (select) {
+                select.value = savedLang;
+                changeLanguage();
+            }
+
             // 从隐藏的 textarea 获取初始代码
             var codeHidden = document.getElementById("code-hidden");
             if (codeHidden) {
@@ -119,6 +127,16 @@
                 editor.moveCursorTo(0, 0);
             }
         });
+        
+        function changeLanguage() {
+            var lang = document.getElementById("language-select").value;
+            localStorage.setItem("selected_language", lang);
+            var editor = ace.edit("code");
+            var mode = "c_cpp";
+            if (lang === "Python") mode = "python";
+            else if (lang === "Java") mode = "java";
+            editor.session.setMode("ace/mode/" + mode);
+        }
     </script>
 </head>
 <body>
@@ -158,6 +176,14 @@
 
         <!-- Right: Code Editor -->
         <div class="problem-editor">
+            <div class="editor-header">
+                <span style="font-weight: 600;">代码编辑</span>
+                <select id="language-select" class="language-select" onchange="changeLanguage()">
+                    <option value="C++">C++</option>
+                    <option value="Java">Java</option>
+                    <option value="Python">Python</option>
+                </select>
+            </div>
             <div class="editor-container">
                 <textarea id="code-hidden" style="display:none;">{{pre_code}}</textarea>
                 <div id="code"></div>
@@ -207,6 +233,17 @@
                 console.error('OJJudgeError', { status: data.status, reason: data.reason, time: Date.now() });
             } catch(e) {}
         }
+
+        function switchTab(index) {
+            // Remove active class from all tabs and contents
+            $('.case-tab').removeClass('active');
+            $('.case-detail').removeClass('active');
+            
+            // Add active class to selected
+            $('#tab-' + index).addClass('active');
+            $('#case-' + index).addClass('active');
+        }
+
         function submitCode() {
             var editor = ace.edit("code");
             var code = editor.getSession().getValue();
@@ -228,14 +265,13 @@
                 crossDomain: false,
                 data: JSON.stringify({
                     'code': code,
-                    'input': ''
+                    'input': '',
+                    'language': $("#language-select").val()
                 }),
                 success: function(data) {
                     submitBtn.prop("disabled", false).text("提交运行");
                     
                     if (data.status === 0) {
-                        var html = '';
-                        html += `<div style="color: var(--success); font-weight: 600; margin-bottom: 8px;">编译运行成功</div>`;
                         var stdout = data.stdout || '';
                         var stderr = data.stderr || '';
                         var parsed = null;
@@ -244,48 +280,96 @@
                                 parsed = JSON.parse(stdout);
                             }
                         } catch(e) {}
+
                         if (parsed && parsed.cases && Array.isArray(parsed.cases)) {
-                            html += `<div style="margin:8px 0; font-weight:600;">评测详情</div>`;
-                            for (var i = 0; i < parsed.cases.length; i++) {
-                                var c = parsed.cases[i];
-                                var pass = c.pass ? '通过' : '失败';
-                                var color = c.pass ? 'var(--success)' : '#ff4d4f';
-                                var name = c.name ? escapeHtml(c.name) : ('用例 ' + (i+1));
-                                var time = (c.time_ms !== undefined) ? (c.time_ms + ' ms') : '—';
-                                var mem = (c.memory_kb !== undefined) ? (c.memory_kb + ' KB') : '—';
-                                html += `<div style="padding:8px;border:1px solid var(--border-color);border-radius:6px;margin-bottom:8px;">
-                                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                                <div style="font-weight:600;">${name}</div>
-                                                <div style="color:${color};">${pass}</div>
-                                            </div>
-                                            <div style="margin-top:6px;color:var(--muted)">时间: ${time} · 内存: ${mem}</div>
-                                            ${c.output !== undefined ? `<pre style="margin-top:6px;background:var(--code-bg);padding:8px;border-radius:6px;white-space:pre-wrap;">${escapeHtml(String(c.output))}</pre>` : ''}
-                                            ${c.expected !== undefined ? `<pre style="margin-top:6px;background:var(--code-bg);padding:8px;border-radius:6px;white-space:pre-wrap;">期望: ${escapeHtml(String(c.expected))}</pre>` : ''}
-                                          </div>`;
+                            // New Style Rendering with Interactive Features
+                            var allPassed = parsed.cases.every(function(c) { return c.pass; });
+                            var maxTime = 0;
+                            if (parsed.summary && parsed.summary.max_time_ms !== undefined) {
+                                maxTime = parsed.summary.max_time_ms;
+                            } else {
+                                parsed.cases.forEach(function(c) { 
+                                    if(c.time_ms > maxTime) maxTime = c.time_ms; 
+                                });
                             }
-                            if (parsed.summary) {
-                                var s = parsed.summary;
-                                var total = s.total !== undefined ? s.total : parsed.cases.length;
-                                var passed = s.passed !== undefined ? s.passed : parsed.cases.filter(function(x){return !!x.pass;}).length;
-                                var overall = s.overall ? escapeHtml(String(s.overall)) : '';
-                                html += `<div style="padding:8px;border:1px dashed var(--border-color);border-radius:6px;">
-                                            <div>汇总: ${passed}/${total} 用例通过</div>
-                                            ${overall ? `<div style="margin-top:4px;color:var(--accent-color)">${overall}</div>` : ''}
+                            
+                            var statusText = allPassed ? '通过' : '未通过';
+                            var statusClass = allPassed ? 'status-passed' : 'status-failed';
+                            
+                            var html = '';
+                            
+                            // 1. Header
+                            html += `<div class="result-header">
+                                        <span class="status-text ${statusClass}">${statusText}</span>
+                                        <span class="time-text">执行用时: ${maxTime} ms</span>
+                                     </div>`;
+                            
+                            // 2. Tabs
+                            html += `<div class="case-tabs">`;
+                            parsed.cases.forEach(function(c, i) {
+                                var isPassed = c.pass;
+                                var iconSvg = isPassed 
+                                    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+                                    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                                var colorClass = isPassed ? 'text-success' : 'text-error';
+                                
+                                html += `<div id="tab-${i}" class="case-tab ${i === 0 ? 'active' : ''}" onclick="switchTab(${i})">
+                                            <span class="case-icon ${colorClass}">${iconSvg}</span>
+                                            Case ${i + 1}
                                          </div>`;
-                            }
+                            });
+                            html += `</div>`;
+                            
+                            // 3. Details
+                            parsed.cases.forEach(function(c, i) {
+                                html += `<div id="case-${i}" class="case-detail ${i === 0 ? 'active' : ''}">`;
+                                
+                                // Input
+                                html += `<div class="detail-block">
+                                            <div class="detail-label">输入</div>
+                                            <div class="detail-content">${escapeHtml(c.input)}</div>
+                                         </div>`;
+                                         
+                                // Output
+                                html += `<div class="detail-block">
+                                            <div class="detail-label">输出</div>
+                                            <div class="detail-content">${escapeHtml(c.output)}</div>
+                                         </div>`;
+                                         
+                                // Expected
+                                html += `<div class="detail-block">
+                                            <div class="detail-label">预期结果</div>
+                                            <div class="detail-content">${escapeHtml(c.expected)}</div>
+                                         </div>`;
+                                         
+                                if (!c.pass && c.stderr) {
+                                     html += `<div class="detail-block">
+                                                <div class="detail-label" style="color:#ff4d4f">错误信息</div>
+                                                <div class="detail-content" style="background:#2a1f1f; color:#ffb3b3; border-color:#5a1f1f;">${escapeHtml(c.stderr)}</div>
+                                             </div>`;
+                                }
+
+                                html += `</div>`;
+                            });
+                            
+                            resultArea.html(html);
+
                         } else {
+                            // Fallback to old simple output style
+                            var html = '';
+                            html += `<div style="color: var(--success); font-weight: 600; margin-bottom: 8px;">编译运行成功</div>`;
                             if (stdout && stdout.trim().length > 0) {
                                 html += `<div style="margin:8px 0; font-weight:600;">程序输出</div>`;
                                 html += `<pre style="background:var(--code-bg);padding:8px;border-radius:6px;white-space:pre-wrap;">${escapeHtml(stdout)}</pre>`;
                             } else {
                                 html += `<div style="color:var(--muted);">无输出</div>`;
                             }
+                            if (stderr && stderr.trim().length > 0) {
+                                html += `<div style="margin:8px 0; font-weight:600;">错误输出</div>`;
+                                html += `<pre style="background:#2a1f1f;color:#ffb3b3;padding:8px;border-radius:6px;white-space:pre-wrap;">${escapeHtml(stderr)}</pre>`;
+                            }
+                            resultArea.html(html);
                         }
-                        if (stderr && stderr.trim().length > 0) {
-                            html += `<div style="margin:8px 0; font-weight:600;">错误输出</div>`;
-                            html += `<pre style="background:#2a1f1f;color:#ffb3b3;padding:8px;border-radius:6px;white-space:pre-wrap;">${escapeHtml(stderr)}</pre>`;
-                        }
-                        resultArea.html(html);
                     } else {
                         renderError(resultArea, data);
                     }

@@ -35,6 +35,7 @@ namespace ns_model
         std::string tail;   //题目的测试用例，需要和header拼接，形成完整代码
         int cpu_limit;      //题目的时间要求(S)
         int mem_limit;      //题目的空间要去(KB)
+        std::string language_type;
     };
 
     struct User
@@ -59,6 +60,7 @@ namespace ns_model
         int mem_usage;
         std::string created_at;
         std::string content; // Submission code/content
+        std::string language;
     };
 
     const std::string oj_questions = "oj_questions";
@@ -107,6 +109,7 @@ namespace ns_model
                               "`mem_usage` int(11) DEFAULT 0,"
                               "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
                               "`content` TEXT,"
+                              "`language` varchar(20) DEFAULT 'C++',"
                               "PRIMARY KEY (`id`),"
                               "INDEX `idx_user_id` (`user_id`),"
                               "INDEX `idx_question_id` (`question_id`)"
@@ -115,32 +118,43 @@ namespace ns_model
         }
 
         void CheckAndUpgradeTable() {
-            // Check if content column exists in submissions table
-            std::string check_sql = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_submissions + "' AND COLUMN_NAME = 'content'";
-            
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(), db.c_str(), port, nullptr, 0)){
                 LOG(ERROR) << "Upgrade Check: Connect failed" << "\n";
                 return;
             }
-            
-            if(0 != mysql_query(my, check_sql.c_str())) {
-                mysql_close(my);
-                return;
+
+            // Check content column
+            std::string check_content = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_submissions + "' AND COLUMN_NAME = 'content'";
+            if(0 == mysql_query(my, check_content.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_submissions + " ADD COLUMN content TEXT";
+                    LOG(INFO) << "Upgrading submissions table: adding content column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check language column
+            std::string check_lang = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_submissions + "' AND COLUMN_NAME = 'language'";
+            if(0 == mysql_query(my, check_lang.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_submissions + " ADD COLUMN language VARCHAR(20) DEFAULT 'C++'";
+                    LOG(INFO) << "Upgrading submissions table: adding language column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
             }
             
-            MYSQL_RES *res = mysql_store_result(my);
-            MYSQL_ROW row = mysql_fetch_row(res);
-            int count = row ? atoi(row[0]) : 0;
-            mysql_free_result(res);
             mysql_close(my);
-            
-            if (count == 0) {
-                // Column does not exist, add it
-                std::string alter_sql = "ALTER TABLE " + oj_submissions + " ADD COLUMN content TEXT";
-                LOG(INFO) << "Upgrading submissions table: adding content column" << "\n";
-                ExecuteSql(alter_sql);
-            }
         }
 
         bool ExecuteSql(const std::string &sql) {
@@ -203,8 +217,7 @@ namespace ns_model
                 q.cpu_limit = row[3] ? atoi(row[3]) : 0;
                 q.mem_limit = row[4] ? atoi(row[4]) : 0;
                 q.desc = row[5] ? row[5] : "";
-                q.header = row[6] ? row[6] : "";
-                q.tail = row[7] ? row[7] : "";
+                q.tail = row[6] ? row[6] : "";
 
                 out->push_back(q);
             }
@@ -269,7 +282,7 @@ namespace ns_model
             char* escaped_content = new char[sub.content.length() * 2 + 1];
             mysql_real_escape_string(my, escaped_content, sub.content.c_str(), sub.content.length());
             
-            std::string sql = "INSERT INTO " + oj_submissions + " (user_id, question_id, result, cpu_time, mem_usage, content) VALUES (";
+            std::string sql = "INSERT INTO " + oj_submissions + " (user_id, question_id, result, cpu_time, mem_usage, content, language) VALUES (";
             sql += "'" + sub.user_id + "', ";
             sql += "'" + sub.question_id + "', ";
             sql += "'" + sub.result + "', ";
@@ -277,6 +290,8 @@ namespace ns_model
             sql += std::to_string(sub.mem_usage) + ", ";
             sql += "'";
             sql += escaped_content;
+            sql += "', '";
+            sql += sub.language;
             sql += "')";
             
             delete[] escaped_content;

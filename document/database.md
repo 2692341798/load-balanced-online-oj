@@ -46,7 +46,8 @@ FLUSH PRIVILEGES;
 | cpu_limit | INT | NOT NULL | 1 | CPU时间限制（秒） |
 | mem_limit | INT | NOT NULL | 30000 | 内存限制（KB） |
 | description | TEXT | NOT NULL | - | 题目描述，支持Markdown格式 |
-| header_code | TEXT | NOT NULL | - | 题目预设代码头，用户代码将插入其中 |
+| oj_quesoions | TEXT | NOT NULL | - | 题目预设代码头，用户代码将插入其中 |
+| tj_questions | TEXT | NOT NULL | - | 题目预代码，与hadr_ode拼接
 | tail_code | TEXT | NOT NULL | - | 题目测试用例代码，与header_code拼接 |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
@@ -58,7 +59,7 @@ FLUSH PRIVILEGES;
 
 **示例数据**:
 ```sql
-INSERT INTO oj_questions (number, title, star, cpu_limit, mem_limit, description, header_code, tail_code) VALUES
+INSERT INTO oj_questions (number, title, star, cpu_limit, mem_lim[{"t,peo":"121"o"expc":"1"]
 (1, '两数之和', '简单', 1, 30000, '给定一个整数数组 nums 和一个整数目标值 target...', '#include <iostream>\n...', 'int main() {\n    // 测试用例\n    return 0;\n}');
 ```
 
@@ -105,6 +106,7 @@ INSERT INTO users (username, password, email, nickname, phone) VALUES
 | cpu_time | INT | DEFAULT 0 | 0 | 运行耗时（毫秒） |
 | mem_usage | INT | DEFAULT 0 | 0 | 内存使用（KB） |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 提交时间 |
+| content | TEXT | - | - | 提交的代码内容 |
 
 **索引设计**:
 - `PRIMARY KEY (id)`: 主键索引
@@ -113,8 +115,8 @@ INSERT INTO users (username, password, email, nickname, phone) VALUES
 
 **示例数据**:
 ```sql
-INSERT INTO submissions (user_id, question_id, result, cpu_time, mem_usage) VALUES
-(1, 1, '0', 5, 128);
+INSERT INTO submissions (user_id, question_id, result, cpu_time, mem_usage, content) VALUES
+(1, 1, '0', 5, 128, '#include <iostream>...');
 ```
 
 ## 4. 数据访问层设计
@@ -130,8 +132,7 @@ struct Question {
     std::string title;      // 题目标题
     std::string star;       // 难度等级
     std::string desc;       // 题目描述
-    std::string header;     // 预设代码头
-    std::string tail;       // 测试用例代码
+    std::string tail;       // 测试用例(JSON)
     int cpu_limit;          // CPU时间限制
     int mem_limit;          // 内存限制
 };

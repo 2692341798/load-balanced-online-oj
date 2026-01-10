@@ -49,7 +49,7 @@ namespace ns_runner
          * cpu_limit: 该程序运行的时候，可以使用的最大cpu资源上限
          * mem_limit: 改程序运行的时候，可以使用的最大的内存大小(KB)
          * *****************************************/
-        static int Run(const std::string &file_name, int cpu_limit, int mem_limit)
+        static int Run(const std::string &file_name, int cpu_limit, int mem_limit, const std::string &language = "C++")
         {
             /*********************************************
              * 程序运行：
@@ -66,7 +66,7 @@ namespace ns_runner
              * 标准输出: 程序运行完成，输出结果是什么
              * 标准错误: 运行时错误信息
              * *******************************************/
-            std::string _execute = PathUtil::Exe(file_name);
+            std::string _execute = PathUtil::Exe(file_name, language);
             std::string _stdin   = PathUtil::Stdin(file_name);
             std::string _stdout  = PathUtil::Stdout(file_name);
             std::string _stderr  = PathUtil::Stderr(file_name);
@@ -98,7 +98,15 @@ namespace ns_runner
 
                 SetProcLimit(cpu_limit, mem_limit);
                 
-                execl(_execute.c_str()/*我要执行谁*/, _execute.c_str()/*我想在命令行上如何执行该程序*/, nullptr);
+                if (language == "C++") {
+                    execl(_execute.c_str(), _execute.c_str(), nullptr);
+                } else if (language == "Python") {
+                    execlp("python3", "python3", _execute.c_str(), nullptr);
+                } else if (language == "Java") {
+                    std::string cp = ns_util::temp_path + file_name;
+                    execlp("java", "java", "-cp", cp.c_str(), "Main", nullptr);
+                }
+                
                 exit(1);
             }
             else
