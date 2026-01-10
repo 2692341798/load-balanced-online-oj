@@ -478,6 +478,7 @@ namespace ns_control
                             Json::Value case_res;
                             case_res["name"] = "Case " + std::to_string(i+1);
                             case_res["pass"] = pass;
+                            case_res["input"] = input_data;
                             case_res["output"] = trim_stdout;
                             case_res["expected"] = trim_expect;
                             // Add time/mem if available in future

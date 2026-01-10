@@ -68,6 +68,21 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.drag-handle {
+    height: 6px;
+    background-color: #1e1e1e;
+    cursor: row-resize;
+    width: 100%;
+    z-index: 10;
+    transition: background-color 0.2s;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.drag-handle:hover, .drag-handle.dragging {
+    background-color: var(--accent-color);
+}
+
 .language-select {
     padding: 6px 12px;
     border-radius: 4px;

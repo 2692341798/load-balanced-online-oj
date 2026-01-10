@@ -188,7 +188,8 @@
                 <textarea id="code-hidden" style="display:none;">{{pre_code}}</textarea>
                 <div id="code"></div>
             </div>
-            <div class="editor-footer">
+            <div class="drag-handle" id="drag-handle"></div>
+            <div class="editor-footer" id="editor-footer">
                 <div class="result-area" id="result-area">
                     <!-- 运行结果将显示在这里 -->
                 </div>
@@ -380,6 +381,49 @@
                 }
             });
         }
+
+        // Drag Resizing Logic
+        const dragHandle = document.getElementById('drag-handle');
+        const editorFooter = document.getElementById('editor-footer');
+        let isDragging = false;
+        let startY;
+        let startHeight;
+
+        dragHandle.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            startY = e.clientY;
+            startHeight = parseInt(window.getComputedStyle(editorFooter).height, 10);
+            dragHandle.classList.add('dragging');
+            document.body.style.cursor = 'row-resize';
+            e.preventDefault(); // Prevent text selection
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            const deltaY = startY - e.clientY; // Dragging up increases height
+            let newHeight = startHeight + deltaY;
+            
+            // Limits
+            const minHeight = 100;
+            const maxHeight = window.innerHeight * 0.8;
+            
+            if (newHeight < minHeight) newHeight = minHeight;
+            if (newHeight > maxHeight) newHeight = maxHeight;
+            
+            editorFooter.style.height = newHeight + 'px';
+            
+            // Trigger ACE editor resize
+            ace.edit("code").resize();
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                dragHandle.classList.remove('dragging');
+                document.body.style.cursor = 'default';
+                ace.edit("code").resize();
+            }
+        });
     </script>
 </body>
 </html>
