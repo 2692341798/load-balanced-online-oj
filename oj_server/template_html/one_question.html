@@ -92,6 +92,21 @@
 
         // 页面初始化
         $(document).ready(function() {
+            // 渲染 Markdown 描述
+            try {
+                var descRawEl = document.getElementById('problem-desc-raw');
+                if (descRawEl) {
+                    var rawDesc = descRawEl.value;
+                    if (rawDesc && typeof marked !== 'undefined') {
+                        document.getElementById('problem-desc-render').innerHTML = marked.parse(rawDesc);
+                    } else if (rawDesc) {
+                        document.getElementById('problem-desc-render').innerText = rawDesc;
+                    }
+                }
+            } catch(e) {
+                console.error("Markdown render error:", e);
+            }
+
             // 获取用户信息
             fetch('/api/user')
                 .then(res => res.json())
