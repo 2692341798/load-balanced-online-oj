@@ -225,6 +225,7 @@ Cookie: session_id=abc123def456
             "id": "1",
             "user_id": "1",
             "question_id": "1",
+            "language": "cpp",
             "result": "0",
             "cpu_time": 10,
             "mem_usage": 1024,
@@ -319,6 +320,7 @@ Cookie: session_id=abc123def456
 | 参数名 | 类型 | 必需 | 描述 |
 |--------|------|------|------|
 | code | string | 是 | 用户提交的代码 |
+| language | string | 是 | 编程语言 (cpp, java, python等) |
 
 **请求示例**:
 ```http
@@ -327,7 +329,8 @@ Content-Type: application/json
 Cookie: session_id=abc123def456
 
 {
-    "code": "#include <iostream>\nusing namespace std;\nint main() {\n    cout << \"Hello World\" << endl;\n    return 0;\n}"
+    "code": "#include <iostream>\nusing namespace std;\nint main() {\n    cout << \"Hello World\" << endl;\n    return 0;\n}",
+    "language": "cpp"
 }
 ```
 
@@ -429,6 +432,7 @@ Content-Type: application/json
 | 参数名 | 类型 | 必需 | 描述 |
 |--------|------|------|------|
 | code | string | 是 | 要编译运行的代码 |
+| language | string | 是 | 编程语言 |
 | input | string | 否 | 标准输入数据 |
 | cpu_limit | number | 是 | CPU时间限制（秒） |
 | mem_limit | number | 是 | 内存限制（KB） |

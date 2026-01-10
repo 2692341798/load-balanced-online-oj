@@ -102,6 +102,7 @@ INSERT INTO users (username, password, email, nickname, phone) VALUES
 | id | INT | PRIMARY KEY, AUTO_INCREMENT | - | 提交ID，唯一标识 |
 | user_id | INT | NOT NULL | - | 用户ID，关联users表 |
 | question_id | INT | NOT NULL | - | 题目ID，关联oj_questions表 |
+| language | VARCHAR(20) | NOT NULL | 'cpp' | 编程语言 |
 | result | VARCHAR(10) | NOT NULL | - | 评测结果状态码（0为通过） |
 | cpu_time | INT | DEFAULT 0 | 0 | 运行耗时（毫秒） |
 | mem_usage | INT | DEFAULT 0 | 0 | 内存使用（KB） |
@@ -115,8 +116,8 @@ INSERT INTO users (username, password, email, nickname, phone) VALUES
 
 **示例数据**:
 ```sql
-INSERT INTO submissions (user_id, question_id, result, cpu_time, mem_usage, content) VALUES
-(1, 1, '0', 5, 128, '#include <iostream>...');
+INSERT INTO submissions (user_id, question_id, language, result, cpu_time, mem_usage, content) VALUES
+(1, 1, 'cpp', '0', 5, 128, '#include <iostream>...');
 ```
 
 ## 4. 数据访问层设计
