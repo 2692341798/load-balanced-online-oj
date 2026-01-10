@@ -53,10 +53,12 @@ namespace ns_model
         std::string id;
         std::string user_id;
         std::string question_id;
+        std::string question_title;
         std::string result; // "0": Success, "-1": Empty, "-3": Compile Error, etc.
         int cpu_time;
         int mem_usage;
         std::string created_at;
+        std::string content; // Submission code/content
     };
 
     const std::string oj_questions = "oj_questions";
@@ -76,6 +78,7 @@ namespace ns_model
             // Try to create users table if not exists
             InitUserTable();
             InitSubmissionTable();
+            CheckAndUpgradeTable();
         }
 
         void InitUserTable() {
@@ -103,11 +106,41 @@ namespace ns_model
                               "`cpu_time` int(11) DEFAULT 0,"
                               "`mem_usage` int(11) DEFAULT 0,"
                               "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+                              "`content` TEXT,"
                               "PRIMARY KEY (`id`),"
                               "INDEX `idx_user_id` (`user_id`),"
                               "INDEX `idx_question_id` (`question_id`)"
                               ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
             ExecuteSql(sql);
+        }
+
+        void CheckAndUpgradeTable() {
+            // Check if content column exists in submissions table
+            std::string check_sql = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_submissions + "' AND COLUMN_NAME = 'content'";
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(), db.c_str(), port, nullptr, 0)){
+                LOG(ERROR) << "Upgrade Check: Connect failed" << "\n";
+                return;
+            }
+            
+            if(0 != mysql_query(my, check_sql.c_str())) {
+                mysql_close(my);
+                return;
+            }
+            
+            MYSQL_RES *res = mysql_store_result(my);
+            MYSQL_ROW row = mysql_fetch_row(res);
+            int count = row ? atoi(row[0]) : 0;
+            mysql_free_result(res);
+            mysql_close(my);
+            
+            if (count == 0) {
+                // Column does not exist, add it
+                std::string alter_sql = "ALTER TABLE " + oj_submissions + " ADD COLUMN content TEXT";
+                LOG(INFO) << "Upgrading submissions table: adding content column" << "\n";
+                ExecuteSql(alter_sql);
+            }
         }
 
         bool ExecuteSql(const std::string &sql) {
@@ -223,13 +256,119 @@ namespace ns_model
 
         bool AddSubmission(const Submission &sub)
         {
-            std::string sql = "INSERT INTO " + oj_submissions + " (user_id, question_id, result, cpu_time, mem_usage) VALUES (";
+            // Escape content to avoid SQL injection
+            // We need a connection to escape string, or just use a simple escape manually or use a prepared statement (C API doesn't make prepared statements easy with simple query strings)
+            // For now, let's just do a basic connection to escape, or trust the caller? No, must escape.
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                 return false;
+            }
+            mysql_set_character_set(my, "utf8");
+            
+            char* escaped_content = new char[sub.content.length() * 2 + 1];
+            mysql_real_escape_string(my, escaped_content, sub.content.c_str(), sub.content.length());
+            
+            std::string sql = "INSERT INTO " + oj_submissions + " (user_id, question_id, result, cpu_time, mem_usage, content) VALUES (";
             sql += "'" + sub.user_id + "', ";
             sql += "'" + sub.question_id + "', ";
             sql += "'" + sub.result + "', ";
             sql += std::to_string(sub.cpu_time) + ", ";
-            sql += std::to_string(sub.mem_usage) + ")";
-            return ExecuteSql(sql);
+            sql += std::to_string(sub.mem_usage) + ", ";
+            sql += "'";
+            sql += escaped_content;
+            sql += "')";
+            
+            delete[] escaped_content;
+            
+            if(0 != mysql_query(my, sql.c_str())) {
+                LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
+                mysql_close(my);
+                return false;
+            }
+            mysql_close(my);
+            return true;
+        }
+        
+        // Get Submissions with filters and pagination
+        // Filters: user_id, question_id, status, start_time, end_time, keyword (in content or question_id)
+        bool GetSubmissions(const std::string &user_id, 
+                            const std::string &question_id, 
+                            const std::string &status,
+                            const std::string &start_time,
+                            const std::string &end_time,
+                            const std::string &keyword,
+                            int offset, int limit,
+                            std::vector<Submission> *out,
+                            int *total)
+        {
+            std::string where_clause = " WHERE 1=1 ";
+            if(!user_id.empty()) where_clause += " AND s.user_id='" + user_id + "' ";
+            if(!question_id.empty()) where_clause += " AND s.question_id='" + question_id + "' ";
+            if(!status.empty()) where_clause += " AND s.result='" + status + "' ";
+            if(!start_time.empty()) where_clause += " AND s.created_at >= '" + start_time + "' ";
+            if(!end_time.empty()) where_clause += " AND s.created_at <= '" + end_time + "' ";
+            if(!keyword.empty()) {
+                // keyword search in question_id or content (if content is searchable, but content is large)
+                // user requirement: "Content keywords"
+                where_clause += " AND s.content LIKE '%" + keyword + "%' "; 
+            }
+
+            // Count total first
+            std::string count_sql = "SELECT count(*) FROM " + oj_submissions + " s " + where_clause;
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            mysql_set_character_set(my, "utf8");
+
+            if(0 != mysql_query(my, count_sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *total = atoi(row[0]);
+                mysql_free_result(res);
+            }
+
+            // Fetch data
+            std::string sql = "SELECT s.id, s.user_id, s.question_id, q.title, s.result, s.cpu_time, s.mem_usage, s.created_at, s.content FROM " 
+                              + oj_submissions + " s LEFT JOIN " + oj_questions + " q ON s.question_id = q.number " 
+                              + where_clause + " ORDER BY s.created_at DESC LIMIT " + std::to_string(offset) + ", " + std::to_string(limit);
+            
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            int fields = mysql_num_fields(res);
+            
+            for(int i = 0; i < rows; i++)
+            {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                
+                Submission s;
+                s.id = row[0] ? row[0] : "";
+                s.user_id = row[1] ? row[1] : "";
+                s.question_id = row[2] ? row[2] : "";
+                s.question_title = row[3] ? row[3] : "";
+                s.result = row[4] ? row[4] : "";
+                s.cpu_time = row[5] ? atoi(row[5]) : 0;
+                s.mem_usage = row[6] ? atoi(row[6]) : 0;
+                s.created_at = row[7] ? row[7] : "";
+                if (fields > 8) s.content = row[8] ? row[8] : "";
+                
+                out->push_back(s);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
         }
 
         // Return map: Difficulty -> Count

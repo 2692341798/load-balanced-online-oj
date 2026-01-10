@@ -193,11 +193,14 @@
                 </div>
             </div>
             
-            <!-- Recent Activity (Placeholder) -->
+            <!-- Recent Activity -->
             <div class="stats-card" style="margin-top: 24px;">
-                <div class="stats-header">最近提交</div>
-                <div style="color: var(--text-secondary); text-align: center; padding: 20px;">
-                    暂无提交记录 (功能开发中)
+                <div class="stats-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>最近提交</span>
+                    <!-- <a href="/submissions" style="font-size: 0.9rem; color: var(--primary-color);">查看全部</a> -->
+                </div>
+                <div id="submissions-list" style="padding: 10px;">
+                    <div style="text-align: center; padding: 20px; color: var(--text-secondary);">加载中...</div>
                 </div>
             </div>
         </div>
@@ -247,6 +250,72 @@
                      el.innerText = formatted;
                  });
             }
+        }
+
+        // Fetch Submissions
+        const userId = "{{user_id}}";
+        
+        async function fetchSubmissions() {
+            try {
+                const response = await fetch(`/api/submissions?user_id=${userId}&page=1&page_size=5`);
+                const result = await response.json();
+                if (result.status === 0) {
+                    renderSubmissions(result.data);
+                } else {
+                    document.getElementById('submissions-list').innerHTML = `<div style="text-align: center; padding: 10px; color: var(--danger-color);">加载失败: ${result.reason}</div>`;
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('submissions-list').innerHTML = `<div style="text-align: center; padding: 10px; color: var(--danger-color);">加载错误</div>`;
+            }
+        }
+        
+        function renderSubmissions(list) {
+            const container = document.getElementById('submissions-list');
+            if (!list || list.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-secondary);">暂无提交记录</div>`;
+                return;
+            }
+            
+            let html = `<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                        <th style="padding: 8px; text-align: left;">状态</th>
+                        <th style="padding: 8px; text-align: left;">题目</th>
+                        <th style="padding: 8px; text-align: left;">时间</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+                
+            list.forEach(sub => {
+                let statusColor = 'var(--text-color)';
+                let statusText = sub.result;
+                if (sub.result == '0') { statusText = '通过'; statusColor = 'var(--success-color)'; }
+                else if (sub.result == '-1') { statusText = '代码为空'; statusColor = 'var(--danger-color)'; }
+                else if (sub.result == '-3') { statusText = '编译错误'; statusColor = 'var(--danger-color)'; }
+                else { statusText = '错误 (' + sub.result + ')'; statusColor = 'var(--danger-color)'; }
+                
+                // Format date
+                const d = new Date(sub.created_at);
+                const dateStr = d.toLocaleString();
+
+                const title = sub.question_title ? escapeHtml(sub.question_title) : '';
+
+                html += `<tr style="border-bottom: 1px solid #333;">
+                    <td style="padding: 8px; color: ${statusColor};">${statusText}</td>
+                    <td style="padding: 8px; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${sub.question_id}. ${title}">
+                        <a href="/question/${sub.question_id}" style="color: var(--primary-color); text-decoration: none;">${sub.question_id}. ${title}</a>
+                    </td>
+                    <td style="padding: 8px; color: var(--text-secondary);">${dateStr}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+        
+        if (userId) {
+            fetchSubmissions();
         }
     </script>
 </body>
