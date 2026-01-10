@@ -46,9 +46,8 @@ FLUSH PRIVILEGES;
 | cpu_limit | INT | NOT NULL | 1 | CPU时间限制（秒） |
 | mem_limit | INT | NOT NULL | 30000 | 内存限制（KB） |
 | description | TEXT | NOT NULL | - | 题目描述，支持Markdown格式 |
-| oj_quesoions | TEXT | NOT NULL | - | 题目预设代码头，用户代码将插入其中 |
-| tj_questions | TEXT | NOT NULL | - | 题目预代码，与hadr_ode拼接
-| tail_code | TEXT | NOT NULL | - | 题目测试用例代码，与header_code拼接 |
+| header | TEXT | NOT NULL | - | [已废弃] 题目预设代码头 |
+| tail | TEXT | NOT NULL | - | JSON格式的测试用例，存储测试用例的输入输出 |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
 
@@ -102,7 +101,7 @@ INSERT INTO users (username, password, email, nickname, phone) VALUES
 | id | INT | PRIMARY KEY, AUTO_INCREMENT | - | 提交ID，唯一标识 |
 | user_id | INT | NOT NULL | - | 用户ID，关联users表 |
 | question_id | INT | NOT NULL | - | 题目ID，关联oj_questions表 |
-| language | VARCHAR(20) | NOT NULL | 'cpp' | 编程语言 |
+| language | VARCHAR(20) | NOT NULL | 'cpp' | 编程语言 (cpp, java, python) |
 | result | VARCHAR(10) | NOT NULL | - | 评测结果状态码（0为通过） |
 | cpu_time | INT | DEFAULT 0 | 0 | 运行耗时（毫秒） |
 | mem_usage | INT | DEFAULT 0 | 0 | 内存使用（KB） |
@@ -461,8 +460,18 @@ FLUSH PRIVILEGES;
 4. **测试连接**: 使用命令行工具测试
 5. **查看状态**: 使用SHOW STATUS命令
 
+## 13. 版本历史
+
+- **v0.2.9 (2026-01-10)**: 
+  - 更新 `oj_questions` 表结构：
+    - 修正字段拼写错误 (`oj_quesoions` -> `header`, `tj_questions` -> `tail`)
+    - `header` 字段标记为废弃
+    - `tail` 字段改为存储 JSON 格式的测试用例
+    - 移除冗余的 `tail_code` 字段
+  - 更新 `submissions` 表说明，明确支持多语言 (cpp, java, python)
+
 ---
 
-**文档版本**: v0.2.6  
+**文档版本**: v0.2.9  
 **最后更新时间**: 2026-01-10  
 **维护团队**: 在线评测系统开发团队

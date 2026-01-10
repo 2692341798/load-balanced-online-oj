@@ -351,9 +351,89 @@ font-weight: 600;      /* 粗体 */
 }
 ```
 
+### 5.5 布局组件 (Layout Components)
+
+#### 5.5.1 可调整面板 (Resizable Panes)
+```css
+.split-pane {
+    display: flex;
+    height: 100%;
+}
+
+.gutter {
+    background-color: var(--bg-color);
+    background-repeat: no-repeat;
+    background-position: 50%;
+    transition: background-color 0.3s;
+}
+
+.gutter:hover {
+    background-color: var(--accent-color);
+}
+
+.gutter.gutter-horizontal {
+    cursor: col-resize;
+    width: 10px;
+}
+
+.gutter.gutter-vertical {
+    cursor: row-resize;
+    height: 10px;
+}
+```
+
+#### 5.5.2 标签页界面 (Tabbed Interface)
+用于测试用例和运行结果的展示。
+
+```css
+.tabs-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.tabs-header {
+    display: flex;
+    background: #2d2d2d;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-item {
+    padding: 10px 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-right: 1px solid var(--border-color);
+    transition: all 0.3s;
+    font-size: 0.9rem;
+}
+
+.tab-item:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-item.active {
+    color: var(--text-main);
+    background: #1e1e1e;
+    border-top: 2px solid var(--accent-color);
+}
+
+.tab-content {
+    flex: 1;
+    overflow: auto;
+    background: #1e1e1e;
+    padding: 16px;
+}
+```
+
 ## 6. 代码编辑器样式 (Code Editor)
 
-### 6.1 编辑器容器
+### 6.1 主题标准
+- **标准主题**: VS Code Dark Theme
+- **支持语言**: C++, Java, Python
+- **字体**: Consolas, 'Courier New', monospace
+
+### 6.2 编辑器容器
 ```css
 .code-editor {
     background: #1e1e1e;
@@ -378,7 +458,7 @@ font-weight: 600;      /* 粗体 */
 }
 ```
 
-### 6.2 代码区域
+### 6.3 代码区域
 ```css
 .code-area {
     background: #1e1e1e;
@@ -398,7 +478,7 @@ font-weight: 600;      /* 粗体 */
 }
 ```
 
-### 6.3 语法高亮（基础）
+### 6.4 语法高亮（基础）
 ```css
 /* 关键字 */
 .keyword { color: #569cd6; }
@@ -708,6 +788,6 @@ oj_server/css/
 
 ---
 
-**文档版本**: v0.2.6  
+**文档版本**: v0.2.9  
 **最后更新时间**: 2026-01-10  
 **维护团队**: 在线评测系统开发团队
