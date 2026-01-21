@@ -4,70 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - Load Balanced OJ</title>
-    <style>
-        :root {
-            --bg-color: #1e1e1e;
-            --text-color: #d4d4d4;
-            --accent-color: #007acc;
-            --input-bg: #252526;
-            --border-color: #3e3e42;
-        }
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-container {
-            background-color: var(--input-bg);
-            padding: 2rem;
-            border-radius: 5px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            width: 300px;
-        }
-        h2 { text-align: center; margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; }
-        input {
-            width: 100%;
-            padding: 0.5rem;
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            border-radius: 3px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 0.7rem;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        button:hover { opacity: 0.9; }
-        .error { color: #f48771; text-align: center; margin-top: 1rem; display: none; }
-    </style>
+    <link rel="stylesheet" href="../css/admin.css">
 </head>
 <body>
-    <div class="login-container">
-        <h2>Admin Login</h2>
-        <div class="form-group">
-            <label>Username</label>
-            <input type="text" id="username" required>
+    <div class="login-wrapper">
+        <div class="login-container">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button onclick="login()" class="btn btn-primary" style="width: 100%">Login</button>
+            <div id="error-msg" class="error-msg"></div>
         </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="password" required>
-        </div>
-        <button onclick="login()">Login</button>
-        <div id="error-msg" class="error"></div>
     </div>
 
     <script>
