@@ -40,3 +40,6 @@ compile_server/compile_server
 output/
 
 
+
+# Trae AI files
+.trae/
