@@ -44,7 +44,9 @@
 
 /* Markdown Styles */
 .markdown-body {
-    color: var(--text-main);
+    color: #eff1f6;
+    font-size: 16px;
+    line-height: 1.6;
 }
 
 .markdown-body h1, .markdown-body h2, .markdown-body h3, 
@@ -53,6 +55,7 @@
     margin-bottom: 16px;
     font-weight: 600;
     line-height: 1.25;
+    color: #eff1f6;
 }
 
 .markdown-body h1 { font-size: 1.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.3em; }
@@ -63,13 +66,19 @@
     margin-bottom: 16px;
 }
 
+.markdown-body strong {
+    font-weight: 600;
+    color: #fff;
+}
+
 .markdown-body code {
     padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.12);
     border-radius: 4px;
-    font-family: 'Consolas', monospace;
+    font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+    color: #eff1f6;
 }
 
 .markdown-body pre {
@@ -77,9 +86,10 @@
     overflow: auto;
     font-size: 85%;
     line-height: 1.45;
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
     margin-bottom: 16px;
+    border: none;
 }
 
 .markdown-body pre code {
@@ -90,18 +100,25 @@
     white-space: pre;
     background: transparent;
     border: 0;
+    color: #eff1f6;
+}
+
+.markdown-body blockquote {
+    padding: 10px 20px;
+    color: #c4c4c4;
+    border-left: 4px solid rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.05);
+    margin: 0 0 16px 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.markdown-body blockquote p {
+    margin-bottom: 0; /* Remove bottom margin for p inside blockquote for tighter look */
 }
 
 .markdown-body ul, .markdown-body ol {
     padding-left: 2em;
     margin-bottom: 16px;
-}
-
-.markdown-body blockquote {
-    padding: 0 1em;
-    color: var(--text-secondary);
-    border-left: 0.25em solid rgba(255, 255, 255, 0.1);
-    margin: 0 0 16px 0;
 }
 
 .markdown-body table {
@@ -113,7 +130,7 @@
 
 .markdown-body table th,
 .markdown-body table td {
-    padding: 6px 13px;
+    padding: 8px 13px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -129,7 +146,7 @@
 .markdown-body img {
     max-width: 100%;
     box-sizing: border-box;
-    background-color: #fff; /* Ensure transparent images are visible if dark text */
+    background-color: transparent;
 }
 
 /* 右侧代码编辑区 */

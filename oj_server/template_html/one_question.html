@@ -11,6 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-language_tools.js"></script>
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script>
         // XSS防护
@@ -185,7 +187,8 @@
                 </div>
             </div>
             <div class="problem-content">
-                <pre>{{desc}}</pre>
+                <textarea id="problem-desc-raw" style="display:none;">{{desc}}</textarea>
+                <div id="problem-desc-render" class="markdown-body"></div>
             </div>
         </div>
 

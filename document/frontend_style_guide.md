@@ -766,22 +766,95 @@ oj_server/css/
 /* 5. 动画属性 */
 ```
 
-## 13. 性能优化
+## 14. Markdown 内容样式 (Markdown Content)
 
-### 13.1 CSS优化
+用于题目描述、题解等富文本内容的展示。
+
+### 14.1 基础排版
+```css
+.markdown-body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-main);
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-main);
+}
+
+.markdown-body p {
+    margin-bottom: 16px;
+    color: #d4d4d4;
+}
+
+.markdown-body blockquote {
+    padding: 0 1em;
+    color: var(--text-secondary);
+    border-left: 0.25em solid var(--border-color);
+    margin: 0 0 16px 0;
+}
+```
+
+### 14.2 代码块与列表
+```css
+.markdown-body pre {
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #1e1e1e;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 16px;
+}
+
+.markdown-body code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+}
+
+.markdown-body pre code {
+    padding: 0;
+    background-color: transparent;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    padding-left: 2em;
+    margin-bottom: 16px;
+}
+
+.markdown-body li {
+    margin-top: 0.25em;
+}
+```
+
+## 15. 性能优化
+
+### 15.1 CSS优化
 - 使用CSS变量减少重复代码
 - 合理使用CSS选择器，避免过度嵌套
 - 压缩CSS文件，移除未使用的样式
 - 使用硬件加速的属性
 
-### 13.2 加载优化
+### 15.2 加载优化
 ```css
 /* 关键CSS内联 */
 /* 非关键CSS异步加载 */
 /* 使用font-display优化字体加载 */
 ```
 
-### 13.3 渲染优化
+### 15.3 渲染优化
 - 避免触发重排和重绘
 - 使用transform和opacity进行动画
 - 合理使用will-change属性
@@ -789,5 +862,5 @@ oj_server/css/
 ---
 
 **文档版本**: v0.2.9  
-**最后更新时间**: 2026-01-10  
+**最后更新时间**: 2026-01-21  
 **维护团队**: 在线评测系统开发团队
