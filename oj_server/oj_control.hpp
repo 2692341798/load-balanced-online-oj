@@ -260,7 +260,7 @@ namespace ns_control
         }
 
         bool CheckUserExists(const std::string &username) {
-            std::string sql_check = "select * from " + oj_users + " where username='" + username + "'";
+            std::string sql_check = "select id, username, password, email, nickname, phone, created_at, role from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
             if (!model_.QueryUserMySql(sql_check, &users)) {
                 LOG(ERROR) << "检查用户是否存在时查询失败: " << username << "\n";
@@ -324,6 +324,173 @@ namespace ns_control
             return false;
         }
 
+        bool AdminAuthCheck(const Request &req, User *user) {
+            if (AuthCheck(req, user)) {
+                return user->role == 1;
+            }
+            return false;
+        }
+
+        bool AllQuestionsAdmin(const Request &req, string *json)
+        {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value root;
+                root["status"] = 403;
+                root["reason"] = "Permission Denied";
+                Json::FastWriter w;
+                *json = w.write(root);
+                return false;
+            }
+
+            vector<struct Question> all;
+            if (model_.GetAllQuestionsAdmin(&all))
+            {
+                Json::Value root;
+                root["status"] = 0;
+                Json::Value list;
+                for (const auto &q : all) {
+                    Json::Value item;
+                    item["number"] = q.number;
+                    item["title"] = q.title;
+                    item["star"] = q.star;
+                    item["cpu_limit"] = q.cpu_limit;
+                    item["mem_limit"] = q.mem_limit;
+                    item["description"] = q.desc;
+                    item["tail"] = q.tail;
+                    item["status"] = q.status;
+                    list.append(item);
+                }
+                root["data"] = list;
+                Json::FastWriter w;
+                *json = w.write(root);
+                return true;
+            }
+            else
+            {
+                Json::Value root;
+                root["status"] = 1;
+                root["reason"] = "Database Error";
+                Json::FastWriter w;
+                *json = w.write(root);
+                return false;
+            }
+        }
+
+        bool AddQuestion(const Request &req, string *json)
+        {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value root;
+                root["status"] = 403;
+                root["reason"] = "Permission Denied";
+                Json::FastWriter w;
+                *json = w.write(root);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            
+            struct Question q;
+            q.title = root["title"].asString();
+            q.star = root["star"].asString();
+            q.desc = root["description"].asString();
+            q.tail = root["tail"].asString(); // Expecting JSON string of test cases
+            q.cpu_limit = root.get("cpu_limit", 1).asInt();
+            q.mem_limit = root.get("mem_limit", 30000).asInt();
+            q.status = root.get("status", 1).asInt();
+
+            if (model_.AddQuestion(q)) {
+                 Json::Value res;
+                 res["status"] = 0;
+                 res["reason"] = "Success";
+                 Json::FastWriter w;
+                 *json = w.write(res);
+                 return true;
+            }
+            
+            Json::Value res;
+            res["status"] = 1;
+            res["reason"] = "Database Error";
+            Json::FastWriter w;
+            *json = w.write(res);
+            return false;
+        }
+
+        bool UpdateQuestion(const std::string &number, const Request &req, string *json)
+        {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value root;
+                root["status"] = 403;
+                root["reason"] = "Permission Denied";
+                Json::FastWriter w;
+                *json = w.write(root);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            
+            struct Question q;
+            q.number = number;
+            q.title = root["title"].asString();
+            q.star = root["star"].asString();
+            q.desc = root["description"].asString();
+            q.tail = root["tail"].asString();
+            q.cpu_limit = root.get("cpu_limit", 1).asInt();
+            q.mem_limit = root.get("mem_limit", 30000).asInt();
+            q.status = root.get("status", 1).asInt();
+
+            if (model_.UpdateQuestion(q)) {
+                 Json::Value res;
+                 res["status"] = 0;
+                 res["reason"] = "Success";
+                 Json::FastWriter w;
+                 *json = w.write(res);
+                 return true;
+            }
+            
+            Json::Value res;
+            res["status"] = 1;
+            res["reason"] = "Database Error";
+            Json::FastWriter w;
+            *json = w.write(res);
+            return false;
+        }
+
+        bool DeleteQuestion(const std::string &number, const Request &req, string *json)
+        {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value root;
+                root["status"] = 403;
+                root["reason"] = "Permission Denied";
+                Json::FastWriter w;
+                *json = w.write(root);
+                return false;
+            }
+
+            if (model_.DeleteQuestion(number)) {
+                 Json::Value res;
+                 res["status"] = 0;
+                 res["reason"] = "Success";
+                 Json::FastWriter w;
+                 *json = w.write(res);
+                 return true;
+            }
+            
+            Json::Value res;
+            res["status"] = 1;
+            res["reason"] = "Database Error";
+            Json::FastWriter w;
+            *json = w.write(res);
+            return false;
+        }
+
         bool Logout(const Request &req) {
             if (req.has_header("Cookie")) {
                 std::string cookie = req.get_header_value("Cookie");
@@ -378,6 +545,11 @@ namespace ns_control
             struct Question q;
             if (model_.GetOneQuestion(number, &q))
             {
+                // Check visibility
+                if (q.status == 0 && user.role != 1) {
+                    *html = "指定题目: " + number + " 未发布!";
+                    return false;
+                }
                 // 获取指定题目信息成功，将所有的题目数据构建成网页
                 view_.OneExpandHtml(q, html, &user);
             }
@@ -394,7 +566,44 @@ namespace ns_control
         {
             // 0. 根据题目编号，直接拿到对应的题目细节
             struct Question q;
-            model_.GetOneQuestion(number, &q);
+            if (!model_.GetOneQuestion(number, &q)) {
+                 Json::Value err_res;
+                 err_res["status"] = -2;
+                 err_res["reason"] = "Question not found";
+                 Json::FastWriter w;
+                 *out_json = w.write(err_res);
+                 return;
+            }
+            
+            // Check visibility (unless it's an internal call or admin)
+            // But Judge doesn't have easy access to User role unless passed or checked.
+            // We can check user_id if provided.
+            if (q.status == 0) {
+                // If user_id is provided, check their role? 
+                // Model doesn't support GetUserById efficiently (only by username in Login/Register, or QueryUserMySql).
+                // But we can assume if it's hidden, regular users can't judge it.
+                // However, Admins might want to test their hidden questions.
+                // For now, let's allow judging if they know the ID, or block it.
+                // Requirement: "Ensure only published questions are visible to customers".
+                // Judging implies visibility of content/result.
+                // I'll block it if status is 0, UNLESS I can verify admin.
+                // Since I can't easily verify admin here without refactoring Judge signature or logic, 
+                // and considering Admin likely tests via the same interface, 
+                // I will add a check: if status==0, check if user is admin.
+                
+                // Fetch user to check role
+                std::string sql = "select id, username, password, email, nickname, phone, created_at, role from " + oj_users + " where id='" + user_id + "'";
+                std::vector<User> users;
+                model_.QueryUserMySql(sql, &users);
+                if (users.empty() || users[0].role != 1) {
+                     Json::Value err_res;
+                     err_res["status"] = -2;
+                     err_res["reason"] = "Question is not published";
+                     Json::FastWriter w;
+                     *out_json = w.write(err_res);
+                     return;
+                }
+            }
 
             // 1. in_json进行反序列化
             Json::Reader reader;
@@ -613,6 +822,7 @@ namespace ns_control
             root["nickname"] = user.nickname;
             root["phone"] = user.phone;
             root["created_at"] = user.created_at;
+            root["role"] = user.role; // Add role to response
             
             Json::Value stats_json;
             for(auto &kv : stats) {

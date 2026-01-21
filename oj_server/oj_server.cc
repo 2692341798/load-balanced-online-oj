@@ -292,6 +292,37 @@ int main()
         resp.set_content(json_out, "application/json;charset=utf-8");
     });
     
+    // --- Admin APIs ---
+    svr.Get("/api/admin/questions", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.AllQuestionsAdmin(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Post("/api/admin/question", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.AddQuestion(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Post(R"(/api/admin/question/update/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string number = req.matches[1];
+        std::string json;
+        ctrl.UpdateQuestion(number, req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Post(R"(/api/admin/question/delete/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string number = req.matches[1];
+        std::string json;
+        ctrl.DeleteQuestion(number, req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    // Admin Page Redirect
+    svr.Get("/admin", [](const Request &req, Response &resp){
+        resp.set_redirect("/admin/index.html");
+    });
     
     svr.set_base_dir("./wwwroot");
     svr.set_mount_point("/css", "./css");

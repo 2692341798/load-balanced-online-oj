@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Question - Admin</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --secondary-bg: #252526;
+            --border-color: #3e3e42;
+            --input-bg: #3c3c3c;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--secondary-bg);
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        textarea { height: 150px; font-family: monospace; }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-secondary { background-color: #666; color: white; margin-right: 10px; }
+        .row { display: flex; gap: 20px; }
+        .col { flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 id="page-title">Add Question</h2>
+        <form id="question-form" onsubmit="saveQuestion(event)">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="title" required>
+            </div>
+            
+            <div class="row">
+                <div class="col form-group">
+                    <label>Difficulty</label>
+                    <select id="star">
+                        <option value="简单">Easy</option>
+                        <option value="中等">Medium</option>
+                        <option value="困难">Hard</option>
+                    </select>
+                </div>
+                <div class="col form-group">
+                    <label>Status</label>
+                    <select id="status">
+                        <option value="1">Visible</option>
+                        <option value="0">Hidden</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col form-group">
+                    <label>CPU Limit (s)</label>
+                    <input type="number" id="cpu_limit" value="1" required>
+                </div>
+                <div class="col form-group">
+                    <label>Memory Limit (KB)</label>
+                    <input type="number" id="mem_limit" value="30000" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Description (Markdown supported)</label>
+                <textarea id="description" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Test Cases (JSON Format: [{"input":"...", "expect":"..."}, ...])</label>
+                <textarea id="tail" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        async function init() {
+            // Check Auth
+            try {
+                const res = await fetch('/api/profile');
+                const data = await res.json();
+                if (data.status !== 0 || data.role !== 1) {
+                    window.location.href = '/admin/login.html';
+                    return;
+                }
+            } catch (e) {
+                window.location.href = '/admin/login.html';
+                return;
+            }
+
+            if (id) {
+                document.getElementById('page-title').textContent = 'Edit Question';
+                loadQuestion(id);
+            } else {
+                // Default test case template
+                document.getElementById('tail').value = JSON.stringify([
+                    { "input": "1 2", "expect": "3" }
+                ], null, 2);
+            }
+        }
+
+        async function loadQuestion(id) {
+            const res = await fetch(`/question/${id}`); // Reuse existing API? No, that returns HTML. 
+            // I need an API to get raw question data. 
+            // I created AllQuestionsAdmin but not GetOneQuestionAdmin (raw JSON).
+            // Actually, I can assume if I'm admin, I can iterate the list from AllQuestionsAdmin to find it, 
+            // or I should add GetOneQuestion API that returns JSON.
+            // Currently /question/{id} returns HTML.
+            // I should add GET /api/admin/question/{id} or just use the list.
+            // Let's use the list for simplicity for now, or fetch all and find.
+            
+            const listRes = await fetch('/api/admin/questions');
+            const listData = await listRes.json();
+            if (listData.status === 0) {
+                const q = listData.data.find(item => item.number == id);
+                if (q) {
+                    document.getElementById('title').value = q.title;
+                    document.getElementById('star').value = q.star;
+                    document.getElementById('status').value = q.status;
+                    document.getElementById('cpu_limit').value = q.cpu_limit;
+                    document.getElementById('mem_limit').value = q.mem_limit;
+                    document.getElementById('description').value = q.description;
+                    document.getElementById('tail').value = q.tail;
+                }
+            }
+        }
+
+        async function saveQuestion(e) {
+            e.preventDefault();
+            const data = {
+                title: document.getElementById('title').value,
+                star: document.getElementById('star').value,
+                status: parseInt(document.getElementById('status').value),
+                cpu_limit: parseInt(document.getElementById('cpu_limit').value),
+                mem_limit: parseInt(document.getElementById('mem_limit').value),
+                description: document.getElementById('description').value,
+                tail: document.getElementById('tail').value
+            };
+
+            // Validate JSON
+            try {
+                JSON.parse(data.tail);
+            } catch (e) {
+                alert('Invalid JSON in Test Cases');
+                return;
+            }
+
+            let url = '/api/admin/question';
+            if (id) {
+                url = `/api/admin/question/update/${id}`;
+            }
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.status === 0) {
+                    alert('Saved successfully');
+                    window.location.href = '/admin/index.html';
+                } else {
+                    alert('Error: ' + result.reason);
+                }
+            } catch (e) {
+                alert('Request failed');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

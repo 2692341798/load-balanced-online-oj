@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problem Management - Admin</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --secondary-bg: #252526;
+            --border-color: #3e3e42;
+            --hover-bg: #2d2d2d;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-danger { background-color: #f44336; color: white; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--secondary-bg);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th { background-color: #333; }
+        tr:hover { background-color: var(--hover-bg); }
+        .status-badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .status-visible { background-color: #4caf50; color: white; }
+        .status-hidden { background-color: #9e9e9e; color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Problem Management</h1>
+        <div>
+            <a href="/admin/question.html" class="btn btn-primary">Add Question</a>
+            <button onclick="logout()" class="btn btn-danger" style="margin-left: 10px;">Logout</button>
+        </div>
+    </div>
+
+    <div id="loading">Loading...</div>
+    
+    <table id="questions-table" style="display: none;">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Difficulty</th>
+                <th>Status</th>
+                <th>CPU Limit</th>
+                <th>Mem Limit</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="questions-body"></tbody>
+    </table>
+
+    <script>
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/profile');
+                const data = await res.json();
+                if (data.status !== 0 || data.role !== 1) {
+                    window.location.href = '/admin/login.html';
+                } else {
+                    loadQuestions();
+                }
+            } catch (e) {
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        async function loadQuestions() {
+            try {
+                const res = await fetch('/api/admin/questions');
+                const data = await res.json();
+                if (data.status === 0) {
+                    const tbody = document.getElementById('questions-body');
+                    tbody.innerHTML = '';
+                    data.data.forEach(q => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${q.number}</td>
+                            <td>${q.title}</td>
+                            <td>${q.star}</td>
+                            <td><span class="status-badge ${q.status == 1 ? 'status-visible' : 'status-hidden'}">${q.status == 1 ? 'Visible' : 'Hidden'}</span></td>
+                            <td>${q.cpu_limit}s</td>
+                            <td>${q.mem_limit}KB</td>
+                            <td>
+                                <a href="/admin/question.html?id=${q.number}" class="btn btn-primary btn-sm">Edit</a>
+                                <button onclick="deleteQuestion(${q.number})" class="btn btn-danger btn-sm">Delete</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('questions-table').style.display = 'table';
+                }
+            } catch (e) {
+                alert('Failed to load questions');
+            }
+        }
+
+        async function deleteQuestion(id) {
+            if (!confirm('Are you sure you want to delete this question?')) return;
+            try {
+                const res = await fetch(`/api/admin/question/delete/${id}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 0) {
+                    loadQuestions();
+                } else {
+                    alert('Failed to delete: ' + data.reason);
+                }
+            } catch (e) {
+                alert('Error deleting question');
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout');
+            window.location.href = '/admin/login.html';
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>

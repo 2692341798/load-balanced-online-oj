@@ -36,6 +36,7 @@ namespace ns_model
         int cpu_limit;      //题目的时间要求(S)
         int mem_limit;      //题目的空间要去(KB)
         std::string language_type;
+        int status;         // 0: Hidden, 1: Visible
     };
 
     struct User
@@ -47,6 +48,7 @@ namespace ns_model
         std::string nickname;
         std::string phone;
         std::string created_at;
+        int role;             // 0: User, 1: Admin
     };
 
     struct Submission
@@ -124,7 +126,7 @@ namespace ns_model
                 return;
             }
 
-            // Check content column
+            // Check content column in submissions
             std::string check_content = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_submissions + "' AND COLUMN_NAME = 'content'";
             if(0 == mysql_query(my, check_content.c_str())) {
                 MYSQL_RES *res = mysql_store_result(my);
@@ -139,7 +141,7 @@ namespace ns_model
                 }
             }
 
-            // Check language column
+            // Check language column in submissions
             std::string check_lang = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_submissions + "' AND COLUMN_NAME = 'language'";
             if(0 == mysql_query(my, check_lang.c_str())) {
                 MYSQL_RES *res = mysql_store_result(my);
@@ -150,6 +152,51 @@ namespace ns_model
                 if (count == 0) {
                     std::string alter_sql = "ALTER TABLE " + oj_submissions + " ADD COLUMN language VARCHAR(20) DEFAULT 'C++'";
                     LOG(INFO) << "Upgrading submissions table: adding language column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check role column in users
+            std::string check_role = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_users + "' AND COLUMN_NAME = 'role'";
+            if(0 == mysql_query(my, check_role.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_users + " ADD COLUMN role INT DEFAULT 0 COMMENT '0:User, 1:Admin'";
+                    LOG(INFO) << "Upgrading users table: adding role column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check created_at column in users
+            std::string check_created = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_users + "' AND COLUMN_NAME = 'created_at'";
+            if(0 == mysql_query(my, check_created.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_users + " ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
+                    LOG(INFO) << "Upgrading users table: adding created_at column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check status column in oj_questions
+            std::string check_status = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_questions + "' AND COLUMN_NAME = 'status'";
+            if(0 == mysql_query(my, check_status.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_questions + " ADD COLUMN status INT DEFAULT 1 COMMENT '0:Hidden, 1:Visible'";
+                    LOG(INFO) << "Upgrading oj_questions table: adding status column" << "\n";
                     mysql_query(my, alter_sql.c_str());
                 }
             }
@@ -202,7 +249,7 @@ namespace ns_model
 
             // 分析结果
             int rows = mysql_num_rows(res); //获得行数量
-            // int cols = mysql_num_fields(res); //获得列数量
+            int fields = mysql_num_fields(res); //获得列数量
 
             Question q;
 
@@ -218,6 +265,12 @@ namespace ns_model
                 q.mem_limit = row[4] ? atoi(row[4]) : 0;
                 q.desc = row[5] ? row[5] : "";
                 q.tail = row[6] ? row[6] : "";
+                // If fields > 7, assume status is the 8th column if we used SELECT * or specific order
+                // But caller might pass custom SQL. 
+                // However, GetAllQuestions and GetOneQuestion are the main callers.
+                // I will update them to use specific columns.
+                if(fields > 7) q.status = row[7] ? atoi(row[7]) : 1;
+                else q.status = 1; // Default visible
 
                 out->push_back(q);
             }
@@ -260,6 +313,9 @@ namespace ns_model
                 if(fields > 4) u.nickname = row[4] ? row[4] : "";
                 if(fields > 5) u.phone = row[5] ? row[5] : "";
                 if(fields > 6) u.created_at = row[6] ? row[6] : "";
+                if(fields > 7) u.role = row[7] ? atoi(row[7]) : 0;
+                else u.role = 0;
+                
                 out->push_back(u);
             }
             mysql_free_result(res);
@@ -428,14 +484,25 @@ namespace ns_model
 
         bool GetAllQuestions(vector<Question> *out)
         {
-            std::string sql = "select * from ";
+            // Only show visible questions for normal users
+            std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from ";
+            sql += oj_questions;
+            sql += " where status=1";
+            return QueryMySql(sql, out);
+        }
+
+        bool GetAllQuestionsAdmin(vector<Question> *out)
+        {
+            // Show all questions for admin
+            std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from ";
             sql += oj_questions;
             return QueryMySql(sql, out);
         }
+
         bool GetOneQuestion(const std::string &number, Question *q)
         {
             bool res = false;
-            std::string sql = "select * from ";
+            std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from ";
             sql += oj_questions;
             sql += " where number=";
             sql += number;
@@ -448,6 +515,82 @@ namespace ns_model
                 }
             }
             return res;
+        }
+
+        bool AddQuestion(const Question &q)
+        {
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            mysql_set_character_set(my, "utf8");
+
+            // Escape strings
+            auto escape = [&](const std::string &s) -> std::string {
+                char *buf = new char[s.length() * 2 + 1];
+                mysql_real_escape_string(my, buf, s.c_str(), s.length());
+                std::string res(buf);
+                delete[] buf;
+                return res;
+            };
+
+            std::string sql = "INSERT INTO " + oj_questions + " (title, star, cpu_limit, mem_limit, description, tail_code, status) VALUES ('"
+                + escape(q.title) + "', '"
+                + escape(q.star) + "', "
+                + std::to_string(q.cpu_limit) + ", "
+                + std::to_string(q.mem_limit) + ", '"
+                + escape(q.desc) + "', '"
+                + escape(q.tail) + "', "
+                + std::to_string(q.status) + ")";
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
+                mysql_close(my);
+                return false;
+            }
+            mysql_close(my);
+            return true;
+        }
+
+        bool UpdateQuestion(const Question &q)
+        {
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            mysql_set_character_set(my, "utf8");
+
+            auto escape = [&](const std::string &s) -> std::string {
+                char *buf = new char[s.length() * 2 + 1];
+                mysql_real_escape_string(my, buf, s.c_str(), s.length());
+                std::string res(buf);
+                delete[] buf;
+                return res;
+            };
+
+            std::string sql = "UPDATE " + oj_questions + " SET "
+                + "title='" + escape(q.title) + "', "
+                + "star='" + escape(q.star) + "', "
+                + "cpu_limit=" + std::to_string(q.cpu_limit) + ", "
+                + "mem_limit=" + std::to_string(q.mem_limit) + ", "
+                + "description='" + escape(q.desc) + "', "
+                + "tail_code='" + escape(q.tail) + "', "
+                + "status=" + std::to_string(q.status)
+                + " WHERE number=" + q.number;
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
+                mysql_close(my);
+                return false;
+            }
+            mysql_close(my);
+            return true;
+        }
+
+        bool DeleteQuestion(const std::string &number)
+        {
+            std::string sql = "DELETE FROM " + oj_questions + " WHERE number=" + number;
+            return ExecuteSql(sql);
         }
 
         // User Auth Methods
@@ -467,7 +610,7 @@ namespace ns_model
 
         bool RegisterUser(const std::string &username, const std::string &password, const std::string &email, const std::string &nickname = "", const std::string &phone = "") {
             // Check if exists
-            std::string sql_check = "select * from " + oj_users + " where username='" + username + "'";
+            std::string sql_check = "select id, username, password, email, nickname, phone, created_at, role from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
             if (!QueryUserMySql(sql_check, &users)) {
                 LOG(ERROR) << "查询用户失败，数据库错误: " << username << "\n";
@@ -493,7 +636,7 @@ namespace ns_model
         }
 
         bool LoginUser(const std::string &username, const std::string &password, User *user) {
-            std::string sql = "select * from " + oj_users + " where username='" + username + "'";
+            std::string sql = "select id, username, password, email, nickname, phone, created_at, role from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
             if (QueryUserMySql(sql, &users) && users.size() == 1) {
                 std::string pwd_hash = SHA256Hash(password);
