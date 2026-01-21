@@ -111,7 +111,7 @@ namespace ns_model
                               "`mem_usage` int(11) DEFAULT 0,"
                               "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
                               "`content` TEXT,"
-                              "`language` varchar(20) DEFAULT 'C++',"
+                              "`language` varchar(20) DEFAULT 'cpp',"
                               "PRIMARY KEY (`id`),"
                               "INDEX `idx_user_id` (`user_id`),"
                               "INDEX `idx_question_id` (`question_id`)"
@@ -150,7 +150,7 @@ namespace ns_model
                 mysql_free_result(res);
                 
                 if (count == 0) {
-                    std::string alter_sql = "ALTER TABLE " + oj_submissions + " ADD COLUMN language VARCHAR(20) DEFAULT 'C++'";
+                    std::string alter_sql = "ALTER TABLE " + oj_submissions + " ADD COLUMN language VARCHAR(20) DEFAULT 'cpp'";
                     LOG(INFO) << "Upgrading submissions table: adding language column" << "\n";
                     mysql_query(my, alter_sql.c_str());
                 }
@@ -574,7 +574,7 @@ namespace ns_model
                 + "cpu_limit=" + std::to_string(q.cpu_limit) + ", "
                 + "mem_limit=" + std::to_string(q.mem_limit) + ", "
                 + "description='" + escape(q.desc) + "', "
-                + "tail_code='" + escape(q.tail) + "', "
+                + "tail='" + escape(q.tail) + "', "
                 + "status=" + std::to_string(q.status)
                 + " WHERE number=" + q.number;
 
