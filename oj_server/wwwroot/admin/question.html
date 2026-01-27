@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Question - Admin</title>
     <link rel="stylesheet" href="../css/admin.css">
+    <style>
+        .diff-easy { color: #28a745; font-weight: bold; }
+        .diff-medium { color: #ffc107; font-weight: bold; }
+        .diff-hard { color: #dc3545; font-weight: bold; }
+        
+        #star option[value="简单"] { color: #28a745; }
+        #star option[value="中等"] { color: #ffc107; }
+        #star option[value="困难"] { color: #dc3545; }
+    </style>
 </head>
 <body>
     <div class="header">
@@ -73,6 +82,17 @@
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
 
+        function updateDifficultyColor() {
+            const select = document.getElementById('star');
+            const val = select.value;
+            select.classList.remove('diff-easy', 'diff-medium', 'diff-hard');
+            if (val === '简单') select.classList.add('diff-easy');
+            else if (val === '中等') select.classList.add('diff-medium');
+            else if (val === '困难') select.classList.add('diff-hard');
+        }
+
+        document.getElementById('star').addEventListener('change', updateDifficultyColor);
+
         async function init() {
             // Check Auth
             try {
@@ -95,6 +115,7 @@
                 document.getElementById('tail').value = JSON.stringify([
                     { "input": "1 2", "expect": "3" }
                 ], null, 2);
+                updateDifficultyColor();
             }
         }
 
@@ -120,6 +141,7 @@
                     document.getElementById('mem_limit').value = q.mem_limit;
                     document.getElementById('description').value = q.description;
                     document.getElementById('tail').value = q.tail;
+                    updateDifficultyColor();
                 }
             }
         }

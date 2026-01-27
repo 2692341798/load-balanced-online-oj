@@ -6,6 +6,11 @@
     <title>题库 - 冻梨OJ</title>
     <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/css/all_questions.css">
+    <!-- Markdown Libraries -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <script>
         // XSS防护
         function escapeHtml(text) {
@@ -110,6 +115,171 @@
                     updateNavAuth({status: -1});
                 });
         });
+
+        // --- View Management ---
+        function switchView(viewId) {
+            // Hide all views
+            ['view-question-list', 'view-discussion-feed', 'view-post-detail', 'view-editor'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            
+            // Show target view
+            const target = document.getElementById(viewId);
+            if (target) {
+                target.style.display = 'block';
+                // Update nav active state
+                document.querySelectorAll('.navbar-links a').forEach(a => a.classList.remove('active'));
+                if (viewId === 'view-question-list') {
+                    document.querySelector('a[href="/all_questions"]').classList.add('active');
+                } else {
+                    document.getElementById('nav-discussion').classList.add('active');
+                }
+            }
+        }
+
+        // --- Discussion Module Logic ---
+        let simplemde = null;
+        
+        function initDiscussion() {
+            // Mock Data
+            const posts = [
+                {
+                    id: 1,
+                    title: "2025 Rewind | 开启你的年度报告",
+                    author: "LeetCode",
+                    date: "2025-12-23",
+                    summary: "年度进度条已趋近 100%，调用「2025 复盘工具」，解锁你的成长报告...",
+                    tags: ["年度回顾", "官方"],
+                    likes: 43,
+                    views: "8.5K",
+                    comments: 92,
+                    isOfficial: true
+                },
+                {
+                    id: 2,
+                    title: "分享 | 800 题纪念",
+                    author: "Apior",
+                    date: "11 小时前",
+                    summary: "时光仓促，犹如一梦。回首时，一个学期已然画上句号...",
+                    tags: ["经验分享", "题解"],
+                    likes: 16,
+                    views: 351,
+                    comments: 3
+                }
+            ];
+            
+            renderFeed(posts);
+        }
+
+        function renderFeed(posts) {
+            const container = document.getElementById('discussion-feed-list');
+            if(!container) return;
+            
+            container.innerHTML = posts.map(post => `
+                <div class="discussion-card" onclick="openPost(${post.id})">
+                    <div class="card-header">
+                        <div class="user-info">
+                            <span class="username">${post.author}</span>
+                            <span class="date">· ${post.date}</span>
+                        </div>
+                        ${post.isOfficial ? '<span class="tag-official">官方</span>' : ''}
+                    </div>
+                    <h3 class="card-title">${post.title}</h3>
+                    <p class="card-summary">${post.summary}</p>
+                    <div class="card-footer">
+                        <div class="stats">
+                            <span>👍 ${post.likes}</span>
+                            <span>👁 ${post.views}</span>
+                            <span>💬 ${post.comments}</span>
+                        </div>
+                        <div class="tags">
+                            ${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openPost(id) {
+            // In a real app, fetch post details
+            switchView('view-post-detail');
+            // Mock render detail
+            document.getElementById('post-detail-content').innerHTML = `
+                <h1>2025 Rewind | 开启你的年度报告</h1>
+                <div class="post-meta">LeetCode · 2025.12.23</div>
+                <div class="markdown-body" id="post-markdown-content">
+                    <p>年度进度条已趋近 100% ✅...</p>
+                    <pre><code>git archive 2025 --format=zip -o growth_2025.zip</code></pre>
+                    <p>这是一段可以进行段内评论的测试文本。请尝试选中这段文字。</p>
+                </div>
+            `;
+            initInlineComments();
+        }
+
+        function openEditor() {
+            switchView('view-editor');
+            if (!simplemde) {
+                simplemde = new EasyMDE({ element: document.getElementById("editor-textarea") });
+            }
+        }
+        
+        // --- Backend API Integration Example ---
+        async function savePost() {
+            if (!simplemde) return;
+            const content = simplemde.value();
+            const title = "New Post"; // Should get from an input field
+            
+            try {
+                // Example of sending data to backend
+                const response = await fetch('/api/discussion/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        tags: ['tag1', 'tag2']
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.status === 0) {
+                    alert('发布成功');
+                    switchView('view-discussion-feed');
+                    // Reload feed
+                    initDiscussion();
+                } else {
+                    alert('发布失败: ' + result.reason);
+                }
+            } catch (e) {
+                console.error('Save post error:', e);
+                // For demo purpose:
+                alert('演示模式：发布成功');
+                switchView('view-discussion-feed');
+            }
+        }
+
+        // Inline Comment Logic
+        function initInlineComments() {
+            const content = document.getElementById('post-markdown-content');
+            const tooltip = document.getElementById('inline-comment-tooltip');
+            
+            content.addEventListener('mouseup', (e) => {
+                const selection = window.getSelection();
+                if (selection.toString().length > 0) {
+                    const range = selection.getRangeAt(0);
+                    const rect = range.getBoundingClientRect();
+                    
+                    tooltip.style.display = 'block';
+                    tooltip.style.top = (window.scrollY + rect.top - 40) + 'px';
+                    tooltip.style.left = (window.scrollX + rect.left + rect.width / 2 - 40) + 'px';
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            });
+        }
     </script>
 </head>
 <body>
@@ -124,7 +294,7 @@
             <a href="/">首页</a>
             <a href="/all_questions" class="active">题库</a>
             <a href="#">竞赛</a>
-            <a href="#">讨论</a>
+            <a href="javascript:void(0)" id="nav-discussion" onclick="switchView('view-discussion-feed'); initDiscussion();">讨论</a>
             <a href="#">求职</a>
         </div>
         <div class="navbar-auth" id="auth-container">
@@ -133,29 +303,58 @@
     </nav>
 
     <div class="question-list-container">
-        <div class="question-list-header">
-            <h1>题库列表</h1>
-            <p style="color: var(--text-secondary);">挑选适合你的题目进行挑战</p>
+        <div id="view-question-list">
+            <div class="question-list-header">
+                <h1>题库列表</h1>
+                <p style="color: var(--text-secondary);">挑选适合你的题目进行挑战</p>
+            </div>
+
+            <table class="question-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">编号</th>
+                        <th>标题</th>
+                        <th style="width: 100px;">难度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#question_list}}
+                    <tr>
+                        <td>{{number}}</td>
+                        <td><a href="/question/{{number}}" class="question-link">{{title}}</a></td>
+                        <td><span class="difficulty-badge difficulty-{{star}}">{{star}}</span></td>
+                    </tr>
+                    {{/question_list}}
+                </tbody>
+            </table>
         </div>
 
-        <table class="question-table">
-            <thead>
-                <tr>
-                    <th style="width: 80px;">编号</th>
-                    <th>标题</th>
-                    <th style="width: 100px;">难度</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{#question_list}}
-                <tr>
-                    <td>{{number}}</td>
-                    <td><a href="/question/{{number}}" class="question-link">{{title}}</a></td>
-                    <td><span class="difficulty-badge difficulty-{{star}}">{{star}}</span></td>
-                </tr>
-                {{/question_list}}
-            </tbody>
-        </table>
+        <!-- Discussion Views -->
+        <div id="view-discussion-feed" style="display:none;">
+            <div class="discussion-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h1 style="color:var(--text-main)">讨论区</h1>
+                <button class="btn-primary" onclick="openEditor()" style="padding:8px 16px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">+ 发起讨论</button>
+            </div>
+            <div id="discussion-feed-list"></div>
+        </div>
+
+        <div id="view-post-detail" style="display:none;">
+            <button class="btn-back" onclick="switchView('view-discussion-feed')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; margin-bottom:10px;">← 返回讨论区</button>
+            <div id="post-detail-content" class="post-detail-container" style="background:var(--card-bg); padding:20px; border-radius:8px;"></div>
+            <div id="inline-comment-tooltip" style="display:none; position:absolute; background:#333; padding:5px; border-radius:4px; z-index:1000; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                <button onclick="alert('添加评论功能')" style="background:none; border:none; color:white; cursor:pointer;">💬 评论</button>
+            </div>
+        </div>
+
+        <div id="view-editor" style="display:none;">
+             <button class="btn-back" onclick="switchView('view-discussion-feed')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; margin-bottom:10px;">← 取消</button>
+             <h2 style="color:var(--text-main); margin-bottom:20px;">发布文章</h2>
+             <input type="text" id="post-title-input" placeholder="请输入标题" style="width:100%; padding:10px; margin-bottom:15px; background:var(--card-bg); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;">
+             <textarea id="editor-textarea"></textarea>
+             <div style="margin-top:20px; text-align:right;">
+                <button class="btn-primary" onclick="savePost()" style="padding:8px 24px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">发布</button>
+             </div>
+        </div>
 
         <div class="footer">
             &copy; 2026 冻梨在线判题平台

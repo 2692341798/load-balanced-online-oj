@@ -329,5 +329,5 @@ chmod +x oj_server/oj_server compile_server/compile_server
 ---
 
 **最后更新时间**: 2026-01-21  
-**文档版本**: v0.3.0  
+**文档版本**: v0.3.1  
 **维护团队**: 在线评测系统开发团队
