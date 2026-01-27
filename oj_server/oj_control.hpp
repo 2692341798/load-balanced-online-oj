@@ -246,6 +246,53 @@ namespace ns_control
         {
         }
 
+        bool UploadImage(const Request &req, std::string *json_out)
+        {
+            if (!req.has_file("image")) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "No image file uploaded";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+
+            const auto &file = req.get_file_value("image");
+            std::string filename = file.filename;
+            std::string content = file.content;
+            
+            // Generate unique filename
+            size_t ext_pos = filename.find_last_of('.');
+            std::string ext = (ext_pos != std::string::npos) ? filename.substr(ext_pos) : ".jpg";
+            std::string new_filename = std::to_string(time(nullptr)) + "_" + std::to_string(rand()) + ext;
+            
+            // Save path
+            std::string path = "./wwwroot/uploads/" + new_filename;
+            
+            // Create uploads directory if not exists
+            // Assuming wwwroot exists, mkdir uploads
+            system("mkdir -p ./wwwroot/uploads");
+            
+            std::ofstream out(path, std::ios::binary);
+            if (!out.is_open()) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Failed to save file";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+            out.write(content.c_str(), content.size());
+            out.close();
+            
+            Json::Value res;
+            res["status"] = 0;
+            res["url"] = "/uploads/" + new_filename;
+            Json::FastWriter w;
+            *json_out = w.write(res);
+            return true;
+        }
+
     public:
         void RecoveryMachine()
         {
@@ -857,6 +904,229 @@ namespace ns_control
                 return true;
             }
             return false;
+        }
+
+        bool AddInlineComment(const std::string &user_id, const std::string &post_id, const std::string &content, const std::string &selected_text, const std::string &parent_id, std::string *json_out)
+        {
+            InlineComment c;
+            c.user_id = user_id;
+            c.post_id = post_id;
+            c.content = content;
+            c.selected_text = selected_text;
+            c.parent_id = parent_id;
+            
+            if (model_.AddInlineComment(c)) {
+                Json::Value res;
+                res["status"] = 0;
+                res["reason"] = "Success";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+        }
+
+        bool GetInlineComments(const std::string &post_id, std::string *json_out)
+        {
+            std::vector<InlineComment> comments;
+            if (model_.GetInlineComments(post_id, &comments)) {
+                Json::Value root;
+                root["status"] = 0;
+                Json::Value list;
+                for (const auto &c : comments) {
+                    Json::Value item;
+                    item["id"] = c.id;
+                    item["user_id"] = c.user_id;
+                    item["username"] = c.username;
+                    item["post_id"] = c.post_id;
+                    item["content"] = c.content;
+                    item["selected_text"] = c.selected_text;
+                    item["parent_id"] = c.parent_id;
+                    item["created_at"] = c.created_at;
+                    list.append(item);
+                }
+                root["data"] = list;
+                Json::FastWriter w;
+                *json_out = w.write(root);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+        }
+
+        bool DeleteInlineComment(const std::string &comment_id, const std::string &user_id, int role, std::string *json_out)
+        {
+             if (model_.DeleteInlineComment(comment_id, user_id, role)) {
+                 Json::Value res;
+                 res["status"] = 0;
+                 res["reason"] = "Success";
+                 Json::FastWriter w;
+                 *json_out = w.write(res);
+                 return true;
+             } else {
+                 Json::Value res;
+                 res["status"] = 1;
+                 res["reason"] = "Failed to delete (Permission Denied or Not Found)";
+                 Json::FastWriter w;
+                 *json_out = w.write(res);
+                 return false;
+             }
+        }
+
+        bool GetAllDiscussions(std::string *json_out)
+        {
+            std::vector<Discussion> discussions;
+            if (model_.GetAllDiscussions(&discussions)) {
+                Json::Value root;
+                root["status"] = 0;
+                Json::Value list;
+                for (const auto &d : discussions) {
+                    Json::Value item;
+                    item["id"] = d.id;
+                    item["title"] = d.title;
+                    item["summary"] = d.content.length() > 100 ? d.content.substr(0, 100) + "..." : d.content;
+                    item["author"] = d.author_name;
+                    item["date"] = d.created_at;
+                    item["likes"] = d.likes;
+                    item["views"] = d.views;
+                    item["comments"] = d.comments_count;
+                    item["isOfficial"] = d.is_official;
+                    list.append(item);
+                }
+                root["data"] = list;
+                Json::FastWriter w;
+                *json_out = w.write(root);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+        }
+
+        bool GetDiscussion(const std::string &id, std::string *json_out)
+        {
+            Discussion d;
+            if (model_.GetOneDiscussion(id, &d)) {
+                Json::Value root;
+                root["status"] = 0;
+                Json::Value item;
+                item["id"] = d.id;
+                item["title"] = d.title;
+                item["content"] = d.content;
+                item["author"] = d.author_name;
+                item["date"] = d.created_at;
+                item["likes"] = d.likes;
+                item["views"] = d.views;
+                item["comments"] = d.comments_count;
+                item["isOfficial"] = d.is_official;
+                root["data"] = item;
+                Json::FastWriter w;
+                *json_out = w.write(root);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Not Found";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+        }
+
+        bool AddDiscussion(const std::string &user_id, const std::string &title, const std::string &content, std::string *json_out)
+        {
+            Discussion d;
+            d.title = title;
+            d.content = content;
+            d.author_id = user_id;
+            d.is_official = false; // Default false
+            
+            if (model_.AddDiscussion(d)) {
+                Json::Value res;
+                res["status"] = 0;
+                res["reason"] = "Success";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+        }
+
+        bool AddArticleComment(const std::string &user_id, const std::string &post_id, const std::string &content, std::string *json_out)
+        {
+            ArticleComment c;
+            c.user_id = user_id;
+            c.post_id = post_id;
+            c.content = content;
+            
+            if (model_.AddArticleComment(c)) {
+                Json::Value res;
+                res["status"] = 0;
+                res["reason"] = "Success";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+        }
+
+        bool GetArticleComments(const std::string &post_id, std::string *json_out)
+        {
+            std::vector<ArticleComment> comments;
+            if (model_.GetArticleComments(post_id, &comments)) {
+                Json::Value root;
+                root["status"] = 0;
+                Json::Value list;
+                for (const auto &c : comments) {
+                    Json::Value item;
+                    item["id"] = c.id;
+                    item["user_id"] = c.user_id;
+                    item["username"] = c.username;
+                    item["post_id"] = c.post_id;
+                    item["content"] = c.content;
+                    item["created_at"] = c.created_at;
+                    item["likes"] = c.likes;
+                    list.append(item);
+                }
+                root["data"] = list;
+                Json::FastWriter w;
+                *json_out = w.write(root);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
         }
     };
 } // namespace ns_control

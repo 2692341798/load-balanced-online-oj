@@ -11,6 +11,138 @@
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <style>
+        .inline-comment-target {
+            border-bottom: 1px dashed #999;
+            cursor: pointer;
+            position: relative;
+        }
+        .inline-comment-target:hover {
+            border-bottom-color: #2cbb5d;
+            background-color: rgba(44, 187, 93, 0.1);
+        }
+        
+        /* Side Drawer */
+        .comment-drawer {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            background: var(--card-bg);
+            box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+            z-index: 1500;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+        .comment-drawer.visible {
+            right: 0;
+        }
+        .comment-drawer-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .comment-drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .comment-drawer-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            z-index: 1400;
+            display: none;
+        }
+        .comment-drawer-backdrop.visible {
+            display: block;
+        }
+        
+        .selected-text-quote {
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border-left: 3px solid #2cbb5d;
+            margin-bottom: 20px;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        /* EasyMDE Dark Mode Customization */
+        .EasyMDEContainer {
+            background: transparent;
+        }
+        .editor-toolbar {
+            background-color: rgba(255,255,255,0.05) !important;
+            border-color: rgba(255,255,255,0.1) !important;
+            display: flex;
+            flex-wrap: wrap;
+            padding: 8px !important;
+        }
+        .editor-toolbar button {
+            color: var(--text-main) !important;
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 4px !important;
+            margin: 2px !important;
+            font-size: 16px !important;
+        }
+        .editor-toolbar button:hover, .editor-toolbar button.active {
+            background-color: rgba(255,255,255,0.1) !important;
+            border: none !important;
+        }
+        .editor-toolbar i.separator {
+            border-left: 1px solid rgba(255,255,255,0.1) !important;
+            border-right: none !important;
+            margin: 0 8px !important;
+        }
+        .CodeMirror {
+            background-color: var(--card-bg) !important;
+            color: var(--text-main) !important;
+            border-color: rgba(255,255,255,0.1) !important;
+            min-height: 400px;
+        }
+        .CodeMirror-cursor {
+            border-color: var(--text-main) !important;
+        }
+        .editor-statusbar {
+            color: var(--text-secondary) !important;
+        }
+        .editor-preview {
+            background-color: var(--card-bg) !important;
+        }
+        .editor-preview-side {
+            border-color: rgba(255,255,255,0.1) !important;
+        }
+        
+        /* Custom Fullscreen Exit Button */
+        #exit-fullscreen-btn {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            z-index: 2000;
+            padding: 10px 20px;
+            background: rgba(44, 187, 93, 0.9);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        #exit-fullscreen-btn:hover {
+            background: #2cbb5d;
+        }
+    </style>
+</head>
     <script>
         // XSS防护
         function escapeHtml(text) {
@@ -79,6 +211,7 @@
         function updateNavAuth(data) {
             const authContainer = document.getElementById('auth-container');
             if (data.status === 0 && data.username) {
+                currentUser = data;
                 authContainer.innerHTML = `
                     <div class="user-profile" onclick="toggleUserMenu(event)">
                         <div class="user-avatar">${data.username.charAt(0).toUpperCase()}</div>
@@ -97,6 +230,15 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             console.log('[all_questions] DOMContentLoaded');
+            
+            // Check for view parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            if (viewParam === 'discussion') {
+                switchView('view-discussion-feed');
+                initDiscussion();
+            }
+
             const authContainer = document.getElementById('auth-container');
             if (!authContainer) {
                 console.error('[all_questions] #auth-container not found');
@@ -140,135 +282,536 @@
 
         // --- Discussion Module Logic ---
         let simplemde = null;
+        let currentUser = null;
+        let currentPostRenderedHTML = "";
         
-        function initDiscussion() {
-            // Mock Data
-            const posts = [
-                {
-                    id: 1,
-                    title: "2025 Rewind | 开启你的年度报告",
-                    author: "LeetCode",
-                    date: "2025-12-23",
-                    summary: "年度进度条已趋近 100%，调用「2025 复盘工具」，解锁你的成长报告...",
-                    tags: ["年度回顾", "官方"],
-                    likes: 43,
-                    views: "8.5K",
-                    comments: 92,
-                    isOfficial: true
-                },
-                {
-                    id: 2,
-                    title: "分享 | 800 题纪念",
-                    author: "Apior",
-                    date: "11 小时前",
-                    summary: "时光仓促，犹如一梦。回首时，一个学期已然画上句号...",
-                    tags: ["经验分享", "题解"],
-                    likes: 16,
-                    views: 351,
-                    comments: 3
+        async function initDiscussion() {
+            try {
+                const response = await fetch('/api/discussions');
+                const res = await response.json();
+                if (res.status === 0) {
+                    renderFeed(res.data || []);
+                } else {
+                    console.error('Failed to load discussions');
                 }
-            ];
-            
-            renderFeed(posts);
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         function renderFeed(posts) {
             const container = document.getElementById('discussion-feed-list');
             if(!container) return;
             
+            if (!posts) posts = [];
+
+            if (posts.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">暂无讨论，快来发布第一篇吧！</div>';
+                return;
+            }
+            
             container.innerHTML = posts.map(post => `
                 <div class="discussion-card" onclick="openPost(${post.id})">
                     <div class="card-header">
                         <div class="user-info">
-                            <span class="username">${post.author}</span>
+                            <span class="username">${escapeHtml(post.author)}</span>
                             <span class="date">· ${post.date}</span>
                         </div>
                         ${post.isOfficial ? '<span class="tag-official">官方</span>' : ''}
                     </div>
-                    <h3 class="card-title">${post.title}</h3>
-                    <p class="card-summary">${post.summary}</p>
+                    <h3 class="card-title">${escapeHtml(post.title)}</h3>
+                    <p class="card-summary">${escapeHtml(post.summary)}</p>
                     <div class="card-footer">
                         <div class="stats">
                             <span>👍 ${post.likes}</span>
                             <span>👁 ${post.views}</span>
                             <span>💬 ${post.comments}</span>
                         </div>
-                        <div class="tags">
-                            ${post.tags.map(t => `<span class="tag">${t}</span>`).join('')}
-                        </div>
                     </div>
                 </div>
             `).join('');
         }
 
-        function openPost(id) {
-            // In a real app, fetch post details
+        let currentPostId = "";
+
+        async function openPost(id) {
             switchView('view-post-detail');
-            // Mock render detail
-            document.getElementById('post-detail-content').innerHTML = `
-                <h1>2025 Rewind | 开启你的年度报告</h1>
-                <div class="post-meta">LeetCode · 2025.12.23</div>
-                <div class="markdown-body" id="post-markdown-content">
-                    <p>年度进度条已趋近 100% ✅...</p>
-                    <pre><code>git archive 2025 --format=zip -o growth_2025.zip</code></pre>
-                    <p>这是一段可以进行段内评论的测试文本。请尝试选中这段文字。</p>
-                </div>
-            `;
-            initInlineComments();
+            currentPostId = id;
+            document.getElementById('post-detail-content').innerHTML = '<div class="loading">加载中...</div>';
+            
+            try {
+                const response = await fetch('/api/discussion/' + id);
+                const res = await response.json();
+                if (res.status === 0 && res.data) {
+                    const post = res.data;
+                    const renderedHTML = marked.parse(post.content || '');
+                    currentPostRenderedHTML = renderedHTML;
+                    document.getElementById('post-detail-content').innerHTML = `
+                        <h1>${escapeHtml(post.title)}</h1>
+                        <div class="post-meta">${escapeHtml(post.author)} · ${post.date} · 👁 ${post.views}</div>
+                        <div class="markdown-body" id="post-markdown-content">
+                            ${renderedHTML} 
+                        </div>
+                    `;
+                    initInlineComments();
+                    loadInlineComments();
+                    loadArticleComments();
+                } else {
+                    document.getElementById('post-detail-content').innerHTML = '<div class="error">加载失败: ' + (res.reason || '数据为空') + '</div>';
+                }
+            } catch (e) {
+                console.error(e);
+                document.getElementById('post-detail-content').innerHTML = '<div class="error">加载异常</div>';
+            }
         }
 
         function openEditor() {
             switchView('view-editor');
             if (!simplemde) {
-                simplemde = new EasyMDE({ element: document.getElementById("editor-textarea") });
-            }
-        }
-        
-        // --- Backend API Integration Example ---
-        async function savePost() {
-            if (!simplemde) return;
-            const content = simplemde.value();
-            const title = "New Post"; // Should get from an input field
-            
-            try {
-                // Example of sending data to backend
-                const response = await fetch('/api/discussion/posts', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        title: title,
-                        content: content,
-                        tags: ['tag1', 'tag2']
-                    })
+                simplemde = new EasyMDE({ 
+                    element: document.getElementById("editor-textarea"),
+                    toolbar: [
+                        "bold", "italic", "heading", "|", 
+                        "quote", "unordered-list", "ordered-list", "|",
+                        "link", 
+                        {
+                            name: "image",
+                            action: function customImage(editor){
+                                document.getElementById('image-upload-input').click();
+                            },
+                            className: "fa fa-image",
+                            title: "上传图片",
+                        },
+                        "|",
+                        "preview", "side-by-side", "fullscreen", "|", "guide"
+                    ],
+                    status: ["lines", "words"], // Simplified status bar
+                    spellChecker: false,
                 });
                 
-                const result = await response.json();
-                if (result.status === 0) {
-                    alert('发布成功');
-                    switchView('view-discussion-feed');
-                    // Reload feed
-                    initDiscussion();
+                // Add fullscreen event listener
+                simplemde.codemirror.on('refresh', function() {
+                    const isFullscreen = simplemde.isFullscreenActive();
+                    const btn = document.getElementById('exit-fullscreen-btn');
+                    if(btn) btn.style.display = isFullscreen ? 'block' : 'none';
+                });
+            }
+            simplemde.value("");
+            document.getElementById('post-title-input').value = "";
+        }
+        
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Check file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('仅支持 JPG, PNG, GIF, WebP 格式的图片');
+                return;
+            }
+            
+            // Check file size (e.g. 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('图片大小不能超过 5MB');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch('/api/upload_image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const res = await response.json();
+                
+                if (res.status === 0) {
+                    const cm = simplemde.codemirror;
+                    const doc = cm.getDoc();
+                    const cursor = doc.getCursor();
+                    const imageMarkdown = `![](${res.url})`;
+                    doc.replaceRange(imageMarkdown, cursor);
                 } else {
-                    alert('发布失败: ' + result.reason);
+                    alert('上传失败: ' + res.reason);
                 }
             } catch (e) {
-                console.error('Save post error:', e);
-                // For demo purpose:
-                alert('演示模式：发布成功');
-                switchView('view-discussion-feed');
+                console.error(e);
+                alert('上传出错');
+            }
+            
+            // Reset input
+            event.target.value = '';
+        }
+
+        function exitFullscreen() {
+        if (simplemde && simplemde.isFullscreenActive()) {
+            try {
+                simplemde.toggleFullScreen();
+            } catch (e) {
+                console.warn('Failed to toggle fullscreen:', e);
+            }
+        }
+    }
+
+        async function savePost() {
+            const title = document.getElementById('post-title-input').value;
+            const content = simplemde.value();
+            
+            if(!title || !content) {
+                alert('标题和内容不能为空');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/discussion', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({title, content})
+                });
+                const res = await response.json();
+                if(res.status === 0) {
+                    alert('发布成功');
+                    switchView('view-discussion-feed');
+                    initDiscussion();
+                } else if (res.status === 401) {
+                    alert('请先登录');
+                } else {
+                    alert('发布失败: ' + res.reason);
+                }
+            } catch(e) {
+                console.error(e);
+                alert('发布失败');
             }
         }
 
-        // Inline Comment Logic
+
+        let currentSelectionText = "";
+
+        function showInlineCommentModal() {
+            if (!currentSelectionText) return;
+            document.getElementById('inline-comment-selected-text').innerText = currentSelectionText;
+            
+            document.getElementById('inline-comment-modal').style.display = 'flex';
+            document.getElementById('inline-comment-tooltip').style.display = 'none';
+
+            // Reset textarea value
+            document.getElementById('inline-comment-input').value = "";
+        }
+
+        function closeInlineCommentModal() {
+            document.getElementById('inline-comment-modal').style.display = 'none';
+        }
+
+        async function submitInlineComment() {
+            const content = document.getElementById('inline-comment-input').value;
+            if (!content) return;
+
+            try {
+                const response = await fetch('/api/inline_comment/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        post_id: currentPostId,
+                        content: content,
+                        selected_text: currentSelectionText
+                    })
+                });
+                const res = await response.json();
+                if (res.status === 0) {
+                    closeInlineCommentModal();
+                    loadInlineComments(); // Refresh highlights
+                    alert('评论发布成功');
+                } else if (res.status === 401) {
+                    alert('请先登录');
+                } else {
+                    alert('发布失败: ' + res.reason);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('发布失败，请稍后重试');
+            }
+        }
+
+        let allInlineComments = [];
+
+        async function loadInlineComments() {
+        try {
+            const response = await fetch('/api/inline_comments/' + currentPostId);
+            const res = await response.json();
+            if (res.status === 0) {
+                allInlineComments = res.data || [];
+                highlightInlineComments(allInlineComments);
+            }
+        } catch (e) {
+            console.error('Failed to load comments', e);
+        }
+    }
+
+    function highlightInlineComments(comments) {
+        const contentDiv = document.getElementById('post-markdown-content');
+        if (!contentDiv) return;
+        
+        if (!comments) comments = [];
+
+        // 1. Reset to original clean HTML to prevent nested wrapping/duplication on reload
+            if (currentPostRenderedHTML) {
+                contentDiv.innerHTML = currentPostRenderedHTML;
+            }
+
+            // 2. Sort by length descending to process longer phrases first
+            const uniqueTexts = [...new Set(comments.map(c => c.selected_text))]
+                .sort((a, b) => b.length - a.length);
+            
+            let html = contentDiv.innerHTML;
+            uniqueTexts.forEach(text => {
+                if(!text) return;
+                
+                // Escape regex special chars in the text
+                const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                
+                try {
+                    // 3. Use Lookbehind Regex: Only match text NOT preceded by an opening tag
+                    // This prevents replacing text inside attributes like onclick="..."
+                    const regex = new RegExp(`(?<!<[^>]*)${escapedText}`, 'g');
+                    
+                    html = html.replace(regex, `<span class="inline-comment-target" onclick="openCommentDrawer('${escapeHtml(text.replace(/'/g, "\\'"))}')">${text}</span>`);
+                } catch (e) {
+                    console.error("Regex error for text:", text, e);
+                }
+            });
+            contentDiv.innerHTML = html;
+        }
+
+        function buildCommentTree(comments) {
+            const map = {};
+            const roots = [];
+            // Deep copy to avoid modifying original
+            const nodes = comments.map(c => ({...c, children: []}));
+            
+            nodes.forEach(c => {
+                map[c.id] = c;
+            });
+            
+            nodes.forEach(c => {
+                if (c.parent_id && c.parent_id !== "0" && map[c.parent_id]) {
+                    map[c.parent_id].children.push(c);
+                } else {
+                    roots.push(c);
+                }
+            });
+            return roots;
+        }
+
+        function renderCommentNode(c, depth = 0) {
+            const isOwner = (currentUser && currentUser.username === c.username) || (currentUser && currentUser.role === 1);
+            const indent = depth * 20;
+            
+            return `
+                <div class="comment-item" style="margin-left: ${indent}px; border-left: ${depth > 0 ? '2px solid rgba(255,255,255,0.1)' : 'none'}; padding-left: ${depth > 0 ? '10px' : '0'}; margin-bottom: 15px;">
+                    <div class="comment-meta" style="display:flex; justify-content:space-between; font-size:0.9em; margin-bottom:5px;">
+                        <div>
+                            <span class="username" style="color:#2cbb5d; font-weight:bold;">${escapeHtml(c.username)}</span>
+                            <span class="date" style="color:var(--text-secondary); margin-left:10px;">${c.created_at}</span>
+                        </div>
+                        <div class="actions">
+                            <button onclick="showReplyInput('${c.id}')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:0.9em; margin-right:10px;">回复</button>
+                            ${isOwner ? `<button onclick="deleteComment('${c.id}')" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.9em;">删除</button>` : ''}
+                        </div>
+                    </div>
+                    <div class="comment-content" style="color:var(--text-main); line-height:1.5;">${DOMPurify.sanitize(marked.parse(c.content))}</div>
+                    
+                    <div id="reply-input-${c.id}" class="reply-input-container" style="display:none; margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:4px;">
+                        <textarea id="reply-text-${c.id}" placeholder="回复 ${escapeHtml(c.username)}..." style="width:100%; height:60px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px; padding:5px; margin-bottom:5px;"></textarea>
+                        <div style="text-align:right;">
+                             <button onclick="document.getElementById('reply-input-${c.id}').style.display='none'" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; margin-right:10px;">取消</button>
+                             <button onclick="submitReply('${c.id}', '${escapeHtml(c.selected_text.replace(/'/g, "\\'"))}')" style="padding:4px 12px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">提交</button>
+                        </div>
+                    </div>
+                    
+                    <div class="children">
+                        ${c.children.map(child => renderCommentNode(child, depth + 1)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function openCommentDrawer(text) {
+            const drawer = document.getElementById('comment-drawer');
+            const backdrop = document.getElementById('drawer-backdrop');
+            const body = document.getElementById('drawer-body');
+            
+            // Filter comments for this text
+            const comments = allInlineComments.filter(c => c.selected_text === text);
+            const commentTree = buildCommentTree(comments);
+            
+            body.innerHTML = `
+                <div class="selected-text-quote">"${escapeHtml(text)}"</div>
+                <div class="comments-container">
+                    ${commentTree.length > 0 ? commentTree.map(c => renderCommentNode(c)).join('') : '<div style="color:var(--text-secondary); text-align:center; padding:20px;">暂无评论</div>'}
+                </div>
+            `;
+            
+            drawer.classList.add('visible');
+            backdrop.classList.add('visible');
+        }
+
+        function showReplyInput(id) {
+            // Hide all other reply inputs? No, let user have multiple open if they want.
+            const el = document.getElementById(`reply-input-${id}`);
+            if(el) {
+                el.style.display = 'block';
+                const textarea = document.getElementById(`reply-text-${id}`);
+                if(textarea) textarea.focus();
+            }
+        }
+
+        async function submitReply(parentId, selectedText) {
+            const textarea = document.getElementById(`reply-text-${parentId}`);
+            const content = textarea.value;
+            if(!content) return;
+            
+            try {
+                const response = await fetch('/api/inline_comment/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        post_id: currentPostId,
+                        content: content,
+                        selected_text: selectedText,
+                        parent_id: parentId
+                    })
+                });
+                const res = await response.json();
+                if (res.status === 0) {
+                    alert('回复成功');
+                    // Reload comments
+                    await loadInlineComments();
+                    // Re-open drawer for this text to show new comment
+                    // We need to find the text again.
+                    openCommentDrawer(selectedText); 
+                } else if (res.status === 401) {
+                    alert('请先登录');
+                } else {
+                    alert('回复失败: ' + res.reason);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('回复失败');
+            }
+        }
+
+        async function deleteComment(id) {
+            if(!confirm('确定要删除这条评论吗？')) return;
+            
+            try {
+                const response = await fetch('/api/inline_comment/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        comment_id: id
+                    })
+                });
+                const res = await response.json();
+                if (res.status === 0) {
+                    alert('删除成功');
+                    // We need to refresh. But we need to know the selected text to re-open the drawer.
+                    // Let's find the comment in allInlineComments before reloading
+                    const comment = allInlineComments.find(c => c.id == id); // loose equality for string/int match
+                    const text = comment ? comment.selected_text : null;
+                    
+                    await loadInlineComments();
+                    if(text) openCommentDrawer(text);
+                } else {
+                    alert('删除失败: ' + res.reason);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('删除失败');
+            }
+        }
+
+        function closeCommentDrawer() {
+             document.getElementById('comment-drawer').classList.remove('visible');
+             document.getElementById('drawer-backdrop').classList.remove('visible');
+        }
+
+        async function loadArticleComments() {
+         try {
+             const response = await fetch('/api/article_comments/' + currentPostId);
+             const res = await response.json();
+             if (res.status === 0) {
+                 renderArticleComments(res.data || []);
+             }
+         } catch (e) {
+             console.error(e);
+         }
+    }
+
+    function renderArticleComments(comments) {
+        const container = document.getElementById('article-comments-list');
+        if (!container) return;
+        
+        if (!comments) comments = [];
+
+        if (comments.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-secondary); padding:10px;">暂无评论</div>';
+                return;
+            }
+
+            container.innerHTML = comments.map(c => `
+                <div class="comment-item" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 15px 0;">
+                    <div class="comment-meta" style="margin-bottom:5px; font-size:0.9em; color:var(--text-secondary);">
+                        <span class="username" style="color:#2cbb5d; margin-right:10px;">${escapeHtml(c.username)}</span>
+                        <span class="date">${c.created_at}</span>
+                    </div>
+                    <div class="comment-content" style="color:var(--text-main);">${escapeHtml(c.content)}</div>
+                </div>
+            `).join('');
+        }
+
+        async function submitArticleComment() {
+            const content = document.getElementById('article-comment-input').value;
+            if(!content) return;
+            
+            try {
+                const response = await fetch('/api/article_comment/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        post_id: currentPostId,
+                        content: content
+                    })
+                });
+                const res = await response.json();
+                if(res.status === 0) {
+                    document.getElementById('article-comment-input').value = "";
+                    loadArticleComments();
+                } else if(res.status === 401) {
+                    alert('请先登录');
+                } else {
+                    alert('发布失败: ' + res.reason);
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
         function initInlineComments() {
             const content = document.getElementById('post-markdown-content');
             const tooltip = document.getElementById('inline-comment-tooltip');
+            const btn = document.getElementById('btn-trigger-comment');
+            
+            if (btn) {
+                btn.onclick = showInlineCommentModal;
+            }
             
             content.addEventListener('mouseup', (e) => {
                 const selection = window.getSelection();
-                if (selection.toString().length > 0) {
+                const text = selection.toString();
+                if (text.length > 0) {
+                    currentSelectionText = text;
                     const range = selection.getRangeAt(0);
                     const rect = range.getBoundingClientRect();
                     
@@ -294,7 +837,7 @@
             <a href="/">首页</a>
             <a href="/all_questions" class="active">题库</a>
             <a href="#">竞赛</a>
-            <a href="javascript:void(0)" id="nav-discussion" onclick="switchView('view-discussion-feed'); initDiscussion();">讨论</a>
+            <a href="/all_questions?view=discussion" id="nav-discussion">讨论</a>
             <a href="#">求职</a>
         </div>
         <div class="navbar-auth" id="auth-container">
@@ -341,8 +884,54 @@
         <div id="view-post-detail" style="display:none;">
             <button class="btn-back" onclick="switchView('view-discussion-feed')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; margin-bottom:10px;">← 返回讨论区</button>
             <div id="post-detail-content" class="post-detail-container" style="background:var(--card-bg); padding:20px; border-radius:8px;"></div>
+            
+            <!-- Global Article Comments -->
+            <div class="article-comments-section" style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <h3 style="color:var(--text-main); margin-bottom: 15px;">文章评论</h3>
+                
+                <div class="comment-form" style="margin-bottom:20px;">
+                    <textarea id="article-comment-input" placeholder="发表你的看法..." style="width:100%; height:80px; padding:10px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px; margin-bottom:10px;"></textarea>
+                    <div style="text-align:right;">
+                        <button onclick="submitArticleComment()" class="btn-primary" style="padding:6px 16px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">发表评论</button>
+                    </div>
+                </div>
+                
+                <div id="article-comments-list"></div>
+            </div>
+
             <div id="inline-comment-tooltip" style="display:none; position:absolute; background:#333; padding:5px; border-radius:4px; z-index:1000; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-                <button onclick="alert('添加评论功能')" style="background:none; border:none; color:white; cursor:pointer;">💬 评论</button>
+                <button id="btn-trigger-comment" style="background:none; border:none; color:white; cursor:pointer;">💬 评论</button>
+            </div>
+        </div>
+
+        <!-- Comment Drawer -->
+        <div id="drawer-backdrop" class="comment-drawer-backdrop" onclick="closeCommentDrawer()"></div>
+        <div id="comment-drawer" class="comment-drawer">
+            <div class="comment-drawer-header">
+                <h3 style="color:var(--text-main); margin:0;">段内评论</h3>
+                <button onclick="closeCommentDrawer()" style="background:none; border:none; color:var(--text-secondary); font-size:1.2em; cursor:pointer;">×</button>
+            </div>
+            <div id="drawer-body" class="comment-drawer-body"></div>
+        </div>
+
+        <!-- Inline Comment Modal -->
+        <div id="inline-comment-modal" class="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; justify-content:center; align-items:center;">
+            <div class="modal-content" style="width: 400px; background:var(--card-bg); padding:20px; border-radius:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                <div class="modal-header" style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <h3 style="color:var(--text-main); margin:0;">添加评论</h3>
+                    <button onclick="closeInlineCommentModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.2em; cursor:pointer;">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 10px; padding: 10px; background:rgba(255,255,255,0.05); border-radius: 4px; font-size: 0.9em; color: var(--text-secondary);">
+                        <div style="margin-bottom: 4px;">选中内容：</div>
+                        <div id="inline-comment-selected-text" style="font-style: italic; color: var(--text-main); max-height: 60px; overflow: hidden; text-overflow: ellipsis;"></div>
+                    </div>
+                    <textarea id="inline-comment-input" placeholder="写下你的想法..." style="width: 100%; height: 100px; padding: 10px; background:rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text-main); border-radius: 4px; resize: vertical; margin-bottom: 15px;"></textarea>
+                </div>
+                <div class="modal-footer" style="text-align:right;">
+                    <button onclick="closeInlineCommentModal()" style="padding:8px 16px; background:transparent; border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:var(--text-main); cursor:pointer; margin-right:10px;">取消</button>
+                    <button onclick="submitInlineComment()" style="padding:8px 16px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">发布</button>
+                </div>
             </div>
         </div>
 
@@ -351,6 +940,11 @@
              <h2 style="color:var(--text-main); margin-bottom:20px;">发布文章</h2>
              <input type="text" id="post-title-input" placeholder="请输入标题" style="width:100%; padding:10px; margin-bottom:15px; background:var(--card-bg); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px;">
              <textarea id="editor-textarea"></textarea>
+             <!-- Hidden file input for image upload -->
+             <input type="file" id="image-upload-input" accept="image/png, image/jpeg, image/gif, image/webp" style="display:none;" onchange="handleImageUpload(event)">
+             <!-- Exit Fullscreen Button -->
+             <button id="exit-fullscreen-btn" onclick="exitFullscreen()">退出全屏</button>
+             
              <div style="margin-top:20px; text-align:right;">
                 <button class="btn-primary" onclick="savePost()" style="padding:8px 24px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">发布</button>
              </div>

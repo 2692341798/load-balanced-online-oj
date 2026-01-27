@@ -291,6 +291,61 @@ int main()
         ctrl.SearchSubmissions(req, &json_out);
         resp.set_content(json_out, "application/json;charset=utf-8");
     });
+
+    // API Add Inline Comment
+    svr.Post("/api/inline_comment/add", [&ctrl](const Request &req, Response &resp){
+        User user;
+        Json::Value res_json;
+        if (!ctrl.AuthCheck(req, &user)) {
+             res_json["status"] = 401;
+             res_json["reason"] = "请先登录";
+             Json::FastWriter w;
+             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             return;
+        }
+
+        Json::Reader reader;
+        Json::Value root;
+        reader.parse(req.body, root);
+        std::string post_id = root["post_id"].asString();
+        std::string content = root["content"].asString();
+        std::string selected_text = root["selected_text"].asString();
+        std::string parent_id = root.isMember("parent_id") ? root["parent_id"].asString() : "0";
+
+        std::string json_out;
+        ctrl.AddInlineComment(user.id, post_id, content, selected_text, parent_id, &json_out);
+        resp.set_content(json_out, "application/json;charset=utf-8");
+    });
+
+    // API Delete Inline Comment
+    svr.Post("/api/inline_comment/delete", [&ctrl](const Request &req, Response &resp){
+        User user;
+        Json::Value res_json;
+        if (!ctrl.AuthCheck(req, &user)) {
+             res_json["status"] = 401;
+             res_json["reason"] = "请先登录";
+             Json::FastWriter w;
+             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             return;
+        }
+
+        Json::Reader reader;
+        Json::Value root;
+        reader.parse(req.body, root);
+        std::string comment_id = root["comment_id"].asString();
+
+        std::string json_out;
+        ctrl.DeleteInlineComment(comment_id, user.id, user.role, &json_out);
+        resp.set_content(json_out, "application/json;charset=utf-8");
+    });
+
+    // API Get Inline Comments
+    svr.Get(R"(/api/inline_comments/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string post_id = req.matches[1];
+        std::string json_out;
+        ctrl.GetInlineComments(post_id, &json_out);
+        resp.set_content(json_out, "application/json;charset=utf-8");
+    });
     
     // --- Admin APIs ---
     svr.Get("/api/admin/questions", [&ctrl](const Request &req, Response &resp){
@@ -324,8 +379,97 @@ int main()
         resp.set_redirect("/admin/index.html");
     });
     
+    // --- Discussion & Article Comments APIs ---
+    
+    // Get Discussion List
+    svr.Get("/api/discussions", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.GetAllDiscussions(&json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    // Get Single Discussion
+    svr.Get(R"(/api/discussion/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string id = req.matches[1];
+        std::string json;
+        ctrl.GetDiscussion(id, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    // Add Discussion
+    svr.Post("/api/discussion", [&ctrl](const Request &req, Response &resp){
+        User user;
+        Json::Value res_json;
+        if (!ctrl.AuthCheck(req, &user)) {
+             res_json["status"] = 401;
+             res_json["reason"] = "Unauthorized";
+             Json::FastWriter w;
+             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             return;
+        }
+        
+        Json::Reader reader;
+        Json::Value root;
+        reader.parse(req.body, root);
+        std::string title = root["title"].asString();
+        std::string content = root["content"].asString();
+        
+        std::string json;
+        ctrl.AddDiscussion(user.id, title, content, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    // Get Article Comments
+    svr.Get(R"(/api/article_comments/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string id = req.matches[1];
+        std::string json;
+        ctrl.GetArticleComments(id, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    // Add Article Comment
+    svr.Post("/api/article_comment/add", [&ctrl](const Request &req, Response &resp){
+        User user;
+        Json::Value res_json;
+        if (!ctrl.AuthCheck(req, &user)) {
+             res_json["status"] = 401;
+             res_json["reason"] = "Unauthorized";
+             Json::FastWriter w;
+             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             return;
+        }
+        
+        Json::Reader reader;
+        Json::Value root;
+        reader.parse(req.body, root);
+        std::string post_id = root["post_id"].asString();
+        std::string content = root["content"].asString();
+        
+        std::string json;
+        ctrl.AddArticleComment(user.id, post_id, content, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    // API Upload Image
+    svr.Post("/api/upload_image", [&ctrl](const Request &req, Response &resp){
+        User user;
+        Json::Value res_json;
+        if (!ctrl.AuthCheck(req, &user)) {
+             res_json["status"] = 401;
+             res_json["reason"] = "Unauthorized";
+             Json::FastWriter w;
+             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             return;
+        }
+        
+        std::string json;
+        ctrl.UploadImage(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
     svr.set_base_dir("./wwwroot");
     svr.set_mount_point("/css", "./css");
+    svr.set_mount_point("/uploads", "./wwwroot/uploads"); // Serve uploaded files
     svr.listen("0.0.0.0", 8080);
     return 0;
 } 

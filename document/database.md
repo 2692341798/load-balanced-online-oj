@@ -120,6 +120,54 @@ INSERT INTO submissions (user_id, question_id, language, result, cpu_time, mem_u
 (1, 1, 'cpp', '0', 5, 128, '#include <iostream>...');
 ```
 
+### 3.4 讨论表 (discussions)
+
+**表描述**: 存储社区讨论文章信息
+
+**表结构**:
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | - | 讨论ID |
+| title | VARCHAR(255) | NOT NULL | - | 标题 |
+| content | TEXT | NOT NULL | - | 内容 (Markdown) |
+| author_id | INT | NOT NULL | - | 作者ID |
+| created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
+| likes | INT | DEFAULT 0 | 0 | 点赞数 |
+| views | INT | DEFAULT 0 | 0 | 浏览数 |
+| is_official | TINYINT | DEFAULT 0 | 0 | 是否官方/置顶 (0:否, 1:是) |
+
+### 3.5 内联评论表 (inline_comments)
+
+**表描述**: 存储文章的具体段落/选区的评论
+
+**表结构**:
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | - | 评论ID |
+| user_id | INT | NOT NULL | - | 用户ID |
+| post_id | INT | NOT NULL | - | 文章ID |
+| content | TEXT | NOT NULL | - | 评论内容 |
+| selected_text | TEXT | - | - | 被选中的原文文本 |
+| parent_id | INT | DEFAULT NULL | NULL | 父评论ID (用于回复) |
+| created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
+
+### 3.6 文章评论表 (article_comments)
+
+**表描述**: 存储文章的全局评论
+
+**表结构**:
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | - | 评论ID |
+| post_id | INT | NOT NULL | - | 文章ID |
+| user_id | INT | NOT NULL | - | 用户ID |
+| content | TEXT | NOT NULL | - | 评论内容 |
+| created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
+| likes | INT | DEFAULT 0 | 0 | 点赞数 |
+
 ## 4. 数据访问层设计
 
 ### 4.1 核心类结构

@@ -556,6 +556,36 @@ document/
 
 ---
 
+## 📅 2026-01-27 | V0.3.3 Discussion System Beta
+
+### 🎯 核心目标
+完成讨论区后端的开发，实现文章发布、评论互动及图片上传功能，并与前端原型进行对接。
+
+### 🔧 主要特性
+
+#### 1. 后端 API 实现
+**Discussion APIs**
+- 实现完整的 CRUD 接口：`GetList`, `GetDetail`, `Create`, `Delete`。
+- 支持 Markdown 内容存储与解析。
+
+**Comment System**
+- **Inline Comments**: 支持基于文本选区的精确评论，实现 `Add` / `Delete` / `Get` 接口。
+- **Article Comments**: 支持文章底部的全局评论。
+
+**Image Upload**
+- 集成 `multipart/form-data` 解析，支持图片上传并返回 URL。
+
+#### 2. 数据库设计
+- 新增 `discussions` 表：存储文章元数据。
+- 新增 `inline_comments` 表：存储内联评论及选区信息。
+- 新增 `article_comments` 表：存储全局评论。
+
+### 📊 版本统计
+- **标签状态**: ✅ V0.3.3
+- **核心变更**: 后端接口全量上线，数据库 Schema 扩展。
+
+---
+
 ## 📅 2026-01-27 | 文档同步与维护
 
 ### 🎯 核心目标

@@ -88,6 +88,7 @@
 - **数据交互**: 与MySQL数据库进行数据持久化
 - **用户认证**: 处理用户注册、登录和密码验证
 - **管理员系统**: 题目的增删改查和发布管理
+- **社区系统**: 处理讨论区文章发布、评论互动和图片上传
 
 #### 3.1.2 核心组件
 
@@ -117,6 +118,13 @@ public:
     bool AddQuestion(const string &json_str); // 添加题目
     bool UpdateQuestion(const string &id, const string &json_str); // 更新题目
     bool DeleteQuestion(const string &id); // 删除题目
+
+    // 社区讨论相关方法
+    bool GetDiscussions(string *json); // 获取讨论列表
+    bool GetDiscussion(const string &id, string *json); // 获取讨论详情
+    bool CreateDiscussion(const string &title, const string &content, int author_id); // 创建讨论
+    bool GetInlineComments(const string &post_id, string *json); // 获取内联评论
+    bool AddInlineComment(const string &json_str); // 添加内联评论
 };
 ```
 

@@ -603,9 +603,193 @@ Content-Type: application/json
 }
 ```
 
-## 8. 错误处理
+## 8. 讨论区接口
 
-### 8.1 通用错误码
+### 8.1 获取讨论列表
+
+**接口描述**: 获取讨论区文章列表
+
+**请求信息**:
+```http
+GET /api/discussions
+```
+
+**响应信息**:
+
+**成功响应** (200 OK):
+```json
+{
+    "status": 0,
+    "reason": "success",
+    "data": [
+        {
+            "id": 1,
+            "title": "Discussion Title",
+            "author_id": 1,
+            "likes": 10,
+            "views": 100,
+            "created_at": "2026-01-27 10:00:00"
+        }
+    ]
+}
+```
+
+### 8.2 获取讨论详情
+
+**接口描述**: 获取单篇讨论详情
+
+**请求信息**:
+```http
+GET /api/discussion/:id
+```
+
+**响应信息**:
+
+**成功响应** (200 OK):
+```json
+{
+    "status": 0,
+    "reason": "success",
+    "data": {
+        "id": 1,
+        "title": "Title",
+        "content": "Markdown Content",
+        "author_id": 1,
+        "likes": 10,
+        "views": 100
+    }
+}
+```
+
+### 8.3 创建讨论
+
+**接口描述**: 发布新的讨论文章
+
+**请求信息**:
+```http
+POST /api/discussion
+Content-Type: application/json
+```
+
+**请求体**:
+
+| 参数名 | 类型 | 必需 | 描述 |
+|--------|------|------|------|
+| title | string | 是 | 标题 |
+| content | string | 是 | 内容 (Markdown) |
+
+**响应信息**:
+
+**成功响应** (200 OK):
+```json
+{
+    "status": 0,
+    "reason": "success"
+}
+```
+
+### 8.4 获取内联评论
+
+**接口描述**: 获取文章的内联评论
+
+**请求信息**:
+```http
+GET /api/inline_comments/:post_id
+```
+
+**响应信息**:
+
+**成功响应** (200 OK):
+```json
+{
+    "status": 0,
+    "reason": "success",
+    "data": [
+        {
+            "id": 1,
+            "content": "Comment",
+            "selected_text": "Selected",
+            "user_id": 1,
+            "created_at": "..."
+        }
+    ]
+}
+```
+
+### 8.5 添加内联评论
+
+**接口描述**: 添加内联评论
+
+**请求信息**:
+```http
+POST /api/inline_comment/add
+Content-Type: application/json
+```
+
+**请求体**:
+
+| 参数名 | 类型 | 必需 | 描述 |
+|--------|------|------|------|
+| post_id | int | 是 | 文章ID |
+| content | string | 是 | 评论内容 |
+| selected_text | string | 是 | 选中文本 |
+| parent_id | int | 否 | 父评论ID |
+
+### 8.6 删除内联评论
+
+**接口描述**: 删除内联评论
+
+**请求信息**:
+```http
+POST /api/inline_comment/delete
+Content-Type: application/json
+```
+
+**请求体**:
+
+| 参数名 | 类型 | 必需 | 描述 |
+|--------|------|------|------|
+| comment_id | int | 是 | 评论ID |
+
+### 8.7 获取文章评论
+
+**接口描述**: 获取文章的全局评论
+
+**请求信息**:
+```http
+GET /api/article_comments/:post_id
+```
+
+### 8.8 添加文章评论
+
+**接口描述**: 添加文章全局评论
+
+**请求信息**:
+```http
+POST /api/article_comment/add
+Content-Type: application/json
+```
+
+**请求体**:
+
+| 参数名 | 类型 | 必需 | 描述 |
+|--------|------|------|------|
+| post_id | int | 是 | 文章ID |
+| content | string | 是 | 评论内容 |
+
+### 8.9 上传图片
+
+**接口描述**: 上传图片到服务器
+
+**请求信息**:
+```http
+POST /api/upload_image
+Content-Type: multipart/form-data
+```
+
+## 9. 错误处理
+
+### 9.1 通用错误码
 
 | HTTP状态码 | 描述 |
 |-------------|------|
@@ -618,7 +802,7 @@ Content-Type: application/json
 | 500 | 服务器内部错误 |
 | 503 | 服务不可用 |
 
-### 8.2 业务错误码
+### 9.2 业务错误码
 
 | 状态码 | 含义 |
 |--------|------|
@@ -628,9 +812,9 @@ Content-Type: application/json
 | -2 | 未知错误 |
 | -3 | 编译错误 |
 
-## 9. 请求示例
+## 10. 请求示例
 
-### 9.1 完整评测流程
+### 10.1 完整评测流程
 
 ```bash
 # 1. 用户注册
@@ -664,9 +848,9 @@ curl -X POST http://localhost:8080/judge/1 \
   }'
 ```
 
-## 10. 安全说明
+## 11. 安全说明
 
-### 10.1 认证安全
+### 11.1 认证安全
 - 使用HTTPS协议传输敏感信息
 - Session Cookie设置HttpOnly属性
 - Session有效期为24小时
@@ -696,7 +880,7 @@ curl -X POST http://localhost:8080/judge/1 \
 - 系统总并发：依赖服务器配置
 - 编译任务并发：受编译服务器数量限制
 
-## 12. 版本历史
+## 13. 版本历史
 
 ### v0.3.0 (2026-01-21)
 - 新增管理员接口：
