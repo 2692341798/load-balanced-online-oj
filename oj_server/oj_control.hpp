@@ -607,6 +607,15 @@ namespace ns_control
             }
             return ret;
         }
+
+        bool DiscussionPage(const Request &req, string *html)
+        {
+            User user;
+            AuthCheck(req, &user);
+            view_.DiscussionHtml(html, &user);
+            return true;
+        }
+
         // code: #include...
         // input: ""
         void Judge(const std::string &number, const std::string in_json, std::string *out_json, const std::string &user_id = "")

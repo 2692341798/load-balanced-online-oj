@@ -123,5 +123,21 @@ namespace ns_view
             ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
             tpl->Expand(html, &root);
         }
+
+        void DiscussionHtml(std::string *html, const User *u = nullptr)
+        {
+            std::string src_html = template_path + "discussion.html";
+            ctemplate::TemplateDictionary root("discussion");
+            
+            if (u && !u->username.empty()) {
+                root.ShowSection("user_logged_in");
+                root.SetValue("username", u->username);
+            } else {
+                root.ShowSection("user_not_logged_in");
+            }
+
+            ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
+            tpl->Expand(html, &root);
+        }
     };
 }

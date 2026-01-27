@@ -616,6 +616,29 @@ document/
 
 ---
 
+## 📅 2026-01-27 | V0.3.4 讨论区系统正式版
+
+### 🎯 核心目标
+完成讨论区系统的最终集成与文档更新，确立前后端分离的实现架构。
+
+### 🔧 技术实现
+
+#### 1. 前端架构 (Frontend)
+- **独立页面**: 将讨论区逻辑从 `all_questions.html` 分离至独立的 `discussion.html`，提升页面加载性能。
+- **样式隔离**: 新增 `discussion.css`，采用模块化 CSS 避免样式污染。
+- **Markdown 编辑器**: 集成 EasyMDE，支持实时预览、图片上传和代码高亮。
+
+#### 2. 后端支持 (Backend)
+- **API 接口**: 实现了完整的 RESTful API（详见 API 文档 8.0 章节）。
+- **控制逻辑**: `Control` 类新增 `GetDiscussions`, `CreateDiscussion`, `AddInlineComment` 等核心方法。
+- **图片服务**: 实现 `POST /api/upload_image` 接口，支持图片存储与 URL 返回。
+
+### 📊 版本统计
+- **标签状态**: ✅ V0.3.4
+- **文档更新**: 全面更新 README、架构文档和 API 参考，反映讨论区功能。
+
+---
+
 *最后更新：2026年1月27日  
 维护者：AI Assistant  
 文档状态：活跃维护*

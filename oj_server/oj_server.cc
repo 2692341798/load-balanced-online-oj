@@ -47,6 +47,20 @@ int main()
         resp.set_content(html, "text/html; charset=utf-8");
     });
 
+    // 讨论区页面
+    svr.Get("/discussion", [&ctrl](const Request &req, Response &resp){
+        // 权限检查
+        User user;
+        if (!ctrl.AuthCheck(req, &user)) {
+            resp.set_redirect("/login");
+            return;
+        }
+        
+        std::string html;
+        ctrl.DiscussionPage(req, &html);
+        resp.set_content(html, "text/html; charset=utf-8");
+    });
+
     // 用户要根据题目编号，获取题目的内容
     // /question/100 -> 正则匹配
     // R"()", 原始字符串raw string,保持字符串内容的原貌，不用做相关的转义

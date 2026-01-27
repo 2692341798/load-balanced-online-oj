@@ -1,0 +1,129 @@
+.inline-comment-target {
+    border-bottom: 1px dashed #999;
+    cursor: pointer;
+    position: relative;
+}
+.inline-comment-target:hover {
+    border-bottom-color: #2cbb5d;
+    background-color: rgba(44, 187, 93, 0.1);
+}
+
+/* Side Drawer */
+.comment-drawer {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100%;
+    background: var(--card-bg);
+    box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+    z-index: 1500;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255,255,255,0.1);
+}
+.comment-drawer.visible {
+    right: 0;
+}
+.comment-drawer-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.comment-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+.comment-drawer-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.3);
+    z-index: 1400;
+    display: none;
+}
+.comment-drawer-backdrop.visible {
+    display: block;
+}
+
+.selected-text-quote {
+    padding: 10px;
+    background: rgba(255,255,255,0.05);
+    border-left: 3px solid #2cbb5d;
+    margin-bottom: 20px;
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+/* EasyMDE Dark Mode Customization */
+.EasyMDEContainer {
+    background: transparent;
+}
+.editor-toolbar {
+    background-color: rgba(255,255,255,0.05) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 8px !important;
+}
+.editor-toolbar button {
+    color: var(--text-main) !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 4px !important;
+    margin: 2px !important;
+    font-size: 16px !important;
+}
+.editor-toolbar button:hover, .editor-toolbar button.active {
+    background-color: rgba(255,255,255,0.1) !important;
+    border: none !important;
+}
+.editor-toolbar i.separator {
+    border-left: 1px solid rgba(255,255,255,0.1) !important;
+    border-right: none !important;
+    margin: 0 8px !important;
+}
+.CodeMirror {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    min-height: 400px;
+}
+.CodeMirror-cursor {
+    border-color: var(--text-main) !important;
+}
+.editor-statusbar {
+    color: var(--text-secondary) !important;
+}
+.editor-preview {
+    background-color: var(--card-bg) !important;
+}
+.editor-preview-side {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Custom Fullscreen Exit Button */
+#exit-fullscreen-btn {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    z-index: 2000;
+    padding: 10px 20px;
+    background: rgba(44, 187, 93, 0.9);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+#exit-fullscreen-btn:hover {
+    background: #2cbb5d;
+}

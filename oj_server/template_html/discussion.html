@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>题库 - 冻梨OJ</title>
+    <title>讨论区 - 冻梨OJ</title>
     <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/css/all_questions.css">
     <!-- Markdown Libraries -->
@@ -11,138 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
-    <style>
-        .inline-comment-target {
-            border-bottom: 1px dashed #999;
-            cursor: pointer;
-            position: relative;
-        }
-        .inline-comment-target:hover {
-            border-bottom-color: #2cbb5d;
-            background-color: rgba(44, 187, 93, 0.1);
-        }
-        
-        /* Side Drawer */
-        .comment-drawer {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100%;
-            background: var(--card-bg);
-            box-shadow: -2px 0 10px rgba(0,0,0,0.5);
-            z-index: 1500;
-            transition: right 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid rgba(255,255,255,0.1);
-        }
-        .comment-drawer.visible {
-            right: 0;
-        }
-        .comment-drawer-header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .comment-drawer-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .comment-drawer-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.3);
-            z-index: 1400;
-            display: none;
-        }
-        .comment-drawer-backdrop.visible {
-            display: block;
-        }
-        
-        .selected-text-quote {
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border-left: 3px solid #2cbb5d;
-            margin-bottom: 20px;
-            font-style: italic;
-            color: var(--text-secondary);
-        }
-
-        /* EasyMDE Dark Mode Customization */
-        .EasyMDEContainer {
-            background: transparent;
-        }
-        .editor-toolbar {
-            background-color: rgba(255,255,255,0.05) !important;
-            border-color: rgba(255,255,255,0.1) !important;
-            display: flex;
-            flex-wrap: wrap;
-            padding: 8px !important;
-        }
-        .editor-toolbar button {
-            color: var(--text-main) !important;
-            width: 36px !important;
-            height: 36px !important;
-            border-radius: 4px !important;
-            margin: 2px !important;
-            font-size: 16px !important;
-        }
-        .editor-toolbar button:hover, .editor-toolbar button.active {
-            background-color: rgba(255,255,255,0.1) !important;
-            border: none !important;
-        }
-        .editor-toolbar i.separator {
-            border-left: 1px solid rgba(255,255,255,0.1) !important;
-            border-right: none !important;
-            margin: 0 8px !important;
-        }
-        .CodeMirror {
-            background-color: var(--card-bg) !important;
-            color: var(--text-main) !important;
-            border-color: rgba(255,255,255,0.1) !important;
-            min-height: 400px;
-        }
-        .CodeMirror-cursor {
-            border-color: var(--text-main) !important;
-        }
-        .editor-statusbar {
-            color: var(--text-secondary) !important;
-        }
-        .editor-preview {
-            background-color: var(--card-bg) !important;
-        }
-        .editor-preview-side {
-            border-color: rgba(255,255,255,0.1) !important;
-        }
-        
-        /* Custom Fullscreen Exit Button */
-        #exit-fullscreen-btn {
-            position: fixed;
-            bottom: 40px;
-            right: 40px;
-            z-index: 2000;
-            padding: 10px 20px;
-            background: rgba(44, 187, 93, 0.9);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        #exit-fullscreen-btn:hover {
-            background: #2cbb5d;
-        }
-    </style>
-</head>
+    <link rel="stylesheet" href="/css/discussion.css">
     <script>
         // XSS防护
         function escapeHtml(text) {
@@ -172,22 +41,22 @@
 
         function toggleUserMenu(event) {
             event.stopPropagation();
-            console.log('[all_questions toggleUserMenu] called');
+            console.log('[discussion toggleUserMenu] called');
             const menu = document.getElementById('user-menu');
             const backdrop = document.getElementById('user-menu-backdrop');
             if (!menu || !backdrop) {
-                console.warn('[all_questions toggleUserMenu] menu or backdrop not found');
+                console.warn('[discussion toggleUserMenu] menu or backdrop not found');
                 return;
             }
             const isVisible = menu.classList.contains('visible');
-            console.log('[all_questions toggleUserMenu] isVisible =', isVisible);
+            console.log('[discussion toggleUserMenu] isVisible =', isVisible);
             if (isVisible) {
                 hideUserMenu();
             } else {
                 menu.classList.add('visible');
                 backdrop.classList.add('visible');
                 document.addEventListener('click', onUserMenuDocumentClick);
-                console.log('[all_questions toggleUserMenu] menu opened');
+                console.log('[discussion toggleUserMenu] menu opened');
             }
         }
 
@@ -229,19 +98,14 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('[all_questions] DOMContentLoaded');
+            console.log('[discussion] DOMContentLoaded');
             
-            // Check for view parameter
-            const urlParams = new URLSearchParams(window.location.search);
-            const viewParam = urlParams.get('view');
-            if (viewParam === 'discussion') {
-                switchView('view-discussion-feed');
-                initDiscussion();
-            }
+            // Initialize discussion feed
+            initDiscussion();
 
             const authContainer = document.getElementById('auth-container');
             if (!authContainer) {
-                console.error('[all_questions] #auth-container not found');
+                console.error('[discussion] #auth-container not found');
                 return;
             }
             authContainer.innerHTML = '<span class="btn-text loading">加载中...</span>';
@@ -249,11 +113,11 @@
             fetch('/api/user')
                 .then(res => res.json())
                 .then(data => {
-                    console.log('[all_questions] /api/user response', data);
+                    console.log('[discussion] /api/user response', data);
                     updateNavAuth(data);
                 })
                 .catch(err => {
-                    console.error('[all_questions] /api/user error', err);
+                    console.error('[discussion] /api/user error', err);
                     updateNavAuth({status: -1});
                 });
         });
@@ -261,7 +125,7 @@
         // --- View Management ---
         function switchView(viewId) {
             // Hide all views
-            ['view-question-list', 'view-discussion-feed', 'view-post-detail', 'view-editor'].forEach(id => {
+            ['view-discussion-feed', 'view-post-detail', 'view-editor'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
@@ -270,13 +134,6 @@
             const target = document.getElementById(viewId);
             if (target) {
                 target.style.display = 'block';
-                // Update nav active state
-                document.querySelectorAll('.navbar-links a').forEach(a => a.classList.remove('active'));
-                if (viewId === 'view-question-list') {
-                    document.querySelector('a[href="/all_questions"]').classList.add('active');
-                } else {
-                    document.getElementById('nav-discussion').classList.add('active');
-                }
             }
         }
 
@@ -835,9 +692,9 @@
         </div>
         <div class="navbar-links">
             <a href="/">首页</a>
-            <a href="/all_questions" class="active">题库</a>
+            <a href="/all_questions">题库</a>
             <a href="#">竞赛</a>
-            <a href="/discussion" id="nav-discussion">讨论</a>
+            <a href="/discussion" class="active">讨论</a>
             <a href="#">求职</a>
         </div>
         <div class="navbar-auth" id="auth-container">
@@ -846,34 +703,8 @@
     </nav>
 
     <div class="question-list-container">
-        <div id="view-question-list">
-            <div class="question-list-header">
-                <h1>题库列表</h1>
-                <p style="color: var(--text-secondary);">挑选适合你的题目进行挑战</p>
-            </div>
-
-            <table class="question-table">
-                <thead>
-                    <tr>
-                        <th style="width: 80px;">编号</th>
-                        <th>标题</th>
-                        <th style="width: 100px;">难度</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#question_list}}
-                    <tr>
-                        <td>{{number}}</td>
-                        <td><a href="/question/{{number}}" class="question-link">{{title}}</a></td>
-                        <td><span class="difficulty-badge difficulty-{{star}}">{{star}}</span></td>
-                    </tr>
-                    {{/question_list}}
-                </tbody>
-            </table>
-        </div>
-
         <!-- Discussion Views -->
-        <div id="view-discussion-feed" style="display:none;">
+        <div id="view-discussion-feed">
             <div class="discussion-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h1 style="color:var(--text-main)">讨论区</h1>
                 <button class="btn-primary" onclick="openEditor()" style="padding:8px 16px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">+ 发起讨论</button>
