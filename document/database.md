@@ -48,6 +48,7 @@ FLUSH PRIVILEGES;
 | description | TEXT | NOT NULL | - | 题目描述，支持Markdown格式 |
 | header | TEXT | NOT NULL | - | [已废弃] 题目预设代码头 |
 | tail | TEXT | NOT NULL | - | JSON格式的测试用例，存储测试用例的输入输出 |
+| status | INT | DEFAULT 0 | 0 | 题目状态 (0:Hidden, 1:Visible) |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
 
@@ -472,6 +473,6 @@ FLUSH PRIVILEGES;
 
 ---
 
-**文档版本**: v0.2.9  
-**最后更新时间**: 2026-01-10  
+**文档版本**: v0.3.2  
+**最后更新时间**: 2026-01-27  
 **维护团队**: 在线评测系统开发团队

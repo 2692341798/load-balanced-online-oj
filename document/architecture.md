@@ -87,6 +87,7 @@
 - **会话管理**: 维护用户登录状态和权限控制
 - **数据交互**: 与MySQL数据库进行数据持久化
 - **用户认证**: 处理用户注册、登录和密码验证
+- **管理员系统**: 题目的增删改查和发布管理
 
 #### 3.1.2 核心组件
 
@@ -110,6 +111,12 @@ public:
     bool CheckUserExists(const std::string &username); // 检查用户是否存在
     bool GetProfile(const User &user, string *html); // 获取个人中心页面
     bool GetProfileData(const User &user, std::string *json); // 获取个人中心数据API
+
+    // 管理员相关方法
+    bool AdminAllQuestions(string *json); // 获取所有题目（含未发布）
+    bool AddQuestion(const string &json_str); // 添加题目
+    bool UpdateQuestion(const string &id, const string &json_str); // 更新题目
+    bool DeleteQuestion(const string &id); // 删除题目
 };
 ```
 
@@ -251,6 +258,12 @@ namespace ns_log {
 - `POST /api/login` - 用户登录
 - `GET /api/user` - 获取当前用户信息
 - `POST /judge/{number}` - 代码评测（需要登录）
+
+#### 4.1.3 管理员路由
+- `GET /api/admin/questions` - 获取所有题目列表
+- `POST /api/admin/question` - 创建题目
+- `POST /api/admin/question/update/{id}` - 更新题目
+- `POST /api/admin/question/delete/{id}` - 删除题目
 
 ### 4.2 编译服务器路由
 - `POST /compile_and_run` - 编译运行服务
@@ -541,6 +554,7 @@ oj_server/
 - **代码编辑器**: VS Code风格编辑器，支持语法高亮和智能提示
 - **布局优化**: 可调整大小的面板（Resizable Panes）
 - **结果展示**: 标签页式结果展示（Tabbed Results）
+- **讨论社区 (V0.3.2)**: 基于 SPA 模式的轻量级社区，集成 Markdown 编辑器 (EasyMDE) 和内联评论交互
 
 ### 9.3 样式系统
 - **CSS变量**: 统一的颜色和主题管理
@@ -887,6 +901,6 @@ if (online_num == 0) {
 
 ---
 
-**文档版本**: v0.2.9  
-**最后更新时间**: 2026-01-10  
+**文档版本**: v0.3.2  
+**最后更新时间**: 2026-01-27  
 **维护团队**: 在线评测系统开发团队
