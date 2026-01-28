@@ -127,7 +127,7 @@
             position: fixed;
             bottom: 40px;
             right: 40px;
-            z-index: 2000;
+            z-index: 2147483647; /* Max z-index */
             padding: 10px 20px;
             background: rgba(44, 187, 93, 0.9);
             color: white;
@@ -391,7 +391,7 @@
                 
                 // Add fullscreen event listener
                 simplemde.codemirror.on('refresh', function() {
-                    const isFullscreen = simplemde.isFullscreenActive();
+                    const isFullscreen = simplemde.isFullscreenActive() || simplemde.isSideBySideActive();
                     const btn = document.getElementById('exit-fullscreen-btn');
                     if(btn) btn.style.display = isFullscreen ? 'block' : 'none';
                 });
@@ -445,10 +445,32 @@
             event.target.value = '';
         }
 
-        function exitFullscreen() {
-        if (simplemde && simplemde.isFullscreenActive()) {
+    function exitFullscreen() {
+        console.log('[all_questions] exitFullscreen clicked');
+        if (!simplemde) {
+            console.error('simplemde instance not found');
+            return;
+        }
+        
+        // Check both API status and DOM classes for robustness
+        const isSideBySide = simplemde.isSideBySideActive() || document.body.classList.contains('side-by-side-active');
+        const isFullscreen = simplemde.isFullscreenActive() || document.body.classList.contains('fullscreen-active');
+        
+        console.log('Status:', { isSideBySide, isFullscreen });
+
+        if (isSideBySide) {
+            try {
+                simplemde.toggleSideBySide();
+                console.log('Toggled side-by-side');
+            } catch (e) {
+                console.warn('Failed to toggle side-by-side:', e);
+            }
+        }
+        
+        if (isFullscreen && !isSideBySide) {
             try {
                 simplemde.toggleFullScreen();
+                console.log('Toggled fullscreen');
             } catch (e) {
                 console.warn('Failed to toggle fullscreen:', e);
             }
@@ -943,7 +965,7 @@
              <!-- Hidden file input for image upload -->
              <input type="file" id="image-upload-input" accept="image/png, image/jpeg, image/gif, image/webp" style="display:none;" onchange="handleImageUpload(event)">
              <!-- Exit Fullscreen Button -->
-             <button id="exit-fullscreen-btn" onclick="exitFullscreen()">退出全屏</button>
+             <button id="exit-fullscreen-btn" type="button" onclick="exitFullscreen()">退出全屏</button>
              
              <div style="margin-top:20px; text-align:right;">
                 <button class="btn-primary" onclick="savePost()" style="padding:8px 24px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">发布</button>

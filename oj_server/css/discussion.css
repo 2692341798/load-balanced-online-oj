@@ -109,7 +109,7 @@
 }
 
 /* Custom Fullscreen Exit Button */
-#exit-fullscreen-btn {
+#exit-preview-btn {
     position: fixed;
     bottom: 40px;
     right: 40px;
@@ -124,6 +124,143 @@
     display: none;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
-#exit-fullscreen-btn:hover {
+#exit-preview-btn:hover {
     background: #2cbb5d;
+}
+
+/* Markdown Content Styling */
+.markdown-body {
+    color: var(--text-main);
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+/* Headers */
+.markdown-body h1, .markdown-body h2, .markdown-body h3, 
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+    color: var(--text-main);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 0.3em;
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+}
+
+.markdown-body h1 { font-size: 2em; }
+.markdown-body h2 { font-size: 1.5em; }
+
+/* Links */
+.markdown-body a {
+    color: #2cbb5d;
+    text-decoration: none;
+}
+.markdown-body a:hover {
+    text-decoration: underline;
+}
+
+/* Lists */
+.markdown-body ul, .markdown-body ol {
+    padding-left: 2em;
+    margin-bottom: 1em;
+}
+
+/* Blockquotes */
+.markdown-body blockquote {
+    padding: 0 1em;
+    color: var(--text-secondary);
+    border-left: 0.25em solid #2cbb5d;
+    background: rgba(255,255,255,0.05);
+    margin: 0 0 1em 0;
+}
+
+/* Tables */
+.markdown-body table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+}
+.markdown-body table th, .markdown-body table td {
+    padding: 6px 13px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.markdown-body table th {
+    font-weight: 600;
+    background-color: rgba(255,255,255,0.05);
+}
+.markdown-body table tr:nth-child(2n) {
+    background-color: rgba(255,255,255,0.02);
+}
+
+/* Images */
+.markdown-body img {
+    max-width: 100%;
+    box-sizing: border-box;
+    background-color: transparent;
+    border-radius: 4px;
+}
+
+/* Code Blocks */
+.markdown-body code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+
+.markdown-body pre {
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #282c34; /* Atom One Dark background */
+    border-radius: 6px;
+    margin-bottom: 1em;
+}
+
+.markdown-body pre code {
+    display: inline;
+    max-width: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    line-height: inherit;
+    word-wrap: normal;
+    background-color: transparent;
+    border: 0;
+}
+
+/* Fix for highlight.js */
+.markdown-body pre code.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 0; /* padding is handled by pre */
+}
+
+
+/* Editor Footer */
+.editor-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--card-bg); /* Use theme background */
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 15px 40px; /* Adjust padding */
+    text-align: right;
+    z-index: 1000; /* Ensure it's above other content but below modals/drawers */
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+    box-sizing: border-box;
+}
+
+.editor-footer-spacer {
+    height: 80px; /* Match footer height + margin */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .editor-footer {
+        padding: 10px 20px;
+    }
 }

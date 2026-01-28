@@ -11,7 +11,33 @@
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <!-- PDF.js for PDF import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <link rel="stylesheet" href="/css/discussion.css">
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        /* Custom Fullscreen Exit Button */
+        #exit-preview-btn {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            z-index: 2147483647; /* Max z-index */
+            padding: 10px 20px;
+            background: rgba(44, 187, 93, 0.9);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+    </style>
     <script>
         // XSS防护
         function escapeHtml(text) {
@@ -210,6 +236,16 @@
                             ${renderedHTML} 
                         </div>
                     `;
+                    
+                    // Trigger syntax highlighting
+                    document.querySelectorAll('#post-markdown-content pre code').forEach((el) => {
+                        try {
+                            hljs.highlightElement(el);
+                        } catch(e) {
+                            console.error('Highlight error:', e);
+                        }
+                    });
+
                     initInlineComments();
                     loadInlineComments();
                     loadArticleComments();
@@ -239,6 +275,14 @@
                             className: "fa fa-image",
                             title: "上传图片",
                         },
+                        {
+                            name: "import",
+                            action: function importFile(editor){
+                                document.getElementById('file-import-input').click();
+                            },
+                            className: "fa fa-upload",
+                            title: "导入文件(MD/PDF)",
+                        },
                         "|",
                         "preview", "side-by-side", "fullscreen", "|", "guide"
                     ],
@@ -246,19 +290,39 @@
                     spellChecker: false,
                 });
                 
-                // Add fullscreen event listener
+                // Add fullscreen/preview event listener
                 simplemde.codemirror.on('refresh', function() {
-                    const isFullscreen = simplemde.isFullscreenActive();
-                    const btn = document.getElementById('exit-fullscreen-btn');
-                    if(btn) btn.style.display = isFullscreen ? 'block' : 'none';
+                    // Only show button in Side-by-Side (Preview) mode
+                    const isPreview = simplemde.isSideBySideActive() || simplemde.isPreviewActive();
+                    const btn = document.getElementById('exit-preview-btn');
+                    if(btn) {
+                        btn.style.display = isPreview ? 'block' : 'none';
+                        btn.innerText = "退出预览";
+                    }
+                });
+
+                // Add Paste and Drop Listeners for Image Upload
+                simplemde.codemirror.on('paste', function(cm, e) {
+                    if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+                        e.preventDefault();
+                        const file = e.clipboardData.files[0];
+                        uploadImageFile(file);
+                    }
+                });
+
+                simplemde.codemirror.on('drop', function(cm, e) {
+                    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files[0];
+                        uploadImageFile(file);
+                    }
                 });
             }
             simplemde.value("");
             document.getElementById('post-title-input').value = "";
         }
         
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
+        async function uploadImageFile(file) {
             if (!file) return;
             
             // Check file type
@@ -277,6 +341,17 @@
             const formData = new FormData();
             formData.append('image', file);
             
+            // Show uploading status in editor
+            const cm = simplemde.codemirror;
+            const doc = cm.getDoc();
+            const cursor = doc.getCursor();
+            const loadingText = "![图片上传中...]()";
+            doc.replaceRange(loadingText, cursor);
+            
+            // Calculate replacement range to replace loading text later
+            const startPos = { line: cursor.line, ch: cursor.ch };
+            const endPos = { line: cursor.line, ch: cursor.ch + loadingText.length };
+
             try {
                 const response = await fetch('/api/upload_image', {
                     method: 'POST',
@@ -285,29 +360,105 @@
                 const res = await response.json();
                 
                 if (res.status === 0) {
-                    const cm = simplemde.codemirror;
-                    const doc = cm.getDoc();
-                    const cursor = doc.getCursor();
                     const imageMarkdown = `![](${res.url})`;
-                    doc.replaceRange(imageMarkdown, cursor);
+                    doc.replaceRange(imageMarkdown, startPos, endPos);
                 } else {
                     alert('上传失败: ' + res.reason);
+                    doc.replaceRange("", startPos, endPos); // Clear loading text
                 }
             } catch (e) {
                 console.error(e);
                 alert('上传出错');
+                doc.replaceRange("", startPos, endPos);
+            }
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            await uploadImageFile(file);
+            event.target.value = '';
+        }
+
+        async function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileName = file.name.toLowerCase();
+            let content = "";
+
+            // Show loading indicator if needed
+            const originalText = simplemde.value(); // Keep original text just in case
+
+            try {
+                if (fileName.endsWith('.md')) {
+                    content = await file.text();
+                } else if (fileName.endsWith('.pdf')) {
+                    // PDF Text Extraction
+                    const arrayBuffer = await file.arrayBuffer();
+                    const loadingTask = pdfjsLib.getDocument(arrayBuffer);
+                    const pdf = await loadingTask.promise;
+                    
+                    let fullText = "";
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        fullText += pageText + "\n\n";
+                    }
+                    content = fullText;
+                } else {
+                    alert('不支持的文件格式，仅支持 Markdown (.md) 和 PDF (.pdf)');
+                    event.target.value = '';
+                    return;
+                }
+
+                if (simplemde) {
+                    const currentContent = simplemde.value();
+                    if (currentContent && currentContent.trim().length > 0) {
+                        if(confirm('当前编辑器已有内容，是否覆盖？\n点击“确定”覆盖，点击“取消”追加到末尾。')) {
+                             simplemde.value(content);
+                        } else {
+                             simplemde.value(currentContent + "\n\n---\n\n" + content);
+                        }
+                    } else {
+                        simplemde.value(content);
+                    }
+                }
+            } catch (e) {
+                console.error('Import failed:', e);
+                alert('文件导入失败: ' + e.message);
             }
             
             // Reset input
             event.target.value = '';
         }
 
-        function exitFullscreen() {
-        if (simplemde && simplemde.isFullscreenActive()) {
+    function exitPreview() {
+        console.log('[discussion] exitPreview clicked');
+        if (!simplemde) {
+            console.error('simplemde instance not found');
+            return;
+        }
+        
+        // Check both API status and DOM classes for robustness
+        const isSideBySide = simplemde.isSideBySideActive() || document.body.classList.contains('side-by-side-active');
+        const isPreview = simplemde.isPreviewActive() || document.body.classList.contains('editor-preview-active');
+        
+        console.log('Status:', { isSideBySide, isPreview });
+
+        if (isSideBySide) {
             try {
-                simplemde.toggleFullScreen();
+                simplemde.toggleSideBySide();
+                console.log('Toggled side-by-side');
             } catch (e) {
-                console.warn('Failed to toggle fullscreen:', e);
+                console.warn('Failed to toggle side-by-side:', e);
+            }
+        } else if (isPreview) {
+            try {
+                simplemde.togglePreview();
+                console.log('Toggled preview');
+            } catch (e) {
+                console.warn('Failed to toggle preview:', e);
             }
         }
     }
@@ -439,6 +590,15 @@
                 }
             });
             contentDiv.innerHTML = html;
+
+            // Trigger syntax highlighting again because innerHTML was reset
+            document.querySelectorAll('#post-markdown-content pre code').forEach((el) => {
+                try {
+                    hljs.highlightElement(el);
+                } catch(e) {
+                    console.error('Highlight error:', e);
+                }
+            });
         }
 
         function buildCommentTree(comments) {
@@ -773,10 +933,14 @@
              <textarea id="editor-textarea"></textarea>
              <!-- Hidden file input for image upload -->
              <input type="file" id="image-upload-input" accept="image/png, image/jpeg, image/gif, image/webp" style="display:none;" onchange="handleImageUpload(event)">
-             <!-- Exit Fullscreen Button -->
-             <button id="exit-fullscreen-btn" onclick="exitFullscreen()">退出全屏</button>
+             <!-- Hidden file input for file import (md, pdf) -->
+             <input type="file" id="file-import-input" accept=".md,.pdf" style="display:none;" onchange="handleFileImport(event)">
+             <!-- Exit Preview Button -->
+             <button id="exit-preview-btn" type="button" onclick="exitPreview()">退出预览</button>
              
-             <div style="margin-top:20px; text-align:right;">
+             <div class="editor-footer-spacer"></div>
+             
+             <div class="editor-footer">
                 <button class="btn-primary" onclick="savePost()" style="padding:8px 24px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">发布</button>
              </div>
         </div>
