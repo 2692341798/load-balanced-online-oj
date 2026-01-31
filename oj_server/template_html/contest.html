@@ -123,10 +123,15 @@
                 <img src="/images/codeforces-sponsored-by-ton.png.webp" alt="Codeforces Logo" class="cf-logo">
                 近期竞赛
             </h1>
+            <div class="contest-controls">
+                <label>
+                    <input type="checkbox" id="filter-running"> 仅显示进行中
+                </label>
+            </div>
         </div>
         
         <div class="contest-table-wrapper">
-            <table class="contest-table">
+            <table class="contest-table" id="contest-table">
                 <thead>
                     <tr>
                         <th class="col-name">竞赛名称</th>
@@ -136,25 +141,19 @@
                         <th class="col-action">操作</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {{#contests}}
-                    <tr>
-                        <td class="col-name" data-label="竞赛名称">{{name}}</td>
-                        <td class="col-time" data-label="开始时间">{{start_time}}</td>
-                        <td class="col-time" data-label="结束时间">{{end_time}}</td>
-                        <td class="col-status" data-label="状态">
-                            <span class="status-badge {{status_class}}">{{status}}</span>
-                        </td>
-                        <td class="col-action">
-                            <a href="{{link}}" target="_blank" class="btn-primary">进入竞赛</a>
-                        </td>
-                    </tr>
-                    {{/contests}}
+                <tbody id="contest-list-body">
+                    <!-- JS populated -->
                 </tbody>
             </table>
         </div>
 
-        <div class="last-updated">
+        <div class="pagination-container">
+            <button id="btn-prev" onclick="changePage(-1)">上一页</button>
+            <span id="page-info">第 1 页</span>
+            <button id="btn-next" onclick="changePage(1)">下一页</button>
+        </div>
+
+        <div class="last-updated" id="last-updated">
             数据更新时间: {{updated_at}}
         </div>
         
@@ -162,5 +161,93 @@
             &copy; 2026 冻梨在线判题平台
         </div>
     </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        const pageSize = 5;
+
+        async function fetchContests() {
+            const onlyRunning = document.getElementById('filter-running').checked;
+            const status = onlyRunning ? 'running' : '';
+            
+            try {
+                const res = await fetch(`/api/contests?page=${currentPage}&size=${pageSize}&status=${status}`);
+                const data = await res.json();
+                
+                if (data.status === 0) {
+                    renderTable(data.data);
+                    totalPages = data.total_pages || 1;
+                    document.getElementById('page-info').textContent = `第 ${data.page} / ${data.total_pages || 1} 页`;
+                    document.getElementById('btn-prev').disabled = currentPage <= 1;
+                    document.getElementById('btn-next').disabled = currentPage >= totalPages;
+                } else {
+                    console.error('获取数据失败: ' + data.reason);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderTable(list) {
+            const tbody = document.getElementById('contest-list-body');
+            tbody.innerHTML = '';
+            
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">暂无数据</td></tr>';
+                return;
+            }
+
+            list.forEach(item => {
+                let statusClass = '';
+                let statusText = '';
+                let actionBtn = '';
+                
+                if (item.status === 'running') {
+                    statusClass = 'status-running';
+                    statusText = '进行中';
+                    actionBtn = `<a href="${item.link}" target="_blank" class="btn-primary">进入</a>`;
+                } else if (item.status === 'upcoming') {
+                    statusClass = 'status-upcoming';
+                    statusText = '未开始';
+                    actionBtn = `<a href="${item.link}" target="_blank" class="btn-primary">报名</a>`;
+                } else {
+                    statusClass = 'status-ended';
+                    statusText = '已结束';
+                    actionBtn = `<a href="${item.link}" target="_blank" class="btn-secondary">查看</a>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="col-name" data-label="竞赛名称">${escapeHtml(item.name)}</td>
+                    <td class="col-time" data-label="开始时间">${item.start_time}</td>
+                    <td class="col-time" data-label="结束时间">${item.end_time}</td>
+                    <td class="col-status" data-label="状态">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </td>
+                    <td class="col-action">
+                        ${actionBtn}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                fetchContests();
+            }
+        }
+        
+        document.getElementById('filter-running').addEventListener('change', () => {
+            currentPage = 1;
+            fetchContests();
+        });
+
+        // Initial load
+        fetchContests();
+    </script>
 </body>
 </html>

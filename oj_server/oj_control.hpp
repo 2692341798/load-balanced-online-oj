@@ -17,6 +17,9 @@
 // #include "oj_model.hpp"
 #include "oj_model2.hpp"
 #include "oj_view.hpp"
+#ifdef ENABLE_REDIS
+#include <hiredis/hiredis.h>
+#endif
 
 namespace ns_control
 {
@@ -616,22 +619,87 @@ namespace ns_control
             return true;
         }
 
+        bool GetContestList(const Request &req, std::string *json_out)
+        {
+            int page = 1;
+            int page_size = 5;
+            if (req.has_param("page")) page = std::stoi(req.get_param_value("page"));
+            if (req.has_param("size")) page_size = std::stoi(req.get_param_value("size"));
+            std::string status = req.get_param_value("status");
+
+#ifdef ENABLE_REDIS
+            // Redis Cache
+            std::string cache_key = "contest:page:" + std::to_string(page) + ":size:" + std::to_string(page_size) + ":status:" + status;
+            redisContext *c = redisConnect("127.0.0.1", 6379);
+            if (c != NULL && c->err == 0) {
+                 redisReply *reply = (redisReply*)redisCommand(c, "GET %s", cache_key.c_str());
+                 if (reply != NULL && reply->type == REDIS_REPLY_STRING) {
+                     *json_out = reply->str;
+                     freeReplyObject(reply);
+                     redisFree(c);
+                     return true;
+                 }
+                 if(reply) freeReplyObject(reply);
+            }
+#endif
+
+            std::vector<ns_model::Contest> contests;
+            int total = 0;
+            if (model_.GetContests(page, page_size, status, &contests, &total)) {
+                 Json::Value root;
+                 root["status"] = 0;
+                 root["total"] = total;
+                 root["total_pages"] = (total + page_size - 1) / page_size;
+                 root["page"] = page;
+                 
+                 Json::Value list;
+                 for(const auto& c : contests) {
+                     Json::Value item;
+                     item["name"] = c.name;
+                     item["start_time"] = c.start_time;
+                     item["end_time"] = c.end_time;
+                     item["status"] = c.status;
+                     item["link"] = c.link;
+                     list.append(item);
+                 }
+                 root["data"] = list;
+                 
+                 Json::FastWriter w;
+                 *json_out = w.write(root);
+
+#ifdef ENABLE_REDIS
+                 // Set Cache
+                 if (c != NULL && c->err == 0) {
+                     redisReply *reply = (redisReply*)redisCommand(c, "SETEX %s 300 %s", cache_key.c_str(), json_out->c_str());
+                     if(reply) freeReplyObject(reply);
+                     redisFree(c);
+                 } else if (c) {
+                     redisFree(c);
+                 }
+#endif
+
+                 return true;
+            } else {
+#ifdef ENABLE_REDIS
+                 if (c) redisFree(c);
+#endif
+                 Json::Value res;
+                 res["status"] = 1;
+                 res["reason"] = "Database Error";
+                 Json::FastWriter w;
+                 *json_out = w.write(res);
+                 return false;
+            }
+        }
+
         bool Contest(const Request &req, string *html)
         {
             User user;
             AuthCheck(req, &user);
 
-            std::string json_data;
-            std::ifstream in("../data/contests.json");
-            if(in.is_open()) {
-                 std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-                 json_data = content;
-                 in.close();
-            } else {
-                 json_data = "{\"contests\": [], \"updated_at\": 0}";
-            }
-
-            view_.ContestHtml(json_data, html, &user);
+            std::vector<ns_model::Contest> contests;
+            // Empty list for initial render, JS will fetch data
+            view_.ContestHtml(contests, html, &user);
             return true;
         }
 

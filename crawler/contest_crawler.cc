@@ -16,6 +16,7 @@
 
 #include <sys/stat.h>
 #include <ctime>
+#include <mysql/mysql.h>
 #include "crawler_common.hpp"
 
 // Redis Config (Global or Static for now, could be in Config)
@@ -25,15 +26,34 @@ const int REDIS_TTL = 86400; // 24 hours
 const std::string LOG_FILE = "../logs/crawler.log";
 const std::string DATA_FILE = "../data/contests.json";
 
+#include <sys/file.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+
+// ... (existing includes)
+
 class ContestCrawler {
 public:
     ContestCrawler(const CrawlerConfig& config) : config_(config) {
         // Ensure log directory exists (simple check)
-        // In a real app we'd use mkdir -p logic or filesystem
     }
 
     void Run() {
-        Log("Crawler service started.");
+        // Implement Singleton Lock using flock
+        int lock_fd = open("/tmp/contest_crawler.lock", O_RDWR | O_CREAT, 0666);
+        if (lock_fd < 0) {
+            Log("Failed to open lock file. Exiting.");
+            return;
+        }
+        
+        if (flock(lock_fd, LOCK_EX | LOCK_NB) < 0) {
+            Log("Another instance is running. Exiting.");
+            close(lock_fd);
+            return;
+        }
+
+        Log("Crawler service started with 30min interval.");
         
         // Initial robots.txt fetch
         FetchRobotsTxt();
@@ -50,14 +70,13 @@ public:
             int sleep_time = config_.min_interval_seconds;
             
             // Respect robots.txt Crawl-delay if specified and meaningful
-            // (Though usually crawl-delay is small, e.g. 5s, and our interval is hours)
             int robot_delay = robots_parser_.GetCrawlDelay();
             if (robot_delay > sleep_time) {
                 sleep_time = robot_delay;
                 Log("Adjusting interval to " + std::to_string(sleep_time) + "s based on robots.txt Crawl-delay.");
             }
 
-            // Add randomness to avoid fingerprinting
+            // Add randomness to avoid fingerprinting (Optional, minimal now)
             int range = config_.max_interval_seconds - config_.min_interval_seconds;
             if (range > 0) {
                 sleep_time += rand() % range;
@@ -73,10 +92,12 @@ public:
             Log("Sleeping for " + std::to_string(sleep_time) + " seconds before next crawl.");
             std::this_thread::sleep_for(std::chrono::seconds(sleep_time));
             
-            // Refresh robots.txt occasionally (e.g., every 24 hours or every cycle)
-            // For simplicity, refresh every cycle or if it's been a long time.
             FetchRobotsTxt(); 
         }
+        
+        // Release lock (though OS does it on exit)
+        flock(lock_fd, LOCK_UN);
+        close(lock_fd);
     }
 
 private:
@@ -197,6 +218,87 @@ private:
         return "";
     }
 
+    void SaveToDB(const std::vector<Contest>& contests) {
+        MYSQL *conn = mysql_init(NULL);
+        if (conn == NULL) {
+            Log("mysql_init failed");
+            return;
+        }
+
+        if (mysql_real_connect(conn, "127.0.0.1", "oj_client", "123456", "oj", 3306, NULL, 0) == NULL) {
+            Log("mysql_real_connect failed: " + std::string(mysql_error(conn)));
+            mysql_close(conn);
+            return;
+        }
+        
+        mysql_set_character_set(conn, "utf8");
+
+        int count = 0;
+        for(const auto& c : contests) {
+            if (count >= 20) break; 
+
+            char* name_esc = new char[c.name.length() * 2 + 1];
+            mysql_real_escape_string(conn, name_esc, c.name.c_str(), c.name.length());
+            
+            char* link_esc = new char[c.link.length() * 2 + 1];
+            mysql_real_escape_string(conn, link_esc, c.link.c_str(), c.link.length());
+
+            char* cid_esc = new char[c.contest_id.length() * 2 + 1];
+            mysql_real_escape_string(conn, cid_esc, c.contest_id.c_str(), c.contest_id.length());
+
+            char* source_esc = new char[c.source.length() * 2 + 1];
+            mysql_real_escape_string(conn, source_esc, c.source.c_str(), c.source.length());
+
+            std::string sql = "INSERT INTO contests (contest_id, name, start_time, end_time, link, source, status, last_crawl_time) VALUES ('" 
+                              + std::string(cid_esc) + "', '" 
+                              + std::string(name_esc) + "', '" 
+                              + c.start_time + "', '" 
+                              + c.end_time + "', '" 
+                              + std::string(link_esc) + "', '" 
+                              + std::string(source_esc) + "', '" 
+                              + c.status + "', NOW()) "
+                              "ON DUPLICATE KEY UPDATE "
+                              "name='" + std::string(name_esc) + "', "
+                              "start_time='" + c.start_time + "', "
+                              "end_time='" + c.end_time + "', "
+                              "status='" + c.status + "', "
+                              "last_crawl_time=NOW()";
+            
+            if (mysql_query(conn, sql.c_str())) {
+                Log("Insert/Update failed for " + c.contest_id + ": " + mysql_error(conn));
+            }
+
+            delete[] name_esc;
+            delete[] link_esc;
+            delete[] cid_esc;
+            delete[] source_esc;
+            count++;
+        }
+        
+        mysql_close(conn);
+        Log("Database sync completed for " + std::to_string(count) + " items.");
+    }
+
+    void InvalidateRedisCache() {
+#ifdef ENABLE_REDIS
+        redisContext *c = redisConnect(REDIS_HOST.c_str(), REDIS_PORT);
+        if (c == NULL || c->err) {
+            if (c) redisFree(c);
+            return;
+        }
+        
+        redisReply *reply = (redisReply*)redisCommand(c, "KEYS contest:page:*");
+        if (reply->type == REDIS_REPLY_ARRAY) {
+            for (size_t i = 0; i < reply->elements; i++) {
+                redisCommand(c, "DEL %s", reply->element[i]->str);
+            }
+        }
+        freeReplyObject(reply);
+        redisFree(c);
+        Log("Redis cache invalidated.");
+#endif
+    }
+
     void PerformCrawl() {
         Log("Starting crawl cycle...");
         std::string html = FetchHTML("/contests");
@@ -210,32 +312,9 @@ private:
         std::vector<Contest> contests = ParseContests(html);
         Log("Parsed " + std::to_string(contests.size()) + " contests.");
 
-        Json::Value root;
-        Json::Value arr(Json::arrayValue);
+        SaveToDB(contests);
+        InvalidateRedisCache();
         
-        for (const auto& c : contests) {
-            Json::Value item;
-            item["name"] = c.name;
-            item["start_time"] = c.start_time;
-            item["link"] = c.link;
-            arr.append(item);
-        }
-        root["contests"] = arr;
-        root["updated_at"] = (Json::UInt64)time(nullptr);
-
-        Json::FastWriter writer;
-        std::string json_output = writer.write(root);
-
-        std::ofstream file(DATA_FILE);
-        if (file.is_open()) {
-            file << json_output;
-            file.close();
-            Log("Saved to " + DATA_FILE);
-        } else {
-            Log("Failed to open " + DATA_FILE + " for writing.");
-        }
-
-        WriteToRedis(json_output);
         Log("Crawl cycle completed.");
     }
 };

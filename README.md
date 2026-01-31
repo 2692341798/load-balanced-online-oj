@@ -210,6 +210,26 @@ load-balanced-online-oj/
 └── README.md                     # 项目说明
 ```
 
+## 🏆 竞赛模块 (New)
+
+### 1. 数据库支持
+- 竞赛数据已从JSON文件迁移至MySQL `contests` 表
+- 执行 `source db_migration.sql` 创建或更新表结构
+
+### 2. 爬虫升级
+- 支持 `status` 状态识别 (Upcoming/Running/Ended)
+- 支持增量更新 (Upsert)
+- 自动速率限制与Robots.txt合规
+
+### 3. 定时任务
+- **内置调度**: 爬虫程序 `contest_crawler` 现已内置定时逻辑，默认每 30 分钟执行一次。
+- **并发控制**: 使用文件锁 `/tmp/contest_crawler.lock` 确保同一时间只有一个实例运行。
+- **启动方式**: `./crawler/contest_crawler` (建议使用 nohup 或 systemd 后台运行)
+
+### 4. 缓存配置
+- 支持 Redis 缓存 (可选)，需安装 `hiredis` 并开启编译选项
+- 默认缓存 TTL: 300秒
+
 ## 🔧 配置说明
 
 ### 编译服务器配置
