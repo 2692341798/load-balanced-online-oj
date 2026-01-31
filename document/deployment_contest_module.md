@@ -60,3 +60,9 @@ crontab -e
 1. 运行 `./contest_crawler`，检查 `logs/crawler.log` 是否显示 "Crawler finished"。
 2. 检查 `data/contests.json` 是否有内容。
 3. 启动 `oj_server`，访问 `/contest` 路由，确认页面能否正常显示竞赛列表。
+
+---
+
+**文档版本**: v0.4.0  
+**最后更新时间**: 2026-01-31  
+**维护团队**: 在线评测系统开发团队

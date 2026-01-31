@@ -89,6 +89,7 @@
 - **用户认证**: 处理用户注册、登录和密码验证
 - **管理员系统**: 题目的增删改查和发布管理
 - **社区系统**: 处理讨论区文章发布、评论互动和图片上传
+- **竞赛系统**: 展示近期竞赛列表（集成竞赛数据读取）
 
 #### 3.1.2 核心组件
 
@@ -125,6 +126,9 @@ public:
     bool CreateDiscussion(const string &title, const string &content, int author_id); // 创建讨论
     bool GetInlineComments(const string &post_id, string *json); // 获取内联评论
     bool AddInlineComment(const string &json_str); // 添加内联评论
+    
+    // 竞赛相关方法
+    bool Contest(string *html); // 获取竞赛列表页面
 };
 ```
 
@@ -251,6 +255,36 @@ namespace ns_log {
 - **Java**: 编译生成class文件，通过java命令运行，支持标准输入输出。
 - **Python**: 直接通过python命令运行脚本，通过标准输入传递测试用例。
 
+### 3.5 竞赛爬虫模块 (Contest Crawler)
+
+#### 3.5.1 职责边界
+- **数据抓取**: 定期从 Codeforces 抓取最新的竞赛信息
+- **数据解析**: 解析 HTML 页面提取竞赛名称、时间、链接等信息
+- **数据持久化**: 将处理后的数据存储为 JSON 文件或写入 Redis
+- **独立运行**: 作为独立进程运行，不影响主服务器性能
+
+#### 3.5.2 核心流程
+```
+Codeforces (External)
+       │
+       │ HTTP Get (HTML)
+       ▼
+Contest Crawler (C++)
+       │
+       │ Parse & Extract
+       ▼
+Data Storage
+(data/contests.json OR Redis)
+       │
+       │ Read
+       ▼
+OJ Server (View Layer)
+       │
+       │ Render
+       ▼
+User Browser (Contest List)
+```
+
 ## 4. 路由设计
 
 ### 4.1 主服务器路由
@@ -259,6 +293,7 @@ namespace ns_log {
 - `GET /` - 首页重定向到题目列表
 - `GET /all_questions` - 题目列表页面（需要登录）
 - `GET /question/{number}` - 题目详情页面（需要登录）
+- `GET /contest` - 竞赛列表页面
 - `GET /login` - 登录页面
 
 #### 4.1.2 API路由
@@ -909,6 +944,6 @@ if (online_num == 0) {
 
 ---
 
-**文档版本**: v0.3.5  
-**最后更新时间**: 2026-01-28  
+**文档版本**: v0.4.0  
+**最后更新时间**: 2026-01-31  
 **维护团队**: 在线评测系统开发团队

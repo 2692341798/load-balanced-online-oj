@@ -846,6 +846,35 @@ oj_server/css/
 - **编辑器集成**: 使用 `EasyMDE` 默认深色适配，自定义了 Toolbar 样式以融入整体主题。
 - **内联评论**: 使用绝对定位的 Tooltip (`#inline-comment-tooltip`) 实现上下文交互。
 
+### 14.4 竞赛列表样式 (Contest List)
+
+**文件**: `oj_server/css/contest-list.css`
+
+**设计特点**:
+- **表格布局**: 使用标准 HTML `<table>` 展示竞赛信息，表头固定。
+- **状态标签**:
+  - `status-badge`: 圆角标签，根据时间动态显示状态。
+  - `status-upcoming`: 蓝色，表示未开始。
+  - `status-running`: 绿色，表示进行中。
+  - `status-ended`: 灰色，表示已结束。
+- **品牌识别**: 标题栏包含 Codeforces Logo 图标。
+- **响应式表格**: 移动端自动转为卡片式布局 (Card View)。
+
+```css
+/* 状态标签示例 */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-upcoming {
+    background: rgba(33, 150, 243, 0.2);
+    color: #2196f3;
+}
+```
+
 ## 15. 性能优化
 
 ### 15.1 CSS优化
@@ -868,6 +897,6 @@ oj_server/css/
 
 ---
 
-**文档版本**: v0.3.5  
-**最后更新时间**: 2026-01-28  
+**文档版本**: v0.4.0  
+**最后更新时间**: 2026-01-31  
 **维护团队**: 在线评测系统开发团队

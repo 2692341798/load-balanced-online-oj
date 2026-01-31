@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-本文档描述了负载均衡式在线评测系统的数据库设计方案。系统采用MySQL 8.0+作为数据库，支持题目管理、用户认证、代码评测等核心功能。数据库设计遵循第三范式，确保数据完整性和查询效率。
+本文档描述了负载均衡式在线评测系统的数据库设计方案。系统采用MySQL 8.0+作为主要数据库，支持题目管理、用户认证、代码评测等核心功能。同时，系统使用JSON文件（或可选Redis）存储部分非关系型数据（如竞赛列表）。
 
 ## 2. 数据库环境配置
 
@@ -167,6 +167,33 @@ INSERT INTO submissions (user_id, question_id, language, result, cpu_time, mem_u
 | content | TEXT | NOT NULL | - | 评论内容 |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | likes | INT | DEFAULT 0 | 0 | 点赞数 |
+
+### 3.7 竞赛数据 (JSON Storage)
+
+**存储方式**: 文件存储 (`data/contests.json`) 或 Redis 缓存
+
+**数据描述**: 存储从 Codeforces 爬取的近期竞赛信息。
+
+**JSON结构**:
+```json
+{
+    "contests": [
+        {
+            "name": "Codeforces Round 999 (Div. 2)",
+            "start_time": "Jan/20/2026 17:35",
+            "link": "https://codeforces.com/contest/1234"
+        },
+        // ...
+    ],
+    "updated_at": 1706600000
+}
+```
+
+**字段说明**:
+- `name`: 竞赛名称
+- `start_time`: 竞赛开始时间（字符串格式）
+- `link`: 竞赛详情页链接
+- `updated_at`: 数据最后更新时间戳
 
 ## 4. 数据访问层设计
 
@@ -521,6 +548,6 @@ FLUSH PRIVILEGES;
 
 ---
 
-**文档版本**: v0.3.2  
-**最后更新时间**: 2026-01-27  
+**文档版本**: v0.4.0  
+**最后更新时间**: 2026-01-31  
 **维护团队**: 在线评测系统开发团队
