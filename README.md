@@ -14,6 +14,8 @@
 - **现代化Web界面**：响应式设计，支持深色主题
 - **实时评测**：快速反馈代码运行结果和测试用例通过情况
 - **错误处理**：完善的异常捕获和用户友好的错误提示
+- **竞赛爬虫 (Contest Crawler)**：自动获取Codeforces竞赛信息，支持自适应速率限制和robots.txt合规
+- **社区讨论 (Community & Discussions)**：支持Markdown帖子、全局评论和行内评论功能
 
 ### 🏗️ 架构设计
 - **OJ主服务器（oj_server）**：提供Web接口、题目管理、评测任务调度与结果汇总
@@ -170,6 +172,10 @@ load-balanced-online-oj/
 │   ├── httplib.h                  # HTTP服务器库
 │   ├── log.hpp                    # 日志系统
 │   └── util.hpp                   # 工具函数
+├── crawler/                       # 竞赛爬虫
+│   ├── contest_crawler.cc        # 爬虫主程序
+│   ├── crawler_common.hpp        # 爬虫公共头文件
+│   └── makefile                  # 编译配置
 ├── compile_server/                # 编译服务器
 │   ├── compile_server.cc         # 主程序
 │   ├── compile_run.hpp           # 编译运行核心
@@ -328,6 +334,6 @@ chmod +x oj_server/oj_server compile_server/compile_server
 
 ---
 
-**最后更新时间**: 2026-01-28  
-**文档版本**: v0.3.5  
+**最后更新时间**: 2026-01-31  
+**文档版本**: v0.4.0  
 **维护团队**: 在线评测系统开发团队
