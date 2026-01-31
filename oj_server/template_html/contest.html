@@ -1,29 +1,121 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>竞赛列表 - 在线评测系统</title>
+    <title>竞赛列表 - 冻梨OJ</title>
     <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/css/contest-list.css">
+    <script>
+        // XSS防护
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
+        }
+
+        function hideUserMenu() {
+            const menu = document.getElementById('user-menu');
+            const backdrop = document.getElementById('user-menu-backdrop');
+            if (menu) menu.classList.remove('visible');
+            if (backdrop) backdrop.classList.remove('visible');
+            document.removeEventListener('click', onUserMenuDocumentClick);
+        }
+
+        function onUserMenuDocumentClick(event) {
+            const profile = document.querySelector('.user-profile');
+            const menu = document.getElementById('user-menu');
+            if (!profile || !menu) {
+                hideUserMenu();
+                return;
+            }
+            if (!profile.contains(event.target) && !menu.contains(event.target)) {
+                hideUserMenu();
+            }
+        }
+
+        function toggleUserMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('user-menu');
+            const backdrop = document.getElementById('user-menu-backdrop');
+            if (!menu || !backdrop) return;
+            
+            const isVisible = menu.classList.contains('visible');
+            if (isVisible) {
+                hideUserMenu();
+            } else {
+                menu.classList.add('visible');
+                backdrop.classList.add('visible');
+                document.addEventListener('click', onUserMenuDocumentClick);
+            }
+        }
+
+        async function handleLogout(event) {
+            event.stopPropagation();
+            try {
+                const response = await fetch('/api/logout', { method: 'GET' });
+                const data = await response.json();
+                if (data.status === 0) {
+                    window.location.reload();
+                } else {
+                    alert('登出失败：' + (data.reason || '未知错误'));
+                }
+            } catch (e) {
+                alert('登出请求失败，请稍后重试');
+            }
+        }
+
+        function updateNavAuth(data) {
+            const authContainer = document.getElementById('auth-container');
+            if (data.status === 0 && data.username) {
+                authContainer.innerHTML = `
+                    <div class="user-profile" onclick="toggleUserMenu(event)">
+                        <div class="user-avatar">${data.username.charAt(0).toUpperCase()}</div>
+                        <span>${escapeHtml(data.username)}</span>
+                    </div>
+                    <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
+                    <div class="user-menu" id="user-menu">
+                        <a href="/profile" class="user-menu-item">个人中心</a>
+                        <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
+                    </div>
+                `;
+            } else {
+                authContainer.innerHTML = `<a href="/login" class="btn-text">登录 / 注册</a>`;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const authContainer = document.getElementById('auth-container');
+            if (authContainer) {
+                authContainer.innerHTML = '<span class="btn-text loading">加载中...</span>';
+                fetch('/api/user')
+                    .then(res => res.json())
+                    .then(data => updateNavAuth(data))
+                    .catch(err => updateNavAuth({status: -1}));
+            }
+        });
+    </script>
 </head>
 <body>
-    <div class="navbar">
-        <a href="/">首页</a>
-        <a href="/all_questions">题库</a>
-        <a href="/contest" class="active">竞赛</a>
-        <a href="/discussion">讨论区</a>
-        <div class="user-info">
-            {{#user_logged_in}}
-            <a href="/profile">{{username}}</a>
-            <a href="/api/logout">退出</a>
-            {{/user_logged_in}}
-            {{#user_not_logged_in}}
-            <a href="/login">登录</a>
-            <a href="/login">注册</a>
-            {{/user_not_logged_in}}
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="/">
+                <span>&lt;/&gt;</span> 冻梨OJ
+            </a>
         </div>
-    </div>
+        <div class="navbar-links">
+            <a href="/">首页</a>
+            <a href="/all_questions">题库</a>
+            <a href="/contest" class="active">竞赛</a>
+            <a href="/discussion">讨论</a>
+            <a href="#">求职</a>
+        </div>
+        <div class="navbar-auth" id="auth-container">
+            <!-- JS will populate this -->
+            {{#user_logged_in}}
+             <!-- Server-side fallback/hydration if needed, but JS will overwrite -->
+            {{/user_logged_in}}
+        </div>
+    </nav>
 
     <div class="contest-container">
         <div class="contest-header">
@@ -54,7 +146,7 @@
                             <span class="status-badge {{status_class}}">{{status}}</span>
                         </td>
                         <td class="col-action">
-                            <a href="{{link}}" target="_blank" class="btn-enter">进入竞赛</a>
+                            <a href="{{link}}" target="_blank" class="btn-primary">进入竞赛</a>
                         </td>
                     </tr>
                     {{/contests}}
@@ -64,6 +156,10 @@
 
         <div class="last-updated">
             数据更新时间: {{updated_at}}
+        </div>
+        
+        <div class="footer">
+            &copy; 2026 冻梨在线判题平台
         </div>
     </div>
 </body>

@@ -203,7 +203,7 @@ namespace ns_view
                         entry.status_class = "status-ended";
                     } else if (now < entry.start_time) {
                         entry.status = "未开始";
-                        entry.status_class = "status-not-started";
+                        entry.status_class = "status-upcoming";
                     } else if (now >= entry.start_time && now <= entry.end_time) {
                         entry.status = "进行中";
                         entry.status_class = "status-running";
