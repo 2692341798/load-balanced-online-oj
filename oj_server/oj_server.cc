@@ -61,6 +61,23 @@ int main()
         resp.set_content(html, "text/html; charset=utf-8");
     });
 
+    // 竞赛页面
+    svr.Get("/contest", [&ctrl](const Request &req, Response &resp){
+        // 权限检查 (可选，是否需要登录才能看？通常竞赛列表是公开的，但为了保持一致性可以要求登录)
+        // Codeforces allows viewing contests without login.
+        // But my implementation of `Contest` calls `AuthCheck` to get user info for navbar.
+        // It doesn't enforce login.
+        // However, `DiscussionPage` enforced login in the snippet above (lines 51-57).
+        // Let's keep it open but show user info if logged in.
+        // Wait, `DiscussionPage` in `oj_server.cc` (line 54) checks auth and redirects if not logged in.
+        // `Contest` in `oj_control` calls `AuthCheck` but ignores return value (just populates user).
+        // So I can just call `ctrl.Contest`.
+        
+        std::string html;
+        ctrl.Contest(req, &html);
+        resp.set_content(html, "text/html; charset=utf-8");
+    });
+
     // 用户要根据题目编号，获取题目的内容
     // /question/100 -> 正则匹配
     // R"()", 原始字符串raw string,保持字符串内容的原貌，不用做相关的转义

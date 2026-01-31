@@ -27,12 +27,17 @@
 *.lib
 *.sql
 
+# Logs
+logs/
+
 # Executables
 *.exe
 *.out
 *.app
 oj_server/oj_server
 compile_server/compile_server
+crawler/contest_crawler
+crawler/test_crawler
 
 # System files
 .DS_Store

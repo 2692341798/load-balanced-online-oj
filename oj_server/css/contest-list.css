@@ -1,0 +1,234 @@
+:root {
+    --primary-color: #007bff;
+    --primary-hover: #0056b3;
+    --text-color: #333;
+    --text-secondary: #666;
+    --bg-card: #fff;
+    --border-color: #ddd;
+    --status-not-started: #28a745;
+    --status-running: #dc3545;
+    --status-ended: #6c757d;
+}
+
+/* Dark theme support (matching index.css usually, but ensuring it here) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #0d6efd;
+        --primary-hover: #0b5ed7;
+        --text-color: #e1e1e1;
+        --text-secondary: #b0b0b0;
+        --bg-card: #1e1e1e;
+        --border-color: #444;
+    }
+}
+
+.contest-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.contest-header {
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.contest-header h1 {
+    color: var(--text-color);
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.cf-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Table Styles */
+.contest-table-wrapper {
+    overflow-x: auto;
+    background: var(--bg-card);
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-color);
+}
+
+.contest-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Ensure table doesn't squish too much */
+}
+
+.contest-table th,
+.contest-table td {
+    padding: 15px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.contest-table th {
+    background-color: rgba(0,0,0,0.02);
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.contest-table tr:last-child td {
+    border-bottom: none;
+}
+
+.contest-table tr:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+/* Column specifics */
+.col-name {
+    width: 40%;
+    font-weight: 500;
+    font-size: 1.1em;
+}
+
+.col-time {
+    width: 20%;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 0.95em;
+}
+
+.col-status {
+    width: 10%;
+    text-align: center;
+}
+
+.col-action {
+    width: 10%;
+    text-align: right;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+}
+
+.status-not-started {
+    background-color: var(--status-not-started);
+}
+
+.status-running {
+    background-color: var(--status-running);
+}
+
+.status-ended {
+    background-color: var(--status-ended);
+}
+
+/* Button */
+.btn-enter {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.btn-enter:hover {
+    background-color: var(--primary-hover);
+}
+
+.last-updated {
+    margin-top: 20px;
+    color: var(--text-secondary);
+    font-size: 0.8em;
+    text-align: right;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .contest-container {
+        padding: 0 10px;
+        margin: 20px auto;
+    }
+
+    .contest-header h1 {
+        font-size: 1.5rem;
+    }
+
+    /* Card view for mobile */
+    .contest-table, 
+    .contest-table thead, 
+    .contest-table tbody, 
+    .contest-table th, 
+    .contest-table td, 
+    .contest-table tr { 
+        display: block; 
+    }
+
+    .contest-table thead tr { 
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .contest-table tr { 
+        border: 1px solid var(--border-color);
+        margin-bottom: 15px;
+        border-radius: 8px;
+        padding: 10px;
+        background: var(--bg-card);
+    }
+
+    .contest-table td { 
+        border: none;
+        padding: 8px 0;
+        position: relative;
+        padding-left: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .contest-table td.col-name {
+        display: block;
+        font-size: 1.1em;
+        margin-bottom: 5px;
+        width: 100%;
+    }
+
+    .contest-table td.col-time::before {
+        content: attr(data-label);
+        font-weight: 600;
+        margin-right: 10px;
+        color: var(--text-secondary);
+    }
+
+    .col-status, .col-action {
+        width: auto;
+        text-align: left;
+        justify-content: flex-start;
+    }
+    
+    .col-action {
+        margin-top: 10px;
+    }
+    
+    .btn-enter {
+        width: 100%;
+        text-align: center;
+    }
+}

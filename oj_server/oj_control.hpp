@@ -616,6 +616,25 @@ namespace ns_control
             return true;
         }
 
+        bool Contest(const Request &req, string *html)
+        {
+            User user;
+            AuthCheck(req, &user);
+
+            std::string json_data;
+            std::ifstream in("../data/contests.json");
+            if(in.is_open()) {
+                 std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+                 json_data = content;
+                 in.close();
+            } else {
+                 json_data = "{\"contests\": [], \"updated_at\": 0}";
+            }
+
+            view_.ContestHtml(json_data, html, &user);
+            return true;
+        }
+
         // code: #include...
         // input: ""
         void Judge(const std::string &number, const std::string in_json, std::string *out_json, const std::string &user_id = "")

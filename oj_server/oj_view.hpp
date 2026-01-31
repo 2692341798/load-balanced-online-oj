@@ -2,10 +2,15 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+#include <algorithm>
+#include <ctime>
+#include <iomanip>
 #include <ctemplate/template.h>
 
 // #include "oj_model.hpp"
 #include "oj_model2.hpp"
+#include "contest_utils.hpp"
 
 namespace ns_view
 {
@@ -134,6 +139,99 @@ namespace ns_view
                 root.SetValue("username", u->username);
             } else {
                 root.ShowSection("user_not_logged_in");
+            }
+
+            ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
+            tpl->Expand(html, &root);
+        }
+
+        void ContestHtml(const std::string &json_data, std::string *html, const User *u = nullptr)
+        {
+            std::string src_html = template_path + "contest.html";
+            ctemplate::TemplateDictionary root("contest");
+
+            if (u && !u->username.empty()) {
+                root.ShowSection("user_logged_in");
+                root.SetValue("username", u->username);
+            } else {
+                root.ShowSection("user_not_logged_in");
+            }
+            
+            // Parse JSON data
+            Json::Reader reader;
+            Json::Value root_val;
+            if(reader.parse(json_data, root_val)) {
+                const Json::Value contests_json = root_val["contests"];
+                
+                std::vector<ContestEntry> entries;
+                time_t now = time(nullptr);
+                
+                for (unsigned int i = 0; i < contests_json.size(); ++i) {
+                    ContestEntry entry;
+                    entry.name = contests_json[i]["name"].asString();
+                    std::string raw_start = contests_json[i]["start_time"].asString();
+                    entry.link = contests_json[i]["link"].asString();
+                    
+                    // Parse start time "Feb/07/2026 17:35"
+                    struct tm tm = {0};
+                    if (strptime(raw_start.c_str(), "%b/%d/%Y %H:%M", &tm)) {
+                        entry.start_time = mktime(&tm);
+                    } else {
+                        entry.start_time = 0; 
+                    }
+                    
+                    // Duration: 2 hours (default)
+                    entry.end_time = entry.start_time + 7200;
+                    
+                    // Format times to YYYY-MM-DD HH:mm
+                    char buf[64];
+                    if (entry.start_time != 0) {
+                        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M", &tm);
+                        entry.start_time_str = buf;
+                        
+                        struct tm *end_tm = localtime(&entry.end_time);
+                        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M", end_tm);
+                        entry.end_time_str = buf;
+                    } else {
+                        entry.start_time_str = raw_start;
+                        entry.end_time_str = "-";
+                    }
+
+                    // Status
+                    if (entry.start_time == 0) {
+                        entry.status = "未知";
+                        entry.status_class = "status-ended";
+                    } else if (now < entry.start_time) {
+                        entry.status = "未开始";
+                        entry.status_class = "status-not-started";
+                    } else if (now >= entry.start_time && now <= entry.end_time) {
+                        entry.status = "进行中";
+                        entry.status_class = "status-running";
+                    } else {
+                        entry.status = "已结束";
+                        entry.status_class = "status-ended";
+                    }
+                    
+                    entries.push_back(entry);
+                }
+                
+                // Sort using utility
+                SortContests(entries);
+                
+                for (const auto& entry : entries) {
+                    ctemplate::TemplateDictionary *sub = root.AddSectionDictionary("contests");
+                    sub->SetValue("name", entry.name);
+                    sub->SetValue("start_time", entry.start_time_str);
+                    sub->SetValue("end_time", entry.end_time_str);
+                    sub->SetValue("link", entry.link);
+                    sub->SetValue("status", entry.status);
+                    sub->SetValue("status_class", entry.status_class);
+                }
+                
+                time_t t = root_val["updated_at"].asUInt64();
+                char buf[64];
+                strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&t));
+                root.SetValue("updated_at", buf);
             }
 
             ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);

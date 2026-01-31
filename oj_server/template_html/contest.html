@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>竞赛列表 - 在线评测系统</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/contest-list.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/">首页</a>
+        <a href="/all_questions">题库</a>
+        <a href="/contest" class="active">竞赛</a>
+        <a href="/discussion">讨论区</a>
+        <div class="user-info">
+            {{#user_logged_in}}
+            <a href="/profile">{{username}}</a>
+            <a href="/api/logout">退出</a>
+            {{/user_logged_in}}
+            {{#user_not_logged_in}}
+            <a href="/login">登录</a>
+            <a href="/login">注册</a>
+            {{/user_not_logged_in}}
+        </div>
+    </div>
+
+    <div class="contest-container">
+        <div class="contest-header">
+            <h1>
+                <img src="/images/codeforces-sponsored-by-ton.png.webp" alt="Codeforces Logo" class="cf-logo">
+                近期竞赛
+            </h1>
+        </div>
+        
+        <div class="contest-table-wrapper">
+            <table class="contest-table">
+                <thead>
+                    <tr>
+                        <th class="col-name">竞赛名称</th>
+                        <th class="col-time">开始时间</th>
+                        <th class="col-time">结束时间</th>
+                        <th class="col-status">状态</th>
+                        <th class="col-action">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#contests}}
+                    <tr>
+                        <td class="col-name" data-label="竞赛名称">{{name}}</td>
+                        <td class="col-time" data-label="开始时间">{{start_time}}</td>
+                        <td class="col-time" data-label="结束时间">{{end_time}}</td>
+                        <td class="col-status" data-label="状态">
+                            <span class="status-badge {{status_class}}">{{status}}</span>
+                        </td>
+                        <td class="col-action">
+                            <a href="{{link}}" target="_blank" class="btn-enter">进入竞赛</a>
+                        </td>
+                    </tr>
+                    {{/contests}}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="last-updated">
+            数据更新时间: {{updated_at}}
+        </div>
+    </div>
+</body>
+</html>
