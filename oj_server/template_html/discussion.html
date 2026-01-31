@@ -563,43 +563,63 @@
         
         if (!comments) comments = [];
 
-        // 1. Reset to original clean HTML to prevent nested wrapping/duplication on reload
-            if (currentPostRenderedHTML) {
-                contentDiv.innerHTML = currentPostRenderedHTML;
-            }
+        // Use the original rendered HTML as base to avoid accumulated DOM changes
+        let html = currentPostRenderedHTML || contentDiv.innerHTML;
 
-            // 2. Sort by length descending to process longer phrases first
-            const uniqueTexts = [...new Set(comments.map(c => c.selected_text))]
-                .sort((a, b) => b.length - a.length);
+        // --- PROTECT CODE BLOCKS ---
+        // Replace code blocks with placeholders to prevent inline comments from breaking code or highlighting
+        const codePlaceholders = [];
+        let placeholderIndex = 0;
+        
+        // Regex to match <pre>...</pre> AND inline <code>...</code>
+        // We match <pre> first because it usually contains <code>
+        const codeBlockRegex = /(<pre[\s\S]*?<\/pre>)|(<code[^>]*>[\s\S]*?<\/code>)/gi;
+        
+        html = html.replace(codeBlockRegex, (match) => {
+            const placeholder = `<!--CODE_PLACEHOLDER_${placeholderIndex++}-->`;
+            codePlaceholders.push(match);
+            return placeholder;
+        });
+        // ---------------------------
+
+        // Sort by length descending to process longer phrases first
+        const uniqueTexts = [...new Set(comments.map(c => c.selected_text))]
+            .sort((a, b) => b.length - a.length);
+        
+        uniqueTexts.forEach(text => {
+            if(!text) return;
             
-            let html = contentDiv.innerHTML;
-            uniqueTexts.forEach(text => {
-                if(!text) return;
+            // Escape regex special chars in the text
+            const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            try {
+                // Use Lookbehind Regex: Only match text NOT preceded by an opening tag
+                // This prevents replacing text inside attributes like onclick="..."
+                const regex = new RegExp(`(?<!<[^>]*)${escapedText}`, 'g');
                 
-                // Escape regex special chars in the text
-                const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                
-                try {
-                    // 3. Use Lookbehind Regex: Only match text NOT preceded by an opening tag
-                    // This prevents replacing text inside attributes like onclick="..."
-                    const regex = new RegExp(`(?<!<[^>]*)${escapedText}`, 'g');
-                    
-                    html = html.replace(regex, `<span class="inline-comment-target" onclick="openCommentDrawer('${escapeHtml(text.replace(/'/g, "\\'"))}')">${text}</span>`);
-                } catch (e) {
-                    console.error("Regex error for text:", text, e);
-                }
-            });
-            contentDiv.innerHTML = html;
+                html = html.replace(regex, `<span class="inline-comment-target" onclick="openCommentDrawer('${escapeHtml(text.replace(/'/g, "\\'"))}')">${text}</span>`);
+            } catch (e) {
+                console.error("Regex error for text:", text, e);
+            }
+        });
 
-            // Trigger syntax highlighting again because innerHTML was reset
-            document.querySelectorAll('#post-markdown-content pre code').forEach((el) => {
-                try {
-                    hljs.highlightElement(el);
-                } catch(e) {
-                    console.error('Highlight error:', e);
-                }
-            });
-        }
+        // --- RESTORE CODE BLOCKS ---
+        html = html.replace(/<!--CODE_PLACEHOLDER_(\d+)-->/g, (match, index) => {
+            return codePlaceholders[parseInt(index)] || match;
+        });
+        // ---------------------------
+
+        contentDiv.innerHTML = html;
+
+        // Trigger syntax highlighting again because innerHTML was reset
+        document.querySelectorAll('#post-markdown-content pre code').forEach((el) => {
+            try {
+                hljs.highlightElement(el);
+            } catch(e) {
+                console.error('Highlight error:', e);
+            }
+        });
+    }
 
         function buildCommentTree(comments) {
             const map = {};
