@@ -48,7 +48,7 @@ FLUSH PRIVILEGES;
 | description | TEXT | NOT NULL | - | 题目描述，支持Markdown格式 |
 | header | TEXT | NOT NULL | - | [已废弃] 题目预设代码头 |
 | tail | TEXT | NOT NULL | - | JSON格式的测试用例，存储测试用例的输入输出 |
-| status | INT | DEFAULT 0 | 0 | 题目状态 (0:Hidden, 1:Visible) |
+| status | INT | DEFAULT 1 | 1 | 题目状态 (0:Hidden, 1:Visible) |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
 
@@ -59,8 +59,12 @@ FLUSH PRIVILEGES;
 
 **示例数据**:
 ```sql
-INSERT INTO oj_questions (number, title, star, cpu_limit, mem_lim[{"t,peo":"121"o"expc":"1"]
-(1, '两数之和', '简单', 1, 30000, '给定一个整数数组 nums 和一个整数目标值 target...', '#include <iostream>\n...', 'int main() {\n    // 测试用例\n    return 0;\n}');
+INSERT INTO oj_questions (number, title, star, cpu_limit, mem_limit, description, header, tail, status) VALUES
+(1, '两数之和', '简单', 1, 30000,
+ '给定一个整数数组 nums 和一个整数目标值 target...',
+ '',
+ '[{\"stdin\":\"2 7 11 15\\n9\\n\",\"expected\":\"0 1\\n\"}]',
+ 1);
 ```
 
 ### 3.2 用户表 (users)
@@ -77,6 +81,7 @@ INSERT INTO oj_questions (number, title, star, cpu_limit, mem_lim[{"t,peo":"121"
 | email | VARCHAR(100) | DEFAULT NULL | NULL | 用户邮箱地址 |
 | nickname | VARCHAR(100) | DEFAULT NULL | NULL | 用户昵称 |
 | phone | VARCHAR(20) | DEFAULT NULL | NULL | 用户手机号 |
+| role | INT | DEFAULT 0 | 0 | 用户角色 (0:User, 1:Admin) |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
 
@@ -178,19 +183,22 @@ INSERT INTO submissions (user_id, question_id, language, result, cpu_time, mem_u
 
 | 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
 |--------|----------|------|--------|------|
-| contest_id | VARCHAR(64) | PRIMARY KEY | - | 竞赛ID (唯一标识) |
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | - | 自增主键 |
+| contest_id | VARCHAR(50) | NOT NULL | - | 平台竞赛ID |
 | name | VARCHAR(255) | NOT NULL | - | 竞赛名称 |
-| start_time | VARCHAR(64) | NOT NULL | - | 开始时间 |
-| end_time | VARCHAR(64) | NOT NULL | - | 结束时间 |
-| link | VARCHAR(512) | NOT NULL | - | 竞赛链接 |
-| source | VARCHAR(32) | NOT NULL | - | 来源 (Codeforces/LeetCode) |
-| status | VARCHAR(16) | NOT NULL | - | 状态 (upcoming/running/ended) |
-| last_crawl_time | TIMESTAMP | - | CURRENT_TIMESTAMP | 最后爬取时间 |
+| start_time | DATETIME | NOT NULL | - | 开始时间 |
+| end_time | DATETIME | NOT NULL | - | 结束时间 |
+| link | VARCHAR(255) | NOT NULL | - | 竞赛链接 |
+| source | VARCHAR(50) | DEFAULT 'Codeforces' | Codeforces | 来源 (Codeforces/LeetCode) |
+| status | VARCHAR(20) | DEFAULT 'upcoming' | upcoming | 状态 (upcoming/running/ended) |
+| last_crawl_time | DATETIME | DEFAULT NULL | NULL | 最后爬取时间 |
+| created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
 
 **索引设计**:
-- `PRIMARY KEY (contest_id)`: 主键索引
-- `INDEX idx_source (source)`: 来源索引
-- `INDEX idx_status (status)`: 状态索引
+- `PRIMARY KEY (id)`: 主键索引
+- `UNIQUE KEY idx_source_id (source, contest_id)`: 竞赛唯一性约束（按来源+平台ID）
+- `INDEX idx_status_time (status, start_time)`: 按状态与时间查询优化
 
 ## 4. 数据访问层设计
 
@@ -546,5 +554,5 @@ FLUSH PRIVILEGES;
 ---
 
 **最后更新时间**: 2026-02-01  
-**文档版本**: v0.5.3  
+**文档版本**: v0.5.4  
 **维护团队**: 在线评测系统开发团队

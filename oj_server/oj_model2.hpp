@@ -84,6 +84,8 @@ namespace ns_model
         std::string content;
         std::string author_id;
         std::string author_name; // Join result
+        std::string question_id; // Related question ID (0 if none)
+        std::string question_title; // Join result
         std::string created_at;
         int likes;
         int views;
@@ -198,12 +200,14 @@ namespace ns_model
                               "`title` varchar(255) NOT NULL,"
                               "`content` TEXT NOT NULL,"
                               "`author_id` int(11) NOT NULL,"
+                              "`question_id` int(11) DEFAULT 0,"
                               "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
                               "`likes` int(11) DEFAULT 0,"
                               "`views` int(11) DEFAULT 0,"
                               "`is_official` tinyint(1) DEFAULT 0,"
                               "PRIMARY KEY (`id`),"
-                              "INDEX `idx_author_id` (`author_id`)"
+                              "INDEX `idx_author_id` (`author_id`),"
+                              "INDEX `idx_question_id` (`question_id`)"
                               ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
             ExecuteSql(sql);
         }
@@ -453,6 +457,21 @@ namespace ns_model
                 }
             }
             
+            // Check question_id column in discussions
+            std::string check_qid = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_discussions + "' AND COLUMN_NAME = 'question_id'";
+            if(0 == mysql_query(my, check_qid.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_discussions + " ADD COLUMN question_id INT DEFAULT 0, ADD INDEX idx_question_id (question_id)";
+                    LOG(INFO) << "Upgrading discussions table: adding question_id column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
             mysql_close(my);
         }
 
@@ -1064,11 +1083,12 @@ namespace ns_model
                 return res;
             };
 
-            std::string sql = "INSERT INTO " + oj_discussions + " (title, content, author_id, is_official) VALUES ('"
+            std::string sql = "INSERT INTO " + oj_discussions + " (title, content, author_id, is_official, question_id) VALUES ('"
                 + escape(d.title) + "', '"
                 + escape(d.content) + "', '"
                 + d.author_id + "', "
-                + (d.is_official ? "1" : "0") + ")";
+                + (d.is_official ? "1" : "0") + ", "
+                + (d.question_id.empty() ? "0" : d.question_id) + ")";
 
             if(0 != mysql_query(my, sql.c_str())) {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
@@ -1081,10 +1101,12 @@ namespace ns_model
 
         bool GetAllDiscussions(std::vector<Discussion> *out)
         {
-            // Join with users to get author name
+            // Join with users to get author name and questions to get title
             std::string sql = "SELECT d.id, d.title, d.content, d.author_id, u.username, d.created_at, d.likes, d.views, d.is_official, "
-                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count "
-                              "FROM " + oj_discussions + " d LEFT JOIN " + oj_users + " u ON d.author_id = u.id "
+                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title "
+                              "FROM " + oj_discussions + " d "
+                              "LEFT JOIN " + oj_users + " u ON d.author_id = u.id "
+                              "LEFT JOIN " + oj_questions + " q ON d.question_id = q.number "
                               "ORDER BY d.created_at DESC";
             
             MYSQL *my = mysql_init(nullptr);
@@ -1100,6 +1122,7 @@ namespace ns_model
             
             MYSQL_RES *res = mysql_store_result(my);
             int rows = mysql_num_rows(res);
+            int fields = mysql_num_fields(res);
             
             for(int i = 0; i < rows; i++)
             {
@@ -1117,6 +1140,59 @@ namespace ns_model
                 d.views = row[7] ? atoi(row[7]) : 0;
                 d.is_official = (row[8] && atoi(row[8]) == 1);
                 d.comments_count = row[9] ? atoi(row[9]) : 0;
+                d.question_id = row[10] ? row[10] : "0";
+                if (fields > 11) d.question_title = row[11] ? row[11] : "";
+                
+                out->push_back(d);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        bool GetDiscussionsByQuestionId(const std::string &qid, std::vector<Discussion> *out)
+        {
+            std::string sql = "SELECT d.id, d.title, d.content, d.author_id, u.username, d.created_at, d.likes, d.views, d.is_official, "
+                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title "
+                              "FROM " + oj_discussions + " d "
+                              "LEFT JOIN " + oj_users + " u ON d.author_id = u.id "
+                              "LEFT JOIN " + oj_questions + " q ON d.question_id = q.number "
+                              "WHERE d.question_id=" + qid + " "
+                              "ORDER BY d.created_at DESC";
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            mysql_set_character_set(my, "utf8");
+            
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            MYSQL_RES *res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            int fields = mysql_num_fields(res);
+            
+            for(int i = 0; i < rows; i++)
+            {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                
+                Discussion d;
+                d.id = row[0] ? row[0] : "";
+                d.title = row[1] ? row[1] : "";
+                d.content = row[2] ? row[2] : "";
+                d.author_id = row[3] ? row[3] : "";
+                d.author_name = row[4] ? row[4] : "Unknown";
+                d.created_at = row[5] ? row[5] : "";
+                d.likes = row[6] ? atoi(row[6]) : 0;
+                d.views = row[7] ? atoi(row[7]) : 0;
+                d.is_official = (row[8] && atoi(row[8]) == 1);
+                d.comments_count = row[9] ? atoi(row[9]) : 0;
+                d.question_id = row[10] ? row[10] : "0";
+                if (fields > 11) d.question_title = row[11] ? row[11] : "";
                 
                 out->push_back(d);
             }
@@ -1128,8 +1204,10 @@ namespace ns_model
         bool GetOneDiscussion(const std::string &id, Discussion *d)
         {
             std::string sql = "SELECT d.id, d.title, d.content, d.author_id, u.username, d.created_at, d.likes, d.views, d.is_official, "
-                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count "
-                              "FROM " + oj_discussions + " d LEFT JOIN " + oj_users + " u ON d.author_id = u.id "
+                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title "
+                              "FROM " + oj_discussions + " d "
+                              "LEFT JOIN " + oj_users + " u ON d.author_id = u.id "
+                              "LEFT JOIN " + oj_questions + " q ON d.question_id = q.number "
                               "WHERE d.id=" + id;
             
             MYSQL *my = mysql_init(nullptr);
@@ -1144,6 +1222,7 @@ namespace ns_model
             }
             
             MYSQL_RES *res = mysql_store_result(my);
+            int fields = mysql_num_fields(res);
             if (mysql_num_rows(res) == 1) {
                 MYSQL_ROW row = mysql_fetch_row(res);
                 if(row) {
@@ -1157,6 +1236,8 @@ namespace ns_model
                     d->views = row[7] ? atoi(row[7]) : 0;
                     d->is_official = (row[8] && atoi(row[8]) == 1);
                     d->comments_count = row[9] ? atoi(row[9]) : 0;
+                    d->question_id = row[10] ? row[10] : "0";
+                    if (fields > 11) d->question_title = row[11] ? row[11] : "";
                     
                     mysql_free_result(res);
                     mysql_close(my);

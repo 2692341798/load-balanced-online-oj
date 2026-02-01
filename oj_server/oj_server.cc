@@ -102,6 +102,14 @@ int main()
         resp.set_content(html, "text/html; charset=utf-8");
     });
 
+    // API Get Single Question (JSON)
+    svr.Get(R"(/api/question/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string number = req.matches[1];
+        std::string json;
+        ctrl.GetQuestionJson(number, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
     // 用户提交代码，使用我们的判题功能(1. 每道题的测试用例 2. compile_and_run)
     svr.Post(R"(/judge/(\d+))", [&ctrl](const Request &req, Response &resp){
         // 权限检查
@@ -451,9 +459,18 @@ int main()
         reader.parse(req.body, root);
         std::string title = root["title"].asString();
         std::string content = root["content"].asString();
+        std::string question_id = root.isMember("question_id") ? root["question_id"].asString() : "0";
         
         std::string json;
-        ctrl.AddDiscussion(user.id, title, content, &json);
+        ctrl.AddDiscussion(user.id, title, content, question_id, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+    
+    // Get Discussions by Question ID
+    svr.Get(R"(/api/discussions/question/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string qid = req.matches[1];
+        std::string json;
+        ctrl.GetDiscussionsByQuestionId(qid, &json);
         resp.set_content(json, "application/json;charset=utf-8");
     });
 

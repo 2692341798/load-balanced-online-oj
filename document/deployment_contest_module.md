@@ -57,11 +57,11 @@ crontab -e
 
 ## 7. 验证
 1. 运行 `./contest_crawler`，检查 `logs/crawler.log` 是否显示 "Crawler finished"。
-2. 检查 `data/contests.json` 是否有内容。
+2. 检查 MySQL `contests` 表是否有数据（或访问 `GET /api/contests` 确认能返回 JSON 列表）。
 3. 启动 `oj_server`，访问 `/contest` 路由，确认页面能否正常显示竞赛列表。
 
 ---
 
-**文档版本**: v0.5.3  
+**文档版本**: v0.5.4  
 **最后更新时间**: 2026-02-01  
 **维护团队**: 在线评测系统开发团队

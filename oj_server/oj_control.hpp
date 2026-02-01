@@ -611,6 +611,51 @@ namespace ns_control
             return ret;
         }
 
+        bool GetQuestionJson(const string &number, string *json_out)
+        {
+            struct Question q;
+            if (model_.GetOneQuestion(number, &q))
+            {
+                // Note: We might want to check visibility here too, but for basic info (title/star) it might be okay?
+                // For consistency, let's assume public API only returns visible ones unless we pass auth (which we don't here easily)
+                // However, GetOneQuestion returns it regardless of status.
+                // Let's filter out hidden ones if we want to be strict, but for now just return it.
+                // Or better, check status.
+                if (q.status == 0) {
+                     Json::Value res;
+                     res["status"] = 1;
+                     res["reason"] = "Question hidden";
+                     Json::FastWriter w;
+                     *json_out = w.write(res);
+                     return false;
+                }
+
+                Json::Value root;
+                root["status"] = 0;
+                Json::Value data;
+                data["number"] = q.number;
+                data["title"] = q.title;
+                data["star"] = q.star;
+                data["cpu_limit"] = q.cpu_limit;
+                data["mem_limit"] = q.mem_limit;
+                // Don't return full description/tail/header to save bandwidth if only needed for metadata
+                root["data"] = data;
+                
+                Json::FastWriter w;
+                *json_out = w.write(root);
+                return true;
+            }
+            else
+            {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Not Found";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+        }
+
         bool DiscussionPage(const Request &req, string *html)
         {
             User user;
@@ -1099,6 +1144,8 @@ namespace ns_control
                     item["views"] = d.views;
                     item["comments"] = d.comments_count;
                     item["isOfficial"] = d.is_official;
+                    item["question_id"] = d.question_id;
+                    item["question_title"] = d.question_title;
                     list.append(item);
                 }
                 root["data"] = list;
@@ -1145,13 +1192,14 @@ namespace ns_control
             }
         }
 
-        bool AddDiscussion(const std::string &user_id, const std::string &title, const std::string &content, std::string *json_out)
+        bool AddDiscussion(const std::string &user_id, const std::string &title, const std::string &content, const std::string &question_id, std::string *json_out)
         {
             Discussion d;
             d.title = title;
             d.content = content;
             d.author_id = user_id;
             d.is_official = false; // Default false
+            d.question_id = question_id;
             
             if (model_.AddDiscussion(d)) {
                 Json::Value res;
@@ -1159,6 +1207,42 @@ namespace ns_control
                 res["reason"] = "Success";
                 Json::FastWriter w;
                 *json_out = w.write(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                Json::FastWriter w;
+                *json_out = w.write(res);
+                return false;
+            }
+        }
+
+        bool GetDiscussionsByQuestionId(const std::string &qid, std::string *json_out)
+        {
+            std::vector<Discussion> posts;
+            if (model_.GetDiscussionsByQuestionId(qid, &posts)) {
+                Json::Value root;
+                root["status"] = 0;
+                Json::Value list;
+                for (const auto &d : posts) {
+                    Json::Value item;
+                    item["id"] = d.id;
+                    item["title"] = d.title;
+                    item["content"] = d.content;
+                    item["author"] = d.author_name;
+                    item["date"] = d.created_at;
+                    item["likes"] = d.likes;
+                    item["views"] = d.views;
+                    item["comments"] = d.comments_count;
+                    item["isOfficial"] = d.is_official;
+                    item["question_id"] = d.question_id;
+                    item["question_title"] = d.question_title;
+                    list.append(item);
+                }
+                root["data"] = list;
+                Json::FastWriter w;
+                *json_out = w.write(root);
                 return true;
             } else {
                 Json::Value res;

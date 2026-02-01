@@ -293,14 +293,27 @@ User Browser (Contest List)
 - `GET /` - 首页重定向到题目列表
 - `GET /all_questions` - 题目列表页面（需要登录）
 - `GET /question/{number}` - 题目详情页面（需要登录）
+- `GET /discussion` - 讨论区页面（需要登录）
+- `GET /profile` - 个人中心页面（需要登录）
 - `GET /contest` - 竞赛列表页面
 - `GET /login` - 登录页面
 
 #### 4.1.2 API路由
 - `POST /api/register` - 用户注册
 - `POST /api/login` - 用户登录
+- `GET /api/logout` - 用户登出
 - `GET /api/user` - 获取当前用户信息
+- `GET /api/profile` - 获取个人中心数据（需要登录）
 - `POST /judge/{number}` - 代码评测（需要登录）
+- `GET /api/discussions` - 获取讨论列表
+- `GET /api/discussion/{id}` - 获取讨论详情
+- `POST /api/discussion` - 创建讨论（需要登录）
+- `POST /api/upload_image` - 上传图片（需要登录）
+- `GET /api/inline_comments/{post_id}` - 获取内联评论
+- `POST /api/inline_comment/add` - 添加内联评论（需要登录）
+- `POST /api/inline_comment/delete` - 删除内联评论（需要登录）
+- `GET /api/article_comments/{post_id}` - 获取文章评论
+- `POST /api/article_comment/add` - 添加文章评论（需要登录）
 
 #### 4.1.3 管理员路由
 - `GET /api/admin/questions` - 获取所有题目列表
@@ -321,8 +334,8 @@ struct Question {
     std::string title;     // 题目标题
     std::string star;      // 难度等级: 简单/中等/困难
     std::string desc;      // 题目描述
-    std::string header;    // 预设代码模板
-    std::string tail;      // 测试用例代码
+    std::string header;    // [已废弃] 预设代码模板
+    std::string tail;      // JSON格式测试用例（输入/预期输出）
     int cpu_limit;         // CPU时间限制(秒)
     int mem_limit;         // 内存限制(KB)
 };
@@ -941,9 +954,10 @@ if (online_num == 0) {
 - 前端交互能力有限
 - 需要手动处理AJAX请求
 - 样式和脚本管理需要规范
+- 外部CDN依赖需固定版本，避免自动升级导致线上兼容性问题（如 Markdown 渲染库 marked.js）
 
 ---
 
-**文档版本**: v0.5.3  
+**文档版本**: v0.5.4  
 **最后更新时间**: 2026-02-01  
 **维护团队**: 在线评测系统开发团队

@@ -11,8 +11,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-language_tools.js"></script>
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
-    <!-- Marked.js for Markdown rendering -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Markdown Libraries -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <!-- Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    
+
 
     <script>
         // XSS防护
@@ -183,6 +192,14 @@
                 <h1 class="problem-title"><span id="number">{{number}}</span>. {{title}}</h1>
                 <div class="problem-meta">
                     <span class="difficulty-badge">{{star}}</span>
+                    <button onclick="openSolutionEditor()" class="btn-solution">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        写题解
+                    </button>
+                    <a href="/discussion?question_id={{number}}" class="btn-solution" style="margin-left:8px; text-decoration:none; display:inline-flex; align-items:center; background:#444;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        查看题解
+                    </a>
                     <!-- 可以添加更多元数据，如通过率等 -->
                 </div>
             </div>
@@ -442,6 +459,146 @@
                 ace.edit("code").resize();
             }
         });
+    </script>
+    <!-- Solution Modal -->
+    <div id="solution-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">写题解</div>
+                <button onclick="closeSolutionEditor()" style="background:none; border:none; color:#aaa; font-size:24px; cursor:pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="solution-title" class="form-input" placeholder="请输入题解标题..." style="font-weight:600;">
+                <textarea id="solution-content"></textarea>
+            </div>
+            <div class="modal-footer">
+                <span id="auto-save-status" style="color:#888; font-size:12px; align-self:center; margin-right:auto;"></span>
+                <button onclick="closeSolutionEditor()" style="padding:8px 16px; background:#444; color:white; border:none; border-radius:4px; cursor:pointer;">取消</button>
+                <button onclick="submitSolution()" style="padding:8px 16px; background:#2cbb5d; color:white; border:none; border-radius:4px; cursor:pointer;">发布题解</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast" class="toast">发布成功！</div>
+
+    <script>
+        let solutionEditor = null;
+        let autoSaveTimer = null;
+        const problemId = "{{number}}"; // Rendered by CTemplate
+
+        function openSolutionEditor() {
+            document.getElementById('solution-modal').style.display = 'flex';
+            if (!solutionEditor) {
+                solutionEditor = new EasyMDE({
+                    element: document.getElementById("solution-content"),
+                    spellChecker: false,
+                    autosave: {
+                        enabled: false, // We implement manual autosave logic to sync with title
+                    },
+                    status: ["lines", "words", "cursor"],
+                    placeholder: "请输入题解内容...\n\n### 算法思路\n\n### 代码实现\n\n```cpp\n\n```\n\n### 复杂度分析",
+                    renderingConfig: {
+                        codeSyntaxHighlighting: true,
+                    },
+                });
+                
+                // Load draft
+                loadDraft();
+                
+                // Setup auto-save
+                solutionEditor.codemirror.on("change", () => {
+                    scheduleAutoSave();
+                });
+                document.getElementById('solution-title').addEventListener('input', scheduleAutoSave);
+            }
+        }
+
+        function closeSolutionEditor() {
+            document.getElementById('solution-modal').style.display = 'none';
+        }
+
+        function scheduleAutoSave() {
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
+            document.getElementById('auto-save-status').innerText = '正在保存...';
+            autoSaveTimer = setTimeout(() => {
+                saveDraft();
+            }, 2000);
+        }
+
+        function saveDraft() {
+            if (!solutionEditor) return;
+            const draft = {
+                title: document.getElementById('solution-title').value,
+                content: solutionEditor.value(),
+                timestamp: Date.now()
+            };
+            localStorage.setItem('solution_draft_' + problemId, JSON.stringify(draft));
+            document.getElementById('auto-save-status').innerText = '草稿已保存 ' + new Date().toLocaleTimeString();
+        }
+
+        function loadDraft() {
+            const saved = localStorage.getItem('solution_draft_' + problemId);
+            if (saved) {
+                try {
+                    const draft = JSON.parse(saved);
+                    document.getElementById('solution-title').value = draft.title || '';
+                    if (solutionEditor) {
+                        solutionEditor.value(draft.content || '');
+                    }
+                } catch(e) {}
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        async function submitSolution() {
+            const title = document.getElementById('solution-title').value.trim();
+            const content = solutionEditor.value().trim();
+            
+            if (!title) {
+                alert('请输入标题');
+                return;
+            }
+            if (!content) {
+                alert('请输入内容');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/discussion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        question_id: problemId
+                    })
+                });
+                
+                const res = await response.json();
+                if (res.status === 0) {
+                    showToast('发布成功！即将跳转...');
+                    // Clear draft
+                    localStorage.removeItem('solution_draft_' + problemId);
+                    setTimeout(() => {
+                        window.location.href = '/discussion'; // Or reload to see it in solutions tab if implemented
+                    }, 1500);
+                    closeSolutionEditor();
+                } else {
+                    alert('发布失败: ' + res.reason);
+                }
+            } catch(e) {
+                alert('网络请求失败');
+            }
+        }
     </script>
 </body>
 </html>

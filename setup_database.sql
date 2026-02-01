@@ -105,7 +105,25 @@ CREATE TABLE IF NOT EXISTS `inline_comments` (
   INDEX `idx_post_id` (`post_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='段内评论表';
 
+-- Table: contests
+-- Stores contest list data fetched by crawler
+CREATE TABLE IF NOT EXISTS `contests` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `contest_id` varchar(50) NOT NULL COMMENT 'Platform ID',
+  `name` varchar(255) NOT NULL,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime NOT NULL,
+  `link` varchar(255) NOT NULL,
+  `source` varchar(50) DEFAULT 'Codeforces',
+  `status` varchar(20) DEFAULT 'upcoming',
+  `last_crawl_time` datetime DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_source_id` (`source`, `contest_id`),
+  INDEX `idx_status_time` (`status`, `start_time` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT INTO users (username, password, email, nickname, role) 
 SELECT 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin@example.com', 'Administrator', 1 
 WHERE NOT EXISTS (SELECT * FROM users WHERE username = 'admin');
-

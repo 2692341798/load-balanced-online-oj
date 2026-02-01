@@ -9,7 +9,7 @@
     <!-- Markdown Libraries -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <!-- PDF.js for PDF import -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -37,12 +37,89 @@
             display: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
+
+        .tag-solution {
+            background: #8e44ad;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 6px;
+        }
+
+        .problem-link-badge {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .problem-link-badge a {
+            color: var(--text-secondary);
+            text-decoration: underline;
+        }
+
+        .solution-info-box {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(44, 187, 93, 0.1);
+            border-left: 4px solid #2cbb5d;
+            border-radius: 4px;
+        }
+        
+        .solution-info-title {
+            font-weight: 600;
+            color: #2cbb5d;
+        }
+        
+        .solution-info-link {
+            color: var(--text-main);
+            text-decoration: underline;
+        }
     </style>
     <script>
-        // XSS防护
+        // --- DOMPurify Configuration ---
+        // Configure DOMPurify to allow specific tags/attributes for code highlighting and math
+        DOMPurify.addHook('beforeSanitizeElements', (currentNode) => {
+            // Optional: You can do some pre-processing here if needed
+        });
+
+        // Use a less aggressive configuration for code content
+        const purifyConfig = {
+            ADD_TAGS: ['iframe'], // If you want to allow embedded videos etc.
+            ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling'],
+            // Crucial: Allow data attributes for Highlight.js or other libs
+            ALLOW_DATA_ATTR: true, 
+            // Prevent stripping of valid code content that looks like tags (e.g. <iostream>)
+            // However, DOMPurify parses HTML. If marked.js produces &lt;iostream&gt;, DOMPurify sees text.
+            // If marked.js produces raw <iostream> (which it shouldn't for code blocks), DOMPurify will strip it.
+            // So the key is to ensure marked.js escapes code correctly.
+        };
+
+        function normalizeMarkdown(input) {
+            if (input === null || input === undefined) return '';
+            if (typeof input === 'string') return input;
+            if (typeof input === 'object') {
+                if (typeof input.content === 'string') return input.content;
+                try {
+                    return JSON.stringify(input, null, 2);
+                } catch (e) {
+                    return String(input);
+                }
+            }
+            return String(input);
+        }
+
+        marked.setOptions({
+            mangle: false,
+            headerIds: false
+        });
+
+        // XSS防护 (moved helper back for other usages)
         function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const str = String(text);
             const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
+            return str.replace(/[&<>"']/g, function(m) { return map[m]; });
         }
 
         function hideUserMenu() {
@@ -170,7 +247,27 @@
         
         async function initDiscussion() {
             try {
-                const response = await fetch('/api/discussions');
+                // Check URL params for question_id
+                const urlParams = new URLSearchParams(window.location.search);
+                const questionId = urlParams.get('question_id');
+                
+                let url = '/api/discussions';
+                let headerTitle = "讨论区";
+                
+                if (questionId) {
+                    url = `/api/discussions/question/${questionId}`;
+                    // Fetch question info to update header
+                    fetch(`/api/question/${questionId}`)
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.status === 0 && res.data) {
+                                document.querySelector('.discussion-header h1').innerHTML = 
+                                    `题解列表: <a href="/question/${res.data.number}" style="color:var(--accent-color); text-decoration:none;">${res.data.number}. ${res.data.title}</a>`;
+                            }
+                        });
+                }
+
+                const response = await fetch(url);
                 const res = await response.json();
                 if (res.status === 0) {
                     renderFeed(res.data || []);
@@ -193,17 +290,32 @@
                 return;
             }
             
-            container.innerHTML = posts.map(post => `
+            container.innerHTML = posts.map(post => {
+                let solutionBadge = '';
+                let problemLink = '';
+                
+                if (post.question_id && post.question_id != "0") {
+                     solutionBadge = '<span class="tag-solution" style="background:#8e44ad; color:white; padding:2px 6px; border-radius:4px; font-size:12px; margin-right:6px;">题解</span>';
+                     if (post.question_title) {
+                         problemLink = `<div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">关联题目: <a href="/question/${post.question_id}" style="color:var(--text-secondary); text-decoration:underline;">${post.question_id}. ${escapeHtml(post.question_title)}</a></div>`;
+                     }
+                }
+
+                return `
                 <div class="discussion-card" onclick="openPost(${post.id})">
                     <div class="card-header">
                         <div class="user-info">
                             <span class="username">${escapeHtml(post.author)}</span>
                             <span class="date">· ${post.date}</span>
                         </div>
-                        ${post.isOfficial ? '<span class="tag-official">官方</span>' : ''}
+                        <div style="display:flex; gap:5px;">
+                            ${solutionBadge}
+                            ${post.isOfficial ? '<span class="tag-official">官方</span>' : ''}
+                        </div>
                     </div>
                     <h3 class="card-title">${escapeHtml(post.title)}</h3>
                     <p class="card-summary">${escapeHtml(post.summary)}</p>
+                    ${problemLink}
                     <div class="card-footer">
                         <div class="stats">
                             <span>👍 ${post.likes}</span>
@@ -212,7 +324,7 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         let currentPostId = "";
@@ -227,11 +339,23 @@
                 const res = await response.json();
                 if (res.status === 0 && res.data) {
                     const post = res.data;
-                    const renderedHTML = marked.parse(post.content || '');
+                    const markdown = normalizeMarkdown(post.content);
+                    const unsafeHTML = marked.parse(markdown);
+                    const renderedHTML = DOMPurify.sanitize(unsafeHTML, purifyConfig);
                     currentPostRenderedHTML = renderedHTML;
+
+                    let problemInfo = '';
+                    if (post.question_id && post.question_id != "0" && post.question_title) {
+                        problemInfo = `<div class="solution-info-box">
+                            <span class="solution-info-title">题解关联题目：</span>
+                            <a href="/question/${post.question_id}" class="solution-info-link">${post.question_id}. ${escapeHtml(post.question_title)}</a>
+                        </div>`;
+                    }
+
                     document.getElementById('post-detail-content').innerHTML = `
                         <h1>${escapeHtml(post.title)}</h1>
                         <div class="post-meta">${escapeHtml(post.author)} · ${post.date} · 👁 ${post.views}</div>
+                        ${problemInfo}
                         <div class="markdown-body" id="post-markdown-content">
                             ${renderedHTML} 
                         </div>
@@ -254,7 +378,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                document.getElementById('post-detail-content').innerHTML = '<div class="error">加载异常</div>';
+                document.getElementById('post-detail-content').innerHTML = '<div class="error">加载异常: ' + escapeHtml(e.message) + '</div>';
             }
         }
 
@@ -590,14 +714,15 @@
             if(!text) return;
             
             // Escape regex special chars in the text
-            const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const textStr = String(text);
+            const escapedText = textStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             
             try {
                 // Use Lookbehind Regex: Only match text NOT preceded by an opening tag
                 // This prevents replacing text inside attributes like onclick="..."
                 const regex = new RegExp(`(?<!<[^>]*)${escapedText}`, 'g');
                 
-                html = html.replace(regex, `<span class="inline-comment-target" onclick="openCommentDrawer('${escapeHtml(text.replace(/'/g, "\\'"))}')">${text}</span>`);
+                html = html.replace(regex, `<span class="inline-comment-target" onclick="openCommentDrawer('${escapeHtml(textStr.replace(/'/g, "\\'"))}')">${textStr}</span>`);
             } catch (e) {
                 console.error("Regex error for text:", text, e);
             }
@@ -657,13 +782,13 @@
                             ${isOwner ? `<button onclick="deleteComment('${c.id}')" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.9em;">删除</button>` : ''}
                         </div>
                     </div>
-                    <div class="comment-content" style="color:var(--text-main); line-height:1.5;">${DOMPurify.sanitize(marked.parse(c.content))}</div>
+                    <div class="comment-content" style="color:var(--text-main); line-height:1.5;">${DOMPurify.sanitize(marked.parse(String(c.content || '')), purifyConfig)}</div>
                     
                     <div id="reply-input-${c.id}" class="reply-input-container" style="display:none; margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:4px;">
                         <textarea id="reply-text-${c.id}" placeholder="回复 ${escapeHtml(c.username)}..." style="width:100%; height:60px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px; padding:5px; margin-bottom:5px;"></textarea>
                         <div style="text-align:right;">
                              <button onclick="document.getElementById('reply-input-${c.id}').style.display='none'" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; margin-right:10px;">取消</button>
-                             <button onclick="submitReply('${c.id}', '${escapeHtml(c.selected_text.replace(/'/g, "\\'"))}')" style="padding:4px 12px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">提交</button>
+                             <button onclick="submitReply('${c.id}', '${escapeHtml(String(c.selected_text || '').replace(/'/g, "\\'"))}')" style="padding:4px 12px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">提交</button>
                         </div>
                     </div>
                     

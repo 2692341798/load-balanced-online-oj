@@ -294,6 +294,10 @@ const message = `欢迎，${userName}！`;
 - **路由模拟**: 在不引入前端路由库的情况下，可通过 URL Hash 或 History API 模拟路由导航。
 - **组件化**: 将独立功能模块（如讨论区、编辑器）封装为独立的 HTML 片段或 JS 函数。
 
+#### 2.2.5 外部依赖与安全
+- **CDN依赖固定版本**: 外部库（如 marked.js / highlight.js / DOMPurify）必须显式固定版本号，避免自动升级引入破坏性变更。
+- **富文本安全**: Markdown 渲染后的 HTML 必须经过 `DOMPurify.sanitize` 过滤后再插入页面，禁止直接 `innerHTML = marked.parse(...)`。
+
 ## 3. 设计原则
 
 ### 3.1 SOLID原则
@@ -1263,6 +1267,6 @@ git log --pretty=format:"- %s" v2.0.0..v2.1.0 > CHANGELOG.md
 
 ---
 
-**文档版本**: v0.5.3  
+**文档版本**: v0.5.4  
 **最后更新时间**: 2026-02-01  
 **维护团队**: 在线评测系统开发团队

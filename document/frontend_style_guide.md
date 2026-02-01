@@ -845,6 +845,7 @@ oj_server/css/
 - **标签样式**: `.tag` 使用半透明背景，保持视觉轻量。
 - **编辑器集成**: 使用 `EasyMDE` 默认深色适配，自定义了 Toolbar 样式以融入整体主题。
 - **内联评论**: 使用绝对定位的 Tooltip (`#inline-comment-tooltip`) 实现上下文交互。
+- **Markdown渲染约束**: 使用固定版本的 `marked`（例如 `marked@4.3.0`）并在插入 DOM 前用 `DOMPurify.sanitize` 过滤，避免 CDN 自动升级与 XSS 风险。
 
 ### 14.4 竞赛列表样式 (Contest List)
 
@@ -897,6 +898,6 @@ oj_server/css/
 
 ---
 
-**文档版本**: v0.5.3  
+**文档版本**: v0.5.4  
 **最后更新时间**: 2026-02-01  
 **维护团队**: 在线评测系统开发团队

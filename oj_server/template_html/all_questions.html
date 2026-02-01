@@ -9,7 +9,7 @@
     <!-- Markdown Libraries -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
     <style>
         .inline-comment-target {
@@ -344,7 +344,7 @@
                 const res = await response.json();
                 if (res.status === 0 && res.data) {
                     const post = res.data;
-                    const renderedHTML = marked.parse(post.content || '');
+                    const renderedHTML = DOMPurify.sanitize(marked.parse(String(post.content || '')));
                     currentPostRenderedHTML = renderedHTML;
                     document.getElementById('post-detail-content').innerHTML = `
                         <h1>${escapeHtml(post.title)}</h1>
@@ -361,7 +361,7 @@
                 }
             } catch (e) {
                 console.error(e);
-                document.getElementById('post-detail-content').innerHTML = '<div class="error">加载异常</div>';
+                document.getElementById('post-detail-content').innerHTML = '<div class="error">加载异常: ' + escapeHtml(e.message) + '</div>';
             }
         }
 
@@ -591,7 +591,7 @@
                 if(!text) return;
                 
                 // Escape regex special chars in the text
-                const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const escapedText = String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 
                 try {
                     // 3. Use Lookbehind Regex: Only match text NOT preceded by an opening tag
@@ -642,13 +642,13 @@
                             ${isOwner ? `<button onclick="deleteComment('${c.id}')" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.9em;">删除</button>` : ''}
                         </div>
                     </div>
-                    <div class="comment-content" style="color:var(--text-main); line-height:1.5;">${DOMPurify.sanitize(marked.parse(c.content))}</div>
+                    <div class="comment-content" style="color:var(--text-main); line-height:1.5;">${DOMPurify.sanitize(marked.parse(String(c.content || '')))}</div>
                     
                     <div id="reply-input-${c.id}" class="reply-input-container" style="display:none; margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:4px;">
                         <textarea id="reply-text-${c.id}" placeholder="回复 ${escapeHtml(c.username)}..." style="width:100%; height:60px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text-main); border-radius:4px; padding:5px; margin-bottom:5px;"></textarea>
                         <div style="text-align:right;">
                              <button onclick="document.getElementById('reply-input-${c.id}').style.display='none'" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; margin-right:10px;">取消</button>
-                             <button onclick="submitReply('${c.id}', '${escapeHtml(c.selected_text.replace(/'/g, "\\'"))}')" style="padding:4px 12px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">提交</button>
+                             <button onclick="submitReply('${c.id}', '${escapeHtml(String(c.selected_text || '').replace(/'/g, "\\'"))}')" style="padding:4px 12px; background:#2cbb5d; border:none; border-radius:4px; color:white; cursor:pointer;">提交</button>
                         </div>
                     </div>
                     

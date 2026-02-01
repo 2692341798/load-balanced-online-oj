@@ -741,6 +741,27 @@ document/
 
 ---
 
+## 📅 2026-02-01 | V0.5.4 讨论区 Markdown 渲染修复
+### 🎯 核心目标
+修复讨论区文章详情无法渲染的问题，消除浏览器控制台 `TypeError: e.replace is not a function` 报错。
+
+### 🔧 关键修复
+#### 1. 根因定位
+- 讨论区页面通过 CDN 引入 `marked` 未固定版本，CDN 自动升级后与现有 `highlight` 配置不兼容，触发 `marked`/`highlight.js` 组合调用链中的类型错误并中断渲染。
+
+#### 2. 解决方案
+- 固定 `marked` 版本为 `marked@4.3.0`，避免线上自动升级引入破坏性变更。
+- 移除 `marked` 内置 `highlight` 配置，改为渲染完成后使用 `hljs.highlightElement` 对代码块做高亮，降低耦合。
+- 渲染 HTML 时统一使用 `DOMPurify.sanitize` 过滤后再插入 DOM，提升安全性与稳定性。
+
+### ✅ 验证结果
+- 讨论区文章详情页可正常渲染 Markdown 内容，控制台无异常。
+- 代码块高亮可正常显示，且与内联评论渲染流程兼容。
+
+### 📊 版本统计
+- **标签状态**: ✅ V0.5.4
+- **核心变更**: Discussion Markdown rendering stabilized (pinned marked.js + sanitize + highlighting pipeline).
+
 *最后更新：2026年2月1日  
 维护者：AI Assistant  
 文档状态：活跃维护*
