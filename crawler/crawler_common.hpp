@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <json/json.h>
+#include <iomanip>
 #include <sstream>
 #include <iostream>
 #include <map>
@@ -9,6 +11,7 @@
 #include <thread>
 #include <algorithm>
 #include <cmath>
+#include <json/json.h>
 
 struct Contest {
     std::string contest_id;
@@ -57,81 +60,82 @@ inline std::string StandardizeTime(const std::string& raw) {
     return raw; // Fallback
 }
 
-inline std::vector<Contest> ParseContests(const std::string& html) {
+inline std::vector<Contest> ParseCodeforcesAPI(const std::string& json_str) {
     std::vector<Contest> contests;
-    std::regex row_regex("<tr[^>]*data-contestId=\"(\\d+)\"[^>]*>([\\s\\S]*?)</tr>");
-    auto words_begin = std::sregex_iterator(html.begin(), html.end(), row_regex);
-    auto words_end = std::sregex_iterator();
+    Json::Value root;
+    Json::Reader reader;
+    if (!reader.parse(json_str, root)) return contests;
 
-    for (std::sregex_iterator i = words_begin; i != words_end; ++i) {
-        std::smatch match = *i;
-        std::string row_content = match[2];
-        std::string contest_id = match[1];
-        
+    if (root["status"].asString() != "OK") return contests;
+    
+    const auto& list = root["result"];
+    for (const auto& item : list) {
         Contest c;
-        c.contest_id = contest_id;
-        c.link = "https://codeforces.com/contest/" + contest_id;
+        c.contest_id = std::to_string(item["id"].asInt());
+        c.name = item["name"].asString();
+        c.link = "https://codeforces.com/contest/" + c.contest_id;
         c.source = "Codeforces";
         
-        std::regex td_regex("<td[^>]*>([\\s\\S]*?)</td>");
-        auto td_begin = std::sregex_iterator(row_content.begin(), row_content.end(), td_regex);
-        auto td_end = std::sregex_iterator();
+        long long start_ts = item["startTimeSeconds"].asInt64();
+        int duration = item["durationSeconds"].asInt();
+        long long end_ts = start_ts + duration;
         
-        int idx = 0;
-        int duration_seconds = 7200;
-        std::string raw_start;
-
-        for (std::sregex_iterator j = td_begin; j != td_end; ++j) {
-            std::string cell = (*j)[1];
-            std::regex tag_remove("<[^>]*>");
-            std::string clean_text = std::regex_replace(cell, tag_remove, "");
-            clean_text = std::regex_replace(clean_text, std::regex("^\\s+|\\s+$"), ""); // Trim
-            
-            if (idx == 0) { 
-                c.name = clean_text;
-            } else if (idx == 2) { 
-                raw_start = clean_text;
-                // Clean up "Enter »" or similar artifacts if present in column 2?
-                // Usually column 2 is start time.
-                // Remove extra spaces/newlines
-                // Codeforces format: "Feb/07/2026 17:35"
-                // Sometimes it has a link.
-                // Let's assume clean_text is the time string.
-            } else if (idx == 3) {
-                // Duration
-                duration_seconds = ParseDuration(clean_text);
-            }
-            idx++;
-        }
+        time_t st = start_ts;
+        char buf[64];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&st));
+        c.start_time = std::string(buf);
         
-        if (!c.name.empty() && !raw_start.empty()) {
-             // Standardize start time
-             c.start_time = StandardizeTime(raw_start);
-             
-             // Calculate End Time
-             struct tm tm = {0};
-             if (strptime(c.start_time.c_str(), "%Y-%m-%d %H:%M:%S", &tm)) {
-                 time_t start_t = mktime(&tm);
-                 time_t end_t = start_t + duration_seconds;
-                 char buf[64];
-                 struct tm *end_tm = localtime(&end_t);
-                 strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", end_tm);
-                 c.end_time = std::string(buf);
-                 
-                 // Determine Status
-                 time_t now = time(nullptr);
-                 if (now < start_t) c.status = "upcoming";
-                 else if (now >= start_t && now <= end_t) c.status = "running";
-                 else c.status = "ended";
-             } else {
-                 c.end_time = c.start_time; // Fallback
-                 c.status = "upcoming"; // Safe default
-             }
+        time_t et = end_ts;
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&et));
+        c.end_time = std::string(buf);
+        
+        std::string phase = item["phase"].asString();
+        if (phase == "BEFORE") c.status = "upcoming";
+        else if (phase == "CODING") c.status = "running";
+        else c.status = "ended";
+        
+        contests.push_back(c);
+    }
+    return contests;
+}
 
-             if (c.name.find("Enter") == std::string::npos && raw_start.find("Before start") == std::string::npos) {
-                 contests.push_back(c);
-             }
-        }
+inline std::vector<Contest> ParseLeetCodeContests(const std::string& json_str) {
+    std::vector<Contest> contests;
+    Json::Value root;
+    Json::Reader reader;
+    if (!reader.parse(json_str, root)) return contests;
+
+    if (!root.isMember("data") || !root["data"].isMember("contestHistory")) return contests;
+    
+    const auto& history = root["data"]["contestHistory"];
+    const auto& list = history["contests"];
+
+    for (const auto& item : list) {
+        Contest c;
+        c.name = item["title"].asString();
+        c.contest_id = item["titleSlug"].asString();
+        c.link = "https://leetcode.cn/contest/" + c.contest_id;
+        c.source = "LeetCode";
+        
+        long long start_ts = item["startTime"].asInt64();
+        int duration = item["duration"].asInt();
+        long long end_ts = start_ts + duration;
+        
+        time_t st = start_ts;
+        char buf[64];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&st));
+        c.start_time = std::string(buf);
+        
+        time_t et = end_ts;
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&et));
+        c.end_time = std::string(buf);
+        
+        time_t now = std::time(nullptr);
+        if (now < start_ts) c.status = "upcoming";
+        else if (now >= start_ts && now <= end_ts) c.status = "running";
+        else c.status = "ended";
+        
+        contests.push_back(c);
     }
     return contests;
 }

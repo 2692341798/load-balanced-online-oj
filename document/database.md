@@ -168,32 +168,29 @@ INSERT INTO submissions (user_id, question_id, language, result, cpu_time, mem_u
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | likes | INT | DEFAULT 0 | 0 | 点赞数 |
 
-### 3.7 竞赛数据 (JSON Storage)
+### 3.7 竞赛数据 (MySQL Table)
 
-**存储方式**: 文件存储 (`data/contests.json`) 或 Redis 缓存
+**存储方式**: MySQL 数据库表 `contests`
 
-**数据描述**: 存储从 Codeforces 爬取的近期竞赛信息。
+**数据描述**: 存储从 Codeforces 和 LeetCode 爬取的近期竞赛信息。
 
-**JSON结构**:
-```json
-{
-    "contests": [
-        {
-            "name": "Codeforces Round 999 (Div. 2)",
-            "start_time": "Jan/20/2026 17:35",
-            "link": "https://codeforces.com/contest/1234"
-        },
-        // ...
-    ],
-    "updated_at": 1706600000
-}
-```
+**表结构 (contests)**:
 
-**字段说明**:
-- `name`: 竞赛名称
-- `start_time`: 竞赛开始时间（字符串格式）
-- `link`: 竞赛详情页链接
-- `updated_at`: 数据最后更新时间戳
+| 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
+|--------|----------|------|--------|------|
+| contest_id | VARCHAR(64) | PRIMARY KEY | - | 竞赛ID (唯一标识) |
+| name | VARCHAR(255) | NOT NULL | - | 竞赛名称 |
+| start_time | VARCHAR(64) | NOT NULL | - | 开始时间 |
+| end_time | VARCHAR(64) | NOT NULL | - | 结束时间 |
+| link | VARCHAR(512) | NOT NULL | - | 竞赛链接 |
+| source | VARCHAR(32) | NOT NULL | - | 来源 (Codeforces/LeetCode) |
+| status | VARCHAR(16) | NOT NULL | - | 状态 (upcoming/running/ended) |
+| last_crawl_time | TIMESTAMP | - | CURRENT_TIMESTAMP | 最后爬取时间 |
+
+**索引设计**:
+- `PRIMARY KEY (contest_id)`: 主键索引
+- `INDEX idx_source (source)`: 来源索引
+- `INDEX idx_status (status)`: 状态索引
 
 ## 4. 数据访问层设计
 
@@ -548,6 +545,6 @@ FLUSH PRIVILEGES;
 
 ---
 
-**文档版本**: v0.4.0  
-**最后更新时间**: 2026-01-31  
+**最后更新时间**: 2026-02-01  
+**文档版本**: v0.5.3  
 **维护团队**: 在线评测系统开发团队

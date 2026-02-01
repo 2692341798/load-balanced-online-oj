@@ -258,25 +258,25 @@ namespace ns_log {
 ### 3.5 竞赛爬虫模块 (Contest Crawler)
 
 #### 3.5.1 职责边界
-- **数据抓取**: 定期从 Codeforces 抓取最新的竞赛信息
-- **数据解析**: 解析 HTML 页面提取竞赛名称、时间、链接等信息
-- **数据持久化**: 将处理后的数据存储为 JSON 文件或写入 Redis
+- **数据抓取**: 定期从 Codeforces 和 LeetCode 抓取最新的竞赛信息
+- **数据解析**: 解析 HTML/JSON 数据提取竞赛名称、时间、链接、状态等信息
+- **数据持久化**: 将处理后的数据存储到 MySQL 数据库，并可选择写入 Redis 缓存
 - **独立运行**: 作为独立进程运行，不影响主服务器性能
 
 #### 3.5.2 核心流程
 ```
-Codeforces (External)
+Sources (Codeforces/LeetCode)
        │
-       │ HTTP Get (HTML)
+       │ HTTP/HTTPS Get
        ▼
 Contest Crawler (C++)
        │
        │ Parse & Extract
        ▼
 Data Storage
-(data/contests.json OR Redis)
+(MySQL Table `contests` + Optional Redis)
        │
-       │ Read
+       │ Read (SQL Select)
        ▼
 OJ Server (View Layer)
        │
@@ -944,6 +944,6 @@ if (online_num == 0) {
 
 ---
 
-**文档版本**: v0.4.0  
-**最后更新时间**: 2026-01-31  
+**文档版本**: v0.5.3  
+**最后更新时间**: 2026-02-01  
 **维护团队**: 在线评测系统开发团队

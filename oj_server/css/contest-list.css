@@ -53,10 +53,18 @@
     accent-color: var(--primary-color);
 }
 
-.cf-logo {
-    height: 40px;
+.contest-name-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.contest-logo {
+    height: 24px;
     width: auto;
     object-fit: contain;
+    border-radius: 2px;
+    flex-shrink: 0;
 }
 
 /* Table Wrapper */

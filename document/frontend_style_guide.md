@@ -857,7 +857,7 @@ oj_server/css/
   - `status-upcoming`: 蓝色，表示未开始。
   - `status-running`: 绿色，表示进行中。
   - `status-ended`: 灰色，表示已结束。
-- **品牌识别**: 标题栏包含 Codeforces Logo 图标。
+- **品牌识别**: 标题栏包含来源平台的 Logo 图标 (Codeforces/LeetCode)。
 - **响应式表格**: 移动端自动转为卡片式布局 (Card View)。
 
 ```css
@@ -897,6 +897,6 @@ oj_server/css/
 
 ---
 
-**文档版本**: v0.4.0  
-**最后更新时间**: 2026-01-31  
+**文档版本**: v0.5.3  
+**最后更新时间**: 2026-02-01  
 **维护团队**: 在线评测系统开发团队

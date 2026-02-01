@@ -217,9 +217,10 @@ load-balanced-online-oj/
 - 执行 `source db_migration.sql` 创建或更新表结构
 
 ### 2. 爬虫升级
-- 支持 `status` 状态识别 (Upcoming/Running/Ended)
-- 支持增量更新 (Upsert)
-- 自动速率限制与Robots.txt合规
+- **多源支持**: 支持 Codeforces 和 LeetCode 周赛抓取
+- **状态识别**: 自动识别 `status` (Upcoming/Running/Ended)
+- **增量更新**: 支持 Upsert 操作，避免重复数据
+- **合规性**: 严格遵守 Robots.txt 和 API 使用规范
 
 ### 3. 定时任务
 - **内置调度**: 爬虫程序 `contest_crawler` 现已内置定时逻辑，默认每 30 分钟执行一次。
@@ -229,6 +230,65 @@ load-balanced-online-oj/
 ### 4. 缓存配置
 - 支持 Redis 缓存 (可选)，需安装 `hiredis` 并开启编译选项
 - 默认缓存 TTL: 300秒
+
+## 🕷️ 竞赛爬虫模块详情 (Crawler Details)
+
+本模块负责从竞争性编程平台（目前支持 Codeforces 和 LeetCode）抓取竞赛信息并存储到数据库中。
+
+### ✨ 主要特性
+- **多源支持**：抓取 Codeforces 和 LeetCode 的周赛信息。
+- **Robots.txt 合规**：严格遵守目标站点的 `robots.txt` 规则（Disallow 路径和 Crawl-delay）。
+- **自适应限流**：实现指数退避算法处理 429/5xx 错误，并加入随机抖动以防止指纹识别。
+- **数据持久化**：将竞赛数据存储在 MySQL 中，并可选择缓存在 Redis 中。
+- **高可用性**：优雅处理网络超时、解析错误和服务中断。
+
+### 🛠️ 依赖项
+- **C++11** 编译器
+- **jsoncpp**：用于解析 LeetCode GraphQL 响应
+- **OpenSSL**：用于 `httplib` 的 HTTPS 支持
+- **MySQL Client**：用于数据库连接
+- **Hiredis** (可选)：用于 Redis 支持 (通过 `#define ENABLE_REDIS` 开启)
+
+#### 安装依赖 (macOS)
+```bash
+brew install jsoncpp openssl mysql-client
+```
+
+### 🚀 构建与运行
+
+1.  **编译**:
+    ```bash
+    cd crawler
+    make contest_crawler
+    ```
+
+2.  **运行**:
+    ```bash
+    ./contest_crawler
+    ```
+    爬虫作为守护进程运行（无限循环），默认间隔为 2-4 小时。
+
+3.  **运行测试**:
+    ```bash
+    make test_crawler
+    ./test_crawler
+    ```
+
+### ⚙️ 配置说明
+配置目前硬编码在 `contest_crawler.cc` 的 `main()` 函数中，但可以轻松扩展为从文件读取。
+- **间隔**: 2-4 小时 (随机化)。
+- **User-Agent**: `ContestBot/2.0 (+https://yourdomain.com/bot; contact@yourdomain.com)`
+
+### ⚖️ 合规声明
+本爬虫旨在成为 Web 的"好公民"：
+- 尊重目标网站的 `robots.txt`。
+- 使用自定义 User-Agent 标识身份。
+- 限制请求频率并尊重 `Crawl-delay` 指令。
+- 仅抓取公开的竞赛列表数据。
+
+### 📂 代码结构
+- `contest_crawler.cc`: 主服务逻辑，`ContestCrawler` 类管理 Codeforces 和 LeetCode 任务。
+- `crawler_common.hpp`: 共享数据结构 (`Contest`)、辅助函数 (`ParseCodeforcesAPI`, `ParseLeetCodeContests`)、`RobotsParser` 和 `BackoffStrategy`。
 
 ## 🔧 配置说明
 

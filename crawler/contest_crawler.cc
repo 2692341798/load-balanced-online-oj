@@ -56,12 +56,14 @@ public:
         Log("Crawler service started with 30min interval.");
         
         // Initial robots.txt fetch
-        FetchRobotsTxt();
+        FetchRobotsTxt("https://codeforces.com", cf_robots_parser_);
+        FetchRobotsTxt("https://leetcode.cn", lc_robots_parser_);
 
         while (true) {
             auto start_time = std::chrono::steady_clock::now();
             
-            PerformCrawl();
+            PerformCodeforcesCrawl();
+            PerformLeetCodeCrawl();
 
             auto end_time = std::chrono::steady_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
@@ -69,14 +71,17 @@ public:
             // Calculate sleep time
             int sleep_time = config_.min_interval_seconds;
             
-            // Respect robots.txt Crawl-delay if specified and meaningful
-            int robot_delay = robots_parser_.GetCrawlDelay();
+            // Respect robots.txt Crawl-delay (use max of both)
+            int cf_delay = cf_robots_parser_.GetCrawlDelay();
+            int lc_delay = lc_robots_parser_.GetCrawlDelay();
+            int robot_delay = std::max(cf_delay, lc_delay);
+            
             if (robot_delay > sleep_time) {
                 sleep_time = robot_delay;
                 Log("Adjusting interval to " + std::to_string(sleep_time) + "s based on robots.txt Crawl-delay.");
             }
 
-            // Add randomness to avoid fingerprinting (Optional, minimal now)
+            // Add randomness to avoid fingerprinting
             int range = config_.max_interval_seconds - config_.min_interval_seconds;
             if (range > 0) {
                 sleep_time += rand() % range;
@@ -92,7 +97,9 @@ public:
             Log("Sleeping for " + std::to_string(sleep_time) + " seconds before next crawl.");
             std::this_thread::sleep_for(std::chrono::seconds(sleep_time));
             
-            FetchRobotsTxt(); 
+            // Refresh robots.txt
+            FetchRobotsTxt("https://codeforces.com", cf_robots_parser_);
+            FetchRobotsTxt("https://leetcode.cn", lc_robots_parser_);
         }
         
         // Release lock (though OS does it on exit)
@@ -102,7 +109,8 @@ public:
 
 private:
     CrawlerConfig config_;
-    RobotsParser robots_parser_;
+    RobotsParser cf_robots_parser_;
+    RobotsParser lc_robots_parser_;
 
     void Log(const std::string& message) {
         std::ofstream log_file(LOG_FILE, std::ios::app);
@@ -146,32 +154,33 @@ private:
 #endif
     }
 
-    void FetchRobotsTxt() {
-        Log("Fetching robots.txt...");
-        httplib::Client cli(config_.host.c_str());
+    void FetchRobotsTxt(const std::string& host, RobotsParser& parser) {
+        Log("Fetching robots.txt from " + host + "...");
+        httplib::Client cli(host.c_str());
         cli.set_connection_timeout(10);
         cli.set_read_timeout(10);
         cli.set_follow_location(true);
 
-        auto res = cli.Get(config_.robots_txt_path.c_str());
+        auto res = cli.Get("/robots.txt");
         if (res && res->status == 200) {
-            robots_parser_.Parse(res->body, config_.user_agent);
-            Log("Robots.txt parsed successfully.");
+            parser.Parse(res->body, config_.user_agent);
+            Log("Robots.txt parsed successfully for " + host);
         } else {
-            Log("Failed to fetch robots.txt. Assuming no restrictions.");
+            Log("Failed to fetch robots.txt for " + host + ". Assuming no restrictions.");
         }
     }
 
-    std::string FetchHTML(const std::string& path) {
-        if (!robots_parser_.IsAllowed(path)) {
-            Log("Access to " + path + " denied by robots.txt");
+    std::string FetchHTML(const std::string& host, const std::string& path, RobotsParser& parser) {
+        if (!parser.IsAllowed(path)) {
+            Log("Access to " + path + " denied by robots.txt (" + host + ")");
             return "";
         }
 
-        httplib::Client cli(config_.host.c_str());
+        httplib::Client cli(host.c_str());
         cli.set_connection_timeout(10);
         cli.set_read_timeout(10);
         cli.set_follow_location(true);
+        cli.enable_server_certificate_verification(false);
         
         httplib::Headers headers = {
             {"User-Agent", config_.user_agent}
@@ -188,7 +197,7 @@ private:
 
             if (res) {
                 if (res->status == 200) {
-                    Log("Request to " + path + " success. Status: 200. Time: " + std::to_string(elapsed) + "ms");
+                    Log("Request to " + host + path + " success. Status: 200. Time: " + std::to_string(elapsed) + "ms");
                     return res->body;
                 } else if (res->status == 429 || res->status == 503) {
                     int wait_time = backoff.GetWaitTime(retries);
@@ -214,7 +223,67 @@ private:
             }
         }
         
-        Log("Max retries reached for " + path);
+        Log("Max retries reached for " + host + path);
+        return "";
+    }
+    
+    std::string FetchGraphQL(const std::string& host, const std::string& query, RobotsParser& parser) {
+         if (!parser.IsAllowed("/graphql")) {
+            // Check if explicitly disallowed
+         }
+
+        httplib::Client cli(host.c_str());
+        cli.set_connection_timeout(10);
+        cli.set_read_timeout(10);
+        cli.set_follow_location(true);
+        cli.enable_server_certificate_verification(false); // Disable cert verification for simplicity, though not ideal for prod
+        
+        httplib::Headers headers = {
+            {"User-Agent", config_.user_agent},
+            // Content-Type is handled by Post arguments
+        };
+        
+        Json::Value req_body;
+        req_body["query"] = query;
+        Json::FastWriter writer;
+        std::string body = writer.write(req_body);
+
+        BackoffStrategy backoff(config_.max_retries);
+        int retries = 0;
+        
+        while (retries <= backoff.GetMaxRetries()) {
+            auto start = std::chrono::steady_clock::now();
+            // Pass content-type explicitly
+            auto res = cli.Post("/graphql", headers, body, "application/json");
+            auto end = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+            if (res) {
+                if (res->status == 200) {
+                    Log("GraphQL Request to " + host + " success. Status: 200. Time: " + std::to_string(elapsed) + "ms");
+                    return res->body;
+                } else if (res->status == 429 || res->status == 503) {
+                    int wait_time = backoff.GetWaitTime(retries);
+                    Log("Rate limited (" + std::to_string(res->status) + "). Retrying in " + std::to_string(wait_time) + "ms");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(wait_time));
+                    retries++;
+                } else {
+                    Log("GraphQL Request failed with status " + std::to_string(res->status));
+                    if (res->status >= 500) {
+                         int wait_time = backoff.GetWaitTime(retries);
+                         std::this_thread::sleep_for(std::chrono::milliseconds(wait_time));
+                         retries++;
+                    } else {
+                        break; 
+                    }
+                }
+            } else {
+                Log("GraphQL Request failed (network error).");
+                 int wait_time = backoff.GetWaitTime(retries);
+                 std::this_thread::sleep_for(std::chrono::milliseconds(wait_time));
+                 retries++;
+            }
+        }
         return "";
     }
 
@@ -299,23 +368,41 @@ private:
 #endif
     }
 
-    void PerformCrawl() {
-        Log("Starting crawl cycle...");
-        std::string html = FetchHTML("/contests");
+    void PerformCodeforcesCrawl() {
+        Log("Starting Codeforces crawl cycle...");
+        // Use API
+        std::string json_resp = FetchHTML("https://codeforces.com", "/api/contest.list?gym=false", cf_robots_parser_);
         
-        if (html.empty()) {
-            Log("Failed to fetch contests content.");
+        if (json_resp.empty()) {
+            Log("Failed to fetch Codeforces contests.");
             return;
         }
 
-        Log("Fetch successful. Parsing...");
-        std::vector<Contest> contests = ParseContests(html);
-        Log("Parsed " + std::to_string(contests.size()) + " contests.");
+        Log("Fetch successful. Parsing Codeforces...");
+        std::vector<Contest> contests = ParseCodeforcesAPI(json_resp);
+        Log("Parsed " + std::to_string(contests.size()) + " Codeforces contests.");
 
         SaveToDB(contests);
         InvalidateRedisCache();
+    }
+    
+    void PerformLeetCodeCrawl() {
+        Log("Starting LeetCode crawl cycle...");
+        std::string gql_query = "query { contestHistory(pageNum: 1, pageSize: 10) { contests { title titleSlug startTime duration } } }";
         
-        Log("Crawl cycle completed.");
+        std::string json_resp = FetchGraphQL("https://leetcode.cn", gql_query, lc_robots_parser_);
+        
+        if (json_resp.empty()) {
+            Log("Failed to fetch LeetCode contests.");
+            return;
+        }
+        
+        Log("Fetch successful. Parsing LeetCode...");
+        std::vector<Contest> contests = ParseLeetCodeContests(json_resp);
+        Log("Parsed " + std::to_string(contests.size()) + " LeetCode contests.");
+        
+        SaveToDB(contests);
+        InvalidateRedisCache();
     }
 };
 

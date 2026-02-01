@@ -120,7 +120,6 @@
     <div class="contest-container">
         <div class="contest-header">
             <h1>
-                <img src="/images/codeforces-sponsored-by-ton.png.webp" alt="Codeforces Logo" class="cf-logo">
                 近期竞赛
             </h1>
             <div class="contest-controls">
@@ -217,9 +216,24 @@
                     actionBtn = `<a href="${item.link}" target="_blank" class="btn-secondary">查看</a>`;
                 }
 
+                // Logo logic
+                let logoHtml = '';
+                // Check if source is Codeforces (case-insensitive or exact match depending on DB)
+                // Assuming DB stores "Codeforces"
+                if (item.source === 'Codeforces') {
+                    logoHtml = '<img src="/images/codeforces-sponsored-by-ton.png.webp" alt="Codeforces" class="contest-logo">';
+                } else if (item.source === 'LeetCode') {
+                    logoHtml = '<img src="/images/LeetCode.jpeg" alt="LeetCode" class="contest-logo">';
+                }
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="col-name" data-label="竞赛名称">${escapeHtml(item.name)}</td>
+                    <td class="col-name" data-label="竞赛名称">
+                        <div class="contest-name-wrapper">
+                            ${logoHtml}
+                            <span class="contest-title-text">${escapeHtml(item.name)}</span>
+                        </div>
+                    </td>
                     <td class="col-time" data-label="开始时间">${item.start_time}</td>
                     <td class="col-time" data-label="结束时间">${item.end_time}</td>
                     <td class="col-status" data-label="状态">

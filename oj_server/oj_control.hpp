@@ -660,6 +660,7 @@ namespace ns_control
                      item["end_time"] = c.end_time;
                      item["status"] = c.status;
                      item["link"] = c.link;
+                     item["source"] = c.source;
                      list.append(item);
                  }
                  root["data"] = list;

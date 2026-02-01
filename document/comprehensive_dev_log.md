@@ -717,6 +717,30 @@ document/
 
 ---
 
-*最后更新：2026年1月31日  
+## 📅 2026-02-01 | V0.5.3 竞赛模块升级
+### 🎯 核心目标
+全面升级竞赛模块，支持 LeetCode 周赛数据抓取，并实现数据存储从文件系统到 MySQL 的迁移。
+
+### 🔧 关键特性
+#### 1. 双源爬虫支持
+- **LeetCode 集成**: 新增 GraphQL 接口调用，支持抓取 LeetCode 周赛信息。
+- **Codeforces 优化**: 切换至官方 API (`/api/contest.list`)，规避 HTML 解析的脆弱性。
+- **合规性**: 针对不同站点实现独立的 Robots.txt 解析与限流策略。
+
+#### 2. 数据架构升级
+- **MySQL 存储**: 废弃 JSON 文件存储，新建 `contests` 表进行持久化。
+- **Schema 设计**: 包含 `source` (来源), `status` (状态), `last_crawl_time` 等关键字段。
+
+#### 3. 文档体系同步
+- 合并 `crawler/README.md` 至主文档。
+- 全面更新架构文档、数据库文档及 API 参考，保持与代码实现一致。
+
+### 📊 版本统计
+- **标签状态**: ✅ V0.5.3
+- **核心变更**: Crawler logic rewrite, Database migration, Documentation merge.
+
+---
+
+*最后更新：2026年2月1日  
 维护者：AI Assistant  
 文档状态：活跃维护*

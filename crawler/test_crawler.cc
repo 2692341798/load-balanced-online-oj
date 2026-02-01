@@ -3,30 +3,63 @@
 #include <thread>
 #include "crawler_common.hpp"
 
-void TestParse() {
-    std::string mock_html = R"(
-        <table>
-        <tr data-contestId="1077">
-            <td>
-                Codeforces Round 1077 (Div. 1)
-            </td>
-            <td>Writer</td>
-            <td>
-                Jan/29/2026 17:35UTC+8
-            </td>
-            <td>Length</td>
-            <td>Registered</td>
-        </tr>
-        </table>
-    )";
+void TestCodeforcesParse() {
+    std::string mock_json = R"({
+        "status": "OK",
+        "result": [
+            {
+                "id": 1077,
+                "name": "Codeforces Round 1077 (Div. 1)",
+                "type": "CF",
+                "phase": "FINISHED",
+                "frozen": false,
+                "durationSeconds": 7200,
+                "startTimeSeconds": 1769679300, 
+                "relativeTimeSeconds": -100000
+            }
+        ]
+    })";
     
-    std::vector<Contest> contests = ParseContests(mock_html);
+    std::vector<Contest> contests = ParseCodeforcesAPI(mock_json);
     assert(contests.size() == 1);
     assert(contests[0].name == "Codeforces Round 1077 (Div. 1)");
-    assert(contests[0].start_time == "Jan/29/2026 17:35UTC+8");
+    assert(contests[0].contest_id == "1077");
     assert(contests[0].link == "https://codeforces.com/contest/1077");
     
-    std::cout << "TestParse Passed!" << std::endl;
+    std::cout << "TestCodeforcesParse Passed!" << std::endl;
+}
+
+void TestLeetCodeParse() {
+    std::string mock_json = R"({
+        "data": {
+            "contestHistory": {
+                "contests": [
+                    {
+                        "title": "Weekly Contest 300",
+                        "titleSlug": "weekly-contest-300",
+                        "startTime": 1656813600,
+                        "duration": 5400,
+                        "originStartTime": 1656813600
+                    }
+                ]
+            }
+        }
+    })";
+
+    std::vector<Contest> contests = ParseLeetCodeContests(mock_json);
+    assert(contests.size() == 1);
+    assert(contests[0].name == "Weekly Contest 300");
+    assert(contests[0].contest_id == "weekly-contest-300");
+    assert(contests[0].link == "https://leetcode.cn/contest/weekly-contest-300");
+    assert(contests[0].source == "LeetCode");
+    
+    // 1656813600 is 2022-07-03 02:00:00 UTC
+    // Our parser converts to local time string. 
+    // Since we can't easily assert exact string due to timezone, check non-empty.
+    assert(!contests[0].start_time.empty());
+    assert(!contests[0].end_time.empty());
+    
+    std::cout << "TestLeetCodeParse Passed!" << std::endl;
 }
 
 void TestRobotsParser() {
@@ -88,7 +121,8 @@ void TestBackoff() {
 }
 
 int main() {
-    TestParse();
+    TestCodeforcesParse();
+    TestLeetCodeParse();
     TestRobotsParser();
     TestBackoff();
     std::cout << "All tests passed!" << std::endl;
