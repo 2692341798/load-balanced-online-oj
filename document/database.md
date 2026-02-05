@@ -46,8 +46,8 @@ FLUSH PRIVILEGES;
 | cpu_limit | INT | NOT NULL | 1 | CPU时间限制（秒） |
 | mem_limit | INT | NOT NULL | 30000 | 内存限制（KB） |
 | description | TEXT | NOT NULL | - | 题目描述，支持Markdown格式 |
-| header | TEXT | NOT NULL | - | [已废弃] 题目预设代码头 |
-| tail | TEXT | NOT NULL | - | JSON格式的测试用例，存储测试用例的输入输出 |
+| header | TEXT | DEFAULT NULL | - | [已废弃] 题目预设代码头 |
+| tail_code | TEXT | NOT NULL | - | JSON格式的测试用例，存储测试用例的输入输出 |
 | status | INT | DEFAULT 1 | 1 | 题目状态 (0:Hidden, 1:Visible) |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
@@ -59,7 +59,7 @@ FLUSH PRIVILEGES;
 
 **示例数据**:
 ```sql
-INSERT INTO oj_questions (number, title, star, cpu_limit, mem_limit, description, header, tail, status) VALUES
+INSERT INTO oj_questions (number, title, star, cpu_limit, mem_limit, description, header, tail_code, status) VALUES
 (1, '两数之和', '简单', 1, 30000,
  '给定一个整数数组 nums 和一个整数目标值 target...',
  '',

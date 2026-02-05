@@ -762,6 +762,27 @@ document/
 - **标签状态**: ✅ V0.5.4
 - **核心变更**: Discussion Markdown rendering stabilized (pinned marked.js + sanitize + highlighting pipeline).
 
-*最后更新：2026年2月1日  
+---
+
+## 📅 2026-02-05 | V0.5.5 洛谷爬虫与文档修复
+### 🎯 核心目标
+新增洛谷题目爬取工具，并修复数据库文档描述不一致的问题。
+
+### 🔧 主要特性
+#### 1. 洛谷爬虫 (Luogu Crawler)
+- **脚本工具**: `crawler/luogu_crawler.py`
+- **功能**: 自动抓取洛谷题目（标题、描述、样例、限制），并生成 SQL 插入语句。
+- **适配**: 解析洛谷最新的 JSON 数据结构，支持 Markdown 格式拼接。
+
+### 📝 文档修复
+- **数据库文档**: 修正 `oj_questions` 表字段说明，明确 `tail` 字段已更名为 `tail_code` 且用于存储 JSON 测试用例，`header` 字段默认置空。
+
+### 📊 版本统计
+- **标签状态**: ✅ V0.5.5
+- **核心变更**: New Crawler Tool, Documentation Fix.
+
+---
+
+*最后更新：2026年2月5日  
 维护者：AI Assistant  
 文档状态：活跃维护*
