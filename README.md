@@ -14,6 +14,7 @@
 - **现代化Web界面**：响应式设计，支持深色主题
 - **实时评测**：快速反馈代码运行结果和测试用例通过情况
 - **错误处理**：完善的异常捕获和用户友好的错误提示
+- **安全加固**：基于Linux Namespace的网络隔离、权限降级(nobody)和严格的资源熔断机制，有效防御Sandbox Escape和DoS攻击
 - **竞赛爬虫 (Contest Crawler)**：自动获取Codeforces竞赛信息，支持自适应速率限制和robots.txt合规
 - **社区讨论 (Community & Discussions)**：支持Markdown帖子、全局评论和行内评论功能
 
@@ -426,5 +427,5 @@ chmod +x oj_server/oj_server compile_server/compile_server
 ---
 
 **最后更新时间**: 2026-02-06  
-**文档版本**: v1.0.0  
+**文档版本**: v1.0.1  
 **维护团队**: 在线评测系统开发团队

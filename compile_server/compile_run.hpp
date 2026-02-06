@@ -129,6 +129,16 @@ namespace ns_compile_and_run
             int mem_limit = in_value["mem_limit"].asInt();
             std::string language = in_value.isMember("language") ? in_value["language"].asString() : "C++";
 
+            // 安全检查: 限制资源最大值，防止DoS攻击
+            if (cpu_limit <= 0 || cpu_limit > 30) {
+                LOG(WARNING) << "Invalid cpu_limit: " << cpu_limit << ", clamped to 30s" << "\n";
+                cpu_limit = 30;
+            }
+            if (mem_limit <= 0 || mem_limit > 512 * 1024) { // 512MB
+                LOG(WARNING) << "Invalid mem_limit: " << mem_limit << ", clamped to 512MB" << "\n";
+                mem_limit = 512 * 1024;
+            }
+
             int status_code = 0;
             Json::Value out_value;
             int run_result = 0;
@@ -173,6 +183,15 @@ namespace ns_compile_and_run
                 //编译失败
                 status_code = -3; //代码编译的时候发生了错误
                 goto END;
+            }
+
+            // 安全: 确保生成的程序对nobody用户是可读/可执行的
+            // 因为Runner中会降权执行
+            {
+                std::string _exe_path = PathUtil::Exe(file_name, language);
+                if (FileUtil::IsFileExists(_exe_path)) {
+                    chmod(_exe_path.c_str(), 0755);
+                }
             }
 
             run_result = Runner::Run(file_name, cpu_limit, mem_limit, language);
