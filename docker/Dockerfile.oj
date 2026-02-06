@@ -30,14 +30,11 @@ COPY . /app
 # We need to build in the directory because makefile relies on relative paths
 WORKDIR /app/oj_server
 # Fix Makefile include paths for Linux/Docker
-RUN sed -i 's|-I/opt/homebrew/include|-I/usr/include/jsoncpp|g' makefile
 RUN make clean && make
 
 # Build crawler
 WORKDIR /app/crawler
 # Fix Makefile include paths for Linux/Docker
-RUN sed -i 's|-I/opt/homebrew/include|-I/usr/include/jsoncpp|g' makefile
-RUN sed -i 's|-L/opt/homebrew/lib||g' makefile
 RUN make clean && make contest_crawler
 
 # Expose port
