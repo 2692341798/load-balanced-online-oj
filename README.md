@@ -143,7 +143,17 @@ cd output
 cd oj_server && ./oj_server
 ```
 
-### 6. 访问系统
+### 6. 爬虫服务 (可选)
+如果需要获取竞赛数据，可以运行爬虫服务：
+```bash
+# 运行竞赛爬虫 (Codeforces/LeetCode)
+./crawler/contest_crawler
+
+# 运行洛谷题目爬虫 (需Python环境)
+python3 crawler/luogu_crawler.py
+```
+
+### 7. 访问系统
 - **主页**：http://localhost:8080
 - **题目列表**：http://localhost:8080/all_questions
 - **题目详情**：http://localhost:8080/question/<题号>
@@ -248,6 +258,7 @@ load-balanced-online-oj/
 - **OpenSSL**：用于 `httplib` 的 HTTPS 支持
 - **MySQL Client**：用于数据库连接
 - **Hiredis** (可选)：用于 Redis 支持 (通过 `#define ENABLE_REDIS` 开启)
+- **Python3** (可选)：用于运行洛谷题目爬虫脚本
 
 #### 安装依赖 (macOS)
 ```bash
@@ -303,7 +314,7 @@ IP地址:端口号
 ```cpp
 const std::string host = "127.0.0.1";
 const std::string user = "oj_client";
-const std::string passwd = "123456";
+const std::string passwd = "YOUR_PASSWORD";
 const std::string db = "oj";
 const int port = 3306;
 ```
@@ -414,6 +425,6 @@ chmod +x oj_server/oj_server compile_server/compile_server
 
 ---
 
-**最后更新时间**: 2026-02-01  
-**文档版本**: v0.5.4  
+**最后更新时间**: 2026-02-06  
+**文档版本**: v0.5.5  
 **维护团队**: 在线评测系统开发团队

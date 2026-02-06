@@ -1,6 +1,7 @@
 -- Database initialization script for Online Judge System
 
 -- Create database
+SET NAMES utf8mb4;
 CREATE DATABASE IF NOT EXISTS oj CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE oj;
@@ -8,8 +9,8 @@ USE oj;
 -- Create user and grant privileges
 -- Note: Check if user exists before creating to avoid errors in some MySQL versions if using strict mode, 
 -- but CREATE USER IF NOT EXISTS is supported in MySQL 5.7+
-CREATE USER IF NOT EXISTS 'oj_client'@'localhost' IDENTIFIED BY '123456';
-GRANT ALL PRIVILEGES ON oj.* TO 'oj_client'@'localhost';
+CREATE USER IF NOT EXISTS 'oj_client'@'%' IDENTIFIED BY '123456';
+GRANT ALL PRIVILEGES ON oj.* TO 'oj_client'@'%';
 FLUSH PRIVILEGES;
 
 -- Table: oj_questions
@@ -21,8 +22,8 @@ CREATE TABLE IF NOT EXISTS `oj_questions` (
   `cpu_limit` INT NOT NULL DEFAULT 1 COMMENT 'CPU时间限制（秒）',
   `mem_limit` INT NOT NULL DEFAULT 30000 COMMENT '内存限制（KB）',
   `description` TEXT NOT NULL COMMENT '题目描述，支持Markdown格式',
-  `header` TEXT NOT NULL COMMENT '[已废弃] 题目预设代码头',
-  `tail` TEXT NOT NULL COMMENT 'JSON格式的测试用例',
+  `header` TEXT DEFAULT NULL COMMENT '[已废弃] 题目预设代码头',
+  `tail_code` TEXT NOT NULL COMMENT 'JSON格式的测试用例',
   `status` INT DEFAULT 1 COMMENT '0:Hidden, 1:Visible',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

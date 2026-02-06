@@ -12,7 +12,7 @@
 - **端口号**: 3306
 - **数据库名称**: oj
 - **用户名**: oj_client
-- **密码**: 123456
+- **密码**: <db_password>
 - **字符集**: utf8mb4
 - **排序规则**: utf8mb4_unicode_ci
 
@@ -25,7 +25,7 @@
 CREATE DATABASE IF NOT EXISTS oj CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 创建用户并授权
-CREATE USER IF NOT EXISTS 'oj_client'@'localhost' IDENTIFIED BY '123456';
+CREATE USER IF NOT EXISTS 'oj_client'@'localhost' IDENTIFIED BY '<db_password>';
 GRANT ALL PRIVILEGES ON oj.* TO 'oj_client'@'localhost';
 FLUSH PRIVILEGES;
 ```
@@ -325,7 +325,7 @@ bool Model::RegisterUser(const string &username, const string &password,
 ```cpp
 const std::string host = "127.0.0.1";
 const std::string user = "oj_client";
-const std::string passwd = "123456";
+const std::string passwd = "YOUR_PASSWORD";
 const std::string db = "oj";
 const int port = 3306;
 ```

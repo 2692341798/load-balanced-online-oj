@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: oj_db
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: oj
+      MYSQL_USER: oj_client
+      MYSQL_PASSWORD: 123456
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./setup_database.sql:/docker-entrypoint-initdb.d/01_setup.sql
+      - ./insert_questions.sql:/docker-entrypoint-initdb.d/02_insert.sql
+    networks:
+      - oj_network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  compile_server_1:
+    build:
+      context: .
+      dockerfile: Dockerfile.compile
+    container_name: compile_server_1
+    command: ["./compile_server", "8081"]
+    ports:
+      - "8081:8081"
+    networks:
+      - oj_network
+    restart: always
+
+  compile_server_2:
+    build:
+      context: .
+      dockerfile: Dockerfile.compile
+    container_name: compile_server_2
+    command: ["./compile_server", "8082"]
+    ports:
+      - "8082:8082"
+    networks:
+      - oj_network
+    restart: always
+
+  oj_server:
+    build:
+      context: .
+      dockerfile: Dockerfile.oj
+    container_name: oj_server
+    ports:
+      - "8080:8080"
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - MYSQL_USER=oj_client
+      - MYSQL_PASSWORD=123456
+      - MYSQL_DB=oj
+    volumes:
+      - ./oj_server/conf/service_machine_docker.conf:/app/output/oj_server/conf/service_machine.conf
+    depends_on:
+      db:
+        condition: service_healthy
+      compile_server_1:
+        condition: service_started
+      compile_server_2:
+        condition: service_started
+    networks:
+      - oj_network
+    restart: always
+
+  contest_crawler:
+    build:
+      context: .
+      dockerfile: Dockerfile.oj
+    container_name: contest_crawler
+    command: ["/app/crawler/contest_crawler"]
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_PORT=3306
+      - MYSQL_USER=oj_client
+      - MYSQL_PASSWORD=123456
+      - MYSQL_DB=oj
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - oj_network
+    restart: always
+
+networks:
+  oj_network:
+    driver: bridge
+
+volumes:
+  db_data:

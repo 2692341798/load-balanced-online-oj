@@ -30,6 +30,7 @@ const std::string DATA_FILE = "../data/contests.json";
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <cstdlib>
 
 // ... (existing includes)
 
@@ -294,13 +295,19 @@ private:
             return;
         }
 
-        if (mysql_real_connect(conn, "127.0.0.1", "oj_client", "123456", "oj", 3306, NULL, 0) == NULL) {
+        const char* db_host = std::getenv("MYSQL_HOST") ? std::getenv("MYSQL_HOST") : "127.0.0.1";
+        const char* db_user = std::getenv("MYSQL_USER") ? std::getenv("MYSQL_USER") : "oj_client";
+        const char* db_pass = std::getenv("MYSQL_PASSWORD") ? std::getenv("MYSQL_PASSWORD") : "123456";
+        const char* db_name = std::getenv("MYSQL_DB") ? std::getenv("MYSQL_DB") : "oj";
+        int db_port = std::getenv("MYSQL_PORT") ? std::stoi(std::getenv("MYSQL_PORT")) : 3306;
+
+        if (mysql_real_connect(conn, db_host, db_user, db_pass, db_name, db_port, NULL, 0) == NULL) {
             Log("mysql_real_connect failed: " + std::string(mysql_error(conn)));
             mysql_close(conn);
             return;
         }
         
-        mysql_set_character_set(conn, "utf8");
+        mysql_set_character_set(conn, "utf8mb4");
 
         int count = 0;
         for(const auto& c : contests) {

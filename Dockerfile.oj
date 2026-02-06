@@ -1,0 +1,54 @@
+FROM ubuntu:22.04
+
+# Avoid prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+# build-essential: gcc, g++, make
+# libctemplate-dev: Google CTemplate
+# libjsoncpp-dev: JSON for C++
+# libmysqlclient-dev: MySQL client library
+# libssl-dev: OpenSSL (for crypto)
+# git, vim: tools
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libctemplate-dev \
+    libjsoncpp-dev \
+    libmysqlclient-dev \
+    libssl-dev \
+    libboost-dev \
+    git \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy source code
+COPY . /app
+
+# Build oj_server
+# We need to build in the directory because makefile relies on relative paths
+WORKDIR /app/oj_server
+# Fix Makefile include paths for Linux/Docker
+RUN sed -i 's|-I/opt/homebrew/include|-I/usr/include/jsoncpp|g' makefile
+RUN make clean && make
+
+# Build crawler
+WORKDIR /app/crawler
+# Fix Makefile include paths for Linux/Docker
+RUN sed -i 's|-I/opt/homebrew/include|-I/usr/include/jsoncpp|g' makefile
+RUN sed -i 's|-L/opt/homebrew/lib||g' makefile
+RUN make clean && make contest_crawler
+
+# Expose port
+EXPOSE 8080
+
+# Run the server
+# Note: make output moves things to output/oj_server, but we can just run from the build dir or structure it manually.
+# The makefile 'output' target copies conf, css, etc. to output/oj_server.
+# Let's run the output target to get a clean deployment folder.
+WORKDIR /app
+RUN make output
+
+WORKDIR /app/output/oj_server
+CMD ["./oj_server"]
