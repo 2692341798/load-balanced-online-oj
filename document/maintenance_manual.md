@@ -115,6 +115,8 @@ ssh -i <Key_Path> root@<Server_IP> "cd oj_project/docker && docker compose logs 
 | `SERVER_USER` | `root` | 登录用户名 |
 | `SSH_PRIVATE_KEY` | `-----BEGIN OPENSSH PRIVATE KEY-----...` | 私钥文件内容 (完整复制) |
 
+> **重要提示**: GitHub Actions 服务器位于海外，且 IP 动态变化。请务必在云服务器**安全组**中放行 **TCP:22** 端口，源 IP 设置为 `0.0.0.0/0` (或所有 IP)，否则会出现 `dial tcp ...:22: i/o timeout` 连接超时错误。
+
 3.  **验证**:
     - 推送代码到 GitHub: `git push origin main`
     - 查看 Actions 选项卡下的构建日志。
