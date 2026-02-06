@@ -12,8 +12,8 @@ services:
       MYSQL_PASSWORD: 123456
     volumes:
       - db_data:/var/lib/mysql
-      - ./setup_database.sql:/docker-entrypoint-initdb.d/01_setup.sql
-      - ./insert_questions.sql:/docker-entrypoint-initdb.d/02_insert.sql
+      - ../sql/setup_database.sql:/docker-entrypoint-initdb.d/01_setup.sql
+      - ../sql/insert_questions.sql:/docker-entrypoint-initdb.d/02_insert.sql
     networks:
       - oj_network
     healthcheck:
@@ -23,8 +23,8 @@ services:
 
   compile_server_1:
     build:
-      context: .
-      dockerfile: Dockerfile.compile
+      context: ..
+      dockerfile: docker/Dockerfile.compile
     container_name: compile_server_1
     command: ["./compile_server", "8081"]
     ports:
@@ -35,8 +35,8 @@ services:
 
   compile_server_2:
     build:
-      context: .
-      dockerfile: Dockerfile.compile
+      context: ..
+      dockerfile: docker/Dockerfile.compile
     container_name: compile_server_2
     command: ["./compile_server", "8082"]
     ports:
@@ -47,8 +47,8 @@ services:
 
   oj_server:
     build:
-      context: .
-      dockerfile: Dockerfile.oj
+      context: ..
+      dockerfile: docker/Dockerfile.oj
     container_name: oj_server
     ports:
       - "8080:8080"
@@ -59,7 +59,7 @@ services:
       - MYSQL_PASSWORD=123456
       - MYSQL_DB=oj
     volumes:
-      - ./oj_server/conf/service_machine_docker.conf:/app/output/oj_server/conf/service_machine.conf
+      - ../oj_server/conf/service_machine_docker.conf:/app/output/oj_server/conf/service_machine.conf
     depends_on:
       db:
         condition: service_healthy
@@ -73,8 +73,8 @@ services:
 
   contest_crawler:
     build:
-      context: .
-      dockerfile: Dockerfile.oj
+      context: ..
+      dockerfile: docker/Dockerfile.oj
     container_name: contest_crawler
     command: ["/app/crawler/contest_crawler"]
     environment:

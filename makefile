@@ -16,10 +16,10 @@ output: all
 	@cp -rf compile_server/compile_server output/compile_server/
 	@if [ -d compile_server/temp ]; then cp -rf compile_server/temp output/compile_server/; fi
 	@cp -rf oj_server/conf output/oj_server/
-	@cp -rf oj_server/css output/oj_server/
+	@cp -rf oj_server/resources/css output/oj_server/
 	@cp -rf oj_server/questions output/oj_server/
-	@cp -rf oj_server/template_html output/oj_server/
-	@cp -rf oj_server/wwwroot output/oj_server/
+	@cp -rf oj_server/resources/template_html output/oj_server/
+	@cp -rf oj_server/resources/wwwroot output/oj_server/
 	@cp -rf oj_server/oj_server output/oj_server/
 	@cp -rf crawler/contest_crawler output/crawler/
 	@mkdir -p output/logs
