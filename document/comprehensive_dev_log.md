@@ -810,6 +810,22 @@ document/
 
 ---
 
+## 📅 2026-02-06 | 项目结构重构
+### 🎯 核心目标
+优化项目目录结构，分离源码、资源与运维脚本，提升项目的可维护性与部署便捷性。
+
+### 🔧 结构变更
+- **资源目录归档**: 将 `oj_server` 下的 `css/`, `template_html/`, `wwwroot/` 统一移动至 `oj_server/resources/` 目录。
+- **Docker 配置独立**: 创建根目录下的 `docker/` 文件夹，归档 `Dockerfile` 和 `docker-compose.yml`。
+- **脚本统一管理**: 创建 `scripts/` 目录存放 `start.sh`, `stop.sh` 等运维脚本。
+- **数据目录分离**: 创建 `data/` 目录用于存放运行时数据（如竞赛缓存）。
+
+### 📝 文档更新
+- 全面更新 `README.md` 及相关技术文档，反映最新的项目结构。
+- 修正 `maintenance_manual.md` 中的部署命令以适配新的 Docker 目录结构。
+
+---
+
 *最后更新：2026年2月6日  
 维护者：AI Assistant  
 文档状态：活跃维护*

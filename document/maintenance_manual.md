@@ -36,9 +36,10 @@
 项目部署在服务器的 `/root/oj_project` 目录下：
 ```
 /root/oj_project/
-├── docker-compose.yml       # 容器编排文件
-├── Dockerfile.oj            # OJ Server 构建文件
-├── Dockerfile.compile       # Compile Server 构建文件
+├── docker/                  # Docker部署目录
+│   ├── docker-compose.yml   # 容器编排文件
+│   ├── Dockerfile.oj        # OJ Server 构建文件
+│   └── Dockerfile.compile   # Compile Server 构建文件
 ├── setup_database.sql       # 数据库初始化脚本
 ├── insert_questions.sql     # 题目数据初始化脚本
 ├── oj_server/               # OJ Server 源码及配置
@@ -62,7 +63,7 @@
 - **Docker Compose**: 2.0+
 
 ### 运行状态检查
-在 `/root/oj_project` 目录下执行：
+在 `/root/oj_project/docker` 目录下执行：
 ```bash
 docker compose ps
 ```
@@ -89,14 +90,14 @@ docker compose ps
 
 2. **解压并重构服务**:
    ```bash
-   ssh -i <Key_Path> root@<Server_IP> "tar -xzf project_deploy.tar.gz -C oj_project && cd oj_project && docker compose up -d --build"
+   ssh -i <Key_Path> root@<Server_IP> "tar -xzf project_deploy.tar.gz -C oj_project && cd oj_project/docker && docker compose up -d --build"
    ```
    > **注意**: 如果修改了数据库结构或需要重置数据，可添加 `--force-recreate` 参数，或先执行 `docker compose down -v` (慎用，会清空数据)。
 
 ### 3.3 健康检查
 部署完成后，执行以下命令验证服务日志：
 ```bash
-ssh -i <Key_Path> root@<Server_IP> "cd oj_project && docker compose logs --tail 20"
+ssh -i <Key_Path> root@<Server_IP> "cd oj_project/docker && docker compose logs --tail 20"
 ```
 
 ### 3.4 自动化部署 (GitHub Actions)

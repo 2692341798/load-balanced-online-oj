@@ -732,7 +732,7 @@ font-weight: 600;      /* 粗体 */
 
 ### 12.1 CSS文件结构
 ```
-oj_server/css/
+oj_server/resources/css/
 ├── index.css           # 基础样式和变量
 ├── login.css          # 登录页面样式
 ├── all_questions.css  # 题目列表样式
@@ -849,7 +849,7 @@ oj_server/css/
 
 ### 14.4 竞赛列表样式 (Contest List)
 
-**文件**: `oj_server/css/contest-list.css`
+**文件**: `oj_server/resources/css/contest-list.css`
 
 **设计特点**:
 - **表格布局**: 使用标准 HTML `<table>` 展示竞赛信息，表头固定。

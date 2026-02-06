@@ -200,20 +200,21 @@ load-balanced-online-oj/
 │   ├── oj_view.hpp               # 视图渲染
 │   ├── conf/                     # 配置文件
 │   │   └── service_machine.conf  # 编译服务器列表
-│   ├── css/                      # 样式文件
-│   │   ├── index.css             # 主页样式
-│   │   ├── all_questions.css     # 题目列表样式
-│   │   ├── one_question.css      # 题目详情样式
-│   │   ├── login.css             # 登录页面样式
-│   │   └── profile.css           # 个人中心样式
-│   ├── template_html/            # HTML模板
-│   │   ├── all_questions.html    # 题目列表模板
-│   │   ├── one_question.html     # 题目详情模板
-│   │   ├── login.html            # 登录页面模板
-│   │   └── profile.html          # 个人中心模板
-│   ├── wwwroot/                  # 静态资源
-│   │   └── index.html            # 主页
+│   ├── resources/                # 静态资源与模板
+│   │   ├── css/                  # 样式文件
+│   │   ├── template_html/        # HTML模板
+│   │   └── wwwroot/              # 静态资源(JS/Images)
+│   ├── contest_utils.hpp         # 竞赛工具类
 │   └── makefile                  # 编译配置
+├── docker/                        # Docker部署配置
+│   ├── Dockerfile.oj
+│   ├── Dockerfile.compile
+│   └── docker-compose.yml
+├── scripts/                       # 运维脚本
+│   ├── start.sh                  # 一键启动
+│   └── stop.sh                   # 一键停止
+├── data/                          # 数据文件
+│   └── contests.json             # 竞赛数据缓存
 ├── makefile                       # 主编译文件
 ├── setup_database.sql            # 数据库初始化脚本
 ├── .gitignore                    # Git忽略规则

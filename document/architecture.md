@@ -590,17 +590,18 @@ id++;
 ### 9.1 文件结构
 ```
 oj_server/
-├── css/                          # 样式文件
-│   ├── index.css                 # 主页样式
-│   ├── all_questions.css         # 题目列表样式
-│   ├── one_question.css          # 题目详情样式
-│   └── login.css                 # 登录页面样式
-├── template_html/                # HTML模板
-│   ├── all_questions.html        # 题目列表模板
-│   ├── one_question.html         # 题目详情模板
-│   └── login.html                # 登录页面模板
-└── wwwroot/                      # 静态资源
-    └── index.html                # 主页
+├── resources/                        # 静态资源与模板
+│   ├── css/                          # 样式文件
+│   │   ├── index.css                 # 主页样式
+│   │   ├── all_questions.css         # 题目列表样式
+│   │   ├── one_question.css          # 题目详情样式
+│   │   └── login.css                 # 登录页面样式
+│   ├── template_html/                # HTML模板
+│   │   ├── all_questions.html        # 题目列表模板
+│   │   ├── one_question.html         # 题目详情模板
+│   │   └── login.html                # 登录页面模板
+│   └── wwwroot/                      # 静态资源
+│       └── index.html                # 主页
 ```
 
 ### 9.2 设计特点

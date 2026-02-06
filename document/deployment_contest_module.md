@@ -46,7 +46,7 @@ crontab -e
 ## 5. 目录结构
 - `crawler/`: 爬虫源码及 Makefile
 - `logs/`: 存放爬虫日志
-- `oj_server/template_html/contest.html`: 前端模板
+- `oj_server/resources/template_html/contest.html`: 前端模板
 
 ## 6. 法律风险与合规说明
 1. **仅公开数据**：本爬虫仅抓取 Codeforces 和 LeetCode 公开的竞赛列表（名称、时间、链接），不涉及用户隐私数据或受版权保护的题目内容。
