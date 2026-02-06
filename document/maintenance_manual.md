@@ -99,6 +99,25 @@ docker compose ps
 ssh -i <Key_Path> root@<Server_IP> "cd oj_project && docker compose logs --tail 20"
 ```
 
+### 3.4 自动化部署 (GitHub Actions)
+本项目已配置 GitHub Actions 工作流 (`.github/workflows/deploy.yml`)，当代码推送到 `main` 分支时自动触发部署。
+
+#### 配置步骤
+1.  **进入 GitHub 仓库设置**:
+    - Settings -> Secrets and variables -> Actions -> New repository secret
+
+2.  **添加以下 Secrets**:
+
+| Secret Name | Value Example | 说明 |
+| :--- | :--- | :--- |
+| `SERVER_HOST` | `47.121.117.192` | 服务器公网 IP |
+| `SERVER_USER` | `root` | 登录用户名 |
+| `SSH_PRIVATE_KEY` | `-----BEGIN OPENSSH PRIVATE KEY-----...` | 私钥文件内容 (完整复制) |
+
+3.  **验证**:
+    - 推送代码到 GitHub: `git push origin main`
+    - 查看 Actions 选项卡下的构建日志。
+
 ---
 
 ## 4. 监控告警机制

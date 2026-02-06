@@ -1,0 +1,41 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 30m
+          script: |
+            echo "Starting deployment..."
+            
+            # 1. Navigate to project directory
+            # Ensure this path matches your server's actual path
+            cd ~/load-balanced-online-oj
+            
+            # 2. Update code
+            echo "Pulling latest code..."
+            git reset --hard origin/main
+            git pull origin main
+            
+            # 3. Restart services
+            echo "Rebuilding and restarting Docker containers..."
+            cd docker
+            docker compose down
+            docker compose up -d --build
+            
+            # 4. Cleanup
+            echo "Cleaning up unused images..."
+            docker image prune -f
+            
+            echo "Deployment finished successfully!"
