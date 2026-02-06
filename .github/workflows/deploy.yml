@@ -21,7 +21,7 @@ jobs:
             
             # 1. Navigate to project directory
             # Ensure this path matches your server's actual path
-            cd ~/load-balanced-online-oj
+            cd /root/oj_project/
             
             # 2. Update code
             echo "Pulling latest code..."
