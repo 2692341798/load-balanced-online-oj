@@ -1,5 +1,6 @@
 #include <iostream>
 #include <signal.h>
+#include <clocale> // For setlocale
 #include <json/json.h>   // 通过 -I/opt/homebrew/include 已能找到
 
 #include "../comm/httplib.h"
@@ -17,6 +18,9 @@ void Recovery(int signo)
 
 int main()
 {
+    // Set locale to use environment variables (en_US.UTF-8 from Dockerfile)
+    std::setlocale(LC_ALL, "en_US.UTF-8");
+
     // Log system locale
     const char* lang = std::getenv("LANG");
     const char* lc_all = std::getenv("LC_ALL");
