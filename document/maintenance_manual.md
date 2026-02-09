@@ -196,4 +196,5 @@ docker exec oj_db mysqldump -u root -p<DB_Root_Password> oj > /root/oj_backup_$(
 
 | 版本号 | 更新日期 | 修改人 | 修改内容 |
 | :--- | :--- | :--- | :--- |
-| v1.0.0 | 2026-02-06 | Trae Assistant | 初始版本创建，包含 Docker 部署与维护全流程 |
+| v1.0.1 | 2026-02-09 | AI Assistant | 更新文档版本与最近修复记录 |
+

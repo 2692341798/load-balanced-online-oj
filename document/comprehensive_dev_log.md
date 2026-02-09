@@ -826,6 +826,33 @@ document/
 
 ---
 
-*最后更新：2026年2月6日  
+## 📅 2026-02-09 | V0.5.6 LaTeX 渲染修复与样式优化
+### 🎯 核心目标
+解决题目详情页中数学公式无法正确渲染的问题，并优化深色主题下的图片显示效果。
+
+### 🔧 关键修复
+#### 1. LaTeX 公式渲染支持
+**问题描述**
+- 题目描述中的数学公式（如 `$S_n=...$`）以原始文本形式显示，Markdown 解析器会破坏 LaTeX 语法中的反斜杠。
+
+**解决方案**
+- 引入 **MathJax** 库。
+- 实现预处理逻辑：在 Markdown 渲染前提取并保护 LaTeX 公式块（`$...$` 和 `$$...$$`），待渲染完成后还原，再调用 `MathJax.typesetPromise` 进行渲染。
+- 此方案完美兼容了 Markdown 语法和 LaTeX 公式。
+
+#### 2. CTemplate 热重载
+- 在开发环境下启用 `ctemplate::Template::ReloadAllIfChanged()`，实现 HTML 模板文件的热更新，无需重启服务器即可预览前端修改。
+
+#### 3. 图片样式优化
+- 针对深色主题，为题目描述中的图片添加了白色背景、圆角和内边距，解决了透明背景图片在深黑背景下不可见的问题。
+- 样式文件：`oj_server/resources/css/one_question.css`。
+
+### 📊 版本统计
+- **标签状态**: ✅ V0.5.6
+- **核心变更**: MathJax Integration, Template Hot-Reloading, CSS Improvements.
+
+---
+
+*最后更新：2026年2月9日  
 维护者：AI Assistant  
 文档状态：活跃维护*

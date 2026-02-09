@@ -838,9 +838,28 @@ oj_server/resources/css/
 .markdown-body li {
     margin-top: 0.25em;
 }
+
+/* 图片样式优化 (V0.5.6) */
+.markdown-body img {
+    max-width: 100%;
+    box-sizing: border-box;
+    background-color: #fff; /* 适配深色主题 */
+    padding: 10px;
+    border-radius: 4px;
+    display: block;
+    margin: 10px auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
 ```
 
-### 14.3 讨论区样式 (V0.3.2)
+### 14.3 数学公式支持 (MathJax)
+- **引擎**: MathJax v3
+- **定界符**:
+  - 行内公式: `$ ... $` 或 `\( ... \)`
+  - 块级公式: `$$ ... $$` 或 `\[ ... \]`
+- **渲染逻辑**: 前端采用 "Protect-Parse-Restore" 策略，防止 Markdown 解析器破坏 LaTeX 语法。
+
+### 14.4 讨论区样式 (V0.3.2)
 - **卡片样式**: `.discussion-card` 继承基础卡片风格，增加了悬停浮动效果。
 - **标签样式**: `.tag` 使用半透明背景，保持视觉轻量。
 - **编辑器集成**: 使用 `EasyMDE` 默认深色适配，自定义了 Toolbar 样式以融入整体主题。
@@ -898,6 +917,6 @@ oj_server/resources/css/
 
 ---
 
-**文档版本**: v1.0.0  
-**最后更新时间**: 2026-02-06  
+**文档版本**: v1.0.1  
+**最后更新时间**: 2026-02-09  
 **维护团队**: 在线评测系统开发团队

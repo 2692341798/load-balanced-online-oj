@@ -17,6 +17,8 @@
 - **安全加固**：基于Linux Namespace的网络隔离、权限降级(nobody)和严格的资源熔断机制，有效防御Sandbox Escape和DoS攻击
 - **竞赛爬虫 (Contest Crawler)**：自动获取Codeforces竞赛信息，支持自适应速率限制和robots.txt合规
 - **社区讨论 (Community & Discussions)**：支持Markdown帖子、全局评论和行内评论功能
+- **数学公式支持**：集成 MathJax，完美渲染 LaTeX 数学公式
+
 
 ### 🏗️ 架构设计
 - **OJ主服务器（oj_server）**：提供Web接口、题目管理、评测任务调度与结果汇总
@@ -427,6 +429,6 @@ chmod +x oj_server/oj_server compile_server/compile_server
 
 ---
 
-**最后更新时间**: 2026-02-06  
-**文档版本**: v1.0.1  
+**最后更新时间**: 2026-02-09  
+**文档版本**: v1.0.2  
 **维护团队**: 在线评测系统开发团队
