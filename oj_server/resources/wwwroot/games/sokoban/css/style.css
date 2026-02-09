@@ -1,0 +1,179 @@
+body, header, h1, h4, canvas, footer, button, img, div, select, option {
+  margin: 0px;
+  padding: 0px;
+  border: 0px;
+}
+
+body  {
+  background-color: #1e1e1e; /* Dark theme */
+  color: #d4d4d4;
+  overflow-x: hidden;
+}
+
+/* Hide header and footer as they are redundant in iframe */
+header, footer {
+  display: none;
+}
+
+.middle-container {
+  font-family: 'Raleway', sans-serif;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  padding-top: 20px;
+  box-sizing: border-box;
+}
+
+.middle-container h2 {
+  font-size: 24px;
+  font-weight: bold;
+  padding-left: 20px;
+  color: #fff;
+}
+
+.middle-container p {
+  padding: 0px 20px;
+  font-size: 16px;
+  color: #ccc;
+  line-height: 1.5;
+}
+
+/* Left panel: Instructions */
+.instructions {
+  width: 300px;
+  max-width: 90%;
+  margin: 10px;
+  background-color: #252526; /* Darker */
+  border-radius: 6px;
+  padding-bottom: 20px;
+  color: #ddd;
+  border: 1px solid #3e3e42;
+}
+
+/* Center: Game Canvas */
+canvas {
+  margin: 10px;
+  display: block;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  background-color: #000;
+  border-radius: 4px;
+}
+
+/* Right panel: Bonus/Controls */
+.bonus {
+  margin: 10px;
+  width: 300px;
+  max-width: 90%;
+  background-color: #252526; /* Darker */
+  border-radius: 6px;
+  color: #ddd;
+  border: 1px solid #3e3e42;
+}
+
+.bonus h2 {
+  padding: 15px;
+  font-size: 18px;
+  border-bottom: 1px solid #3e3e42;
+  margin-bottom: 10px;
+}
+
+/* Buttons */
+#reset-level, #skip-level, .reset-game {
+  cursor: pointer;
+  box-sizing: border-box;
+  margin: 10px 20px;
+  width: calc(100% - 40px);
+  height: 40px;
+  background-color: #007acc; /* Blue accent */
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  transition: background 0.2s;
+}
+
+#reset-level:hover, #skip-level:hover, .reset-game:hover {
+  background-color: #005999;
+}
+
+#reset-level:focus, #skip-level:focus, .reset-game:focus {
+  outline: none;
+}
+
+select {
+  height: 30px;
+  width: 80px;
+  font-size: 16px;
+  text-align-last: center;
+  border: 1px solid #555;
+  background-color: #333;
+  color: #fff;
+  border-radius: 4px;
+}
+
+/* Dialog */
+#dialog {
+  width: 400px;
+  max-width: 90%;
+  margin: 10px auto;
+  border-radius: 6px;
+  background-color: #252526;
+  text-align: center;
+  color: white;
+  border: 1px solid #444;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+#dialog h3 {
+  padding-top: 20px;
+  font-size: 24px;
+  color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .middle-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    canvas {
+        order: 1;
+        max-width: 100%;
+        height: auto;
+    }
+    .bonus {
+        order: 2;
+        width: 100%;
+        max-width: 800px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+    }
+    .instructions {
+        order: 3;
+        width: 100%;
+        max-width: 800px;
+    }
+    
+    .bonus h2 {
+        border-bottom: none;
+        margin: 0;
+        width: auto;
+        font-size: 16px;
+        padding: 10px 20px;
+    }
+    
+    #reset-level, #skip-level, .reset-game {
+        width: auto;
+        min-width: 120px;
+        margin: 5px 10px;
+        display: inline-block;
+    }
+}

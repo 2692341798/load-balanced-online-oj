@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Sokoban - Boris Paskhaver</title>
+
+    <script src="https://code.createjs.com/createjs-2015.11.26.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+
+    <script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+
+    <script
+    src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
+    integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
+    crossorigin="anonymous">
+    </script>
+
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+
+
+    <link rel="stylesheet" href="css/style.css">
+
+  </head>
+
+  <body>
+
+    <header>
+      <h1>Sokoban</h1>
+    </header>
+
+    <div class="middle-container">
+
+      <div class="instructions">
+        <h2>Welcome!</h2>
+
+        <p>Sokoban is a popular puzzle game developed by Hiroyuki
+        Imabayashi in 1981. The goal of the game is to move all boxes on
+        the screen to their designated checkpoints.</p>
+
+        <h2>Instructions</h2>
+
+        <p>Use the arrow keys on the keyboard to move the player
+        around the grid. The next level will load when all
+        boxes are placed on checkpoints.</p>
+
+        <p>If you get stuck, click the Reset Level button on the
+        right to restart the level.</p>
+
+        <h2>About</h2>
+
+        <p>Sokoban is built using Easel.js, a library for
+        interacting with HTML5's canvas element. Explore the
+        project's code at <a href="http://www.github.com/paskhaver/sokoban" target="_blank">GitHub</a>.</p>
+
+
+      </div>
+      <canvas id="canvas">
+
+      </canvas>
+
+      <div id="dialog">
+        <h3>Congratulations! You won!</h3>
+
+        <img src="PNG/burgundy.jpg" width="400">
+
+        <button class="reset-game">Play Again</button>
+      </div>
+
+      <div class="bonus">
+        <h2>Level:
+          <select id="select-level">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+            <option value="19">19</option>
+            <option value="20">20</option>
+            <option value="21">21</option>
+            <option value="22">22</option>
+            <option value="23">23</option>
+            <option value="24">24</option>
+            <option value="25">25</option>
+            <option value="26">26</option>
+            <option value="27">27</option>
+            <option value="28">28</option>
+            <option value="29">29</option>
+            <option value="30">30</option>
+          </select>
+          of 30</h2>
+        <h2>Steps Taken: <span id="steps-taken">0</span></h2>
+        <h2>Box Pushes: <span id="box-pushes">0</span></h2>
+        <button id="reset-level">Reset Level</button>
+        <button id="skip-level">Skip Level</button>
+        <button class="reset-game">Reset Game</button>
+      </div>
+
+    </div>
+
+    <footer>
+
+      <a href="http://www.github.com/paskhaver/sokoban" target="_blank">
+        <img height="80" src="./PNG/github-logo.png">
+      </a>
+
+      <a href="https://www.linkedin.com/in/boris-paskhaver-73399760/" target="_blank">
+        <img height="80" src="./PNG/linkedin-logo.png">
+      </a>
+
+      </footer>
+
+    <script src="./dist/bundle.js"></script>
+
+  </body>
+</html>

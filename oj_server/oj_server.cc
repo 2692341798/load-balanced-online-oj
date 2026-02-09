@@ -18,6 +18,10 @@ void Recovery(int signo)
 
 int main()
 {
+    // Disable stdout buffering
+    setbuf(stdout, NULL);
+    std::cout << "[INFO] Server starting..." << std::endl;
+
     // Set locale to use environment variables (en_US.UTF-8 from Dockerfile)
     std::setlocale(LC_ALL, "en_US.UTF-8");
 

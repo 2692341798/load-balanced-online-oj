@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加分娱乐站 - 冻梨OJ</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --sidebar-bg: #252526;
+            --text-color: #d4d4d4;
+            --accent-color: #007acc;
+            --hover-color: #2a2d2e;
+            --border-color: #3e3e42;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 250px;
+            height: 100%;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 10px 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .sidebar-header {
+            padding: 15px 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .back-link {
+            text-decoration: none;
+            color: var(--accent-color);
+            font-size: 0.9em;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .game-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex: 1;
+        }
+        .game-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-left 0.2s;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        .game-item:hover {
+            background-color: var(--hover-color);
+        }
+        .game-item.active {
+            background-color: #37373d;
+            border-left-color: var(--accent-color);
+            font-weight: bold;
+        }
+        .game-icon {
+            margin-right: 10px;
+            width: 24px;
+            text-align: center;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 100%;
+            overflow: hidden;
+        }
+        .toolbar {
+            height: 50px;
+            width: 100%;
+            flex-shrink: 0;
+            background-color: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            justify-content: space-between;
+        }
+        .toolbar-title {
+            font-weight: bold;
+        }
+        .toolbar-controls button {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 5px 15px;
+            margin-left: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .toolbar-controls button:hover {
+            background-color: var(--hover-color);
+        }
+        #game-frame {
+            flex: 1;
+            display: block;
+            border: none;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+        .overlay {
+            position: absolute;
+            top: 50px; /* Below toolbar */
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 20;
+        }
+        .overlay.visible {
+            display: flex;
+        }
+        .overlay h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .overlay button {
+            padding: 10px 30px;
+            font-size: 1.1em;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .mobile-menu-toggle {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: var(--sidebar-bg);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 5px 10px;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: -250px;
+                height: 100%;
+                transition: left 0.3s;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .mobile-menu-toggle {
+                display: block;
+            }
+            .toolbar {
+                padding-left: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="back-link">←</a> 娱乐中心
+        </div>
+        <ul class="game-list">
+            <li class="game-item active" onclick="loadGame('mario', this)">
+                <span class="game-icon">🍄</span> 超级玛丽
+            </li>
+            <li class="game-item" onclick="loadGame('sokoban', this)">
+                <span class="game-icon">📦</span> 推箱子
+            </li>
+            <li class="game-item" onclick="loadGame('dino', this)">
+                <span class="game-icon">🦖</span> 小恐龙
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="toolbar">
+            <div class="toolbar-title" id="current-game-title">超级玛丽</div>
+            <div class="toolbar-controls">
+                <button onclick="togglePause()" id="pause-btn">暂停</button>
+                <button onclick="reloadGame()">重置</button>
+                <button onclick="toggleMute()" id="mute-btn">静音</button>
+                <button onclick="window.location.href='/'">退出</button>
+            </div>
+        </div>
+        
+        <iframe id="game-frame" src="mario/index.html" allow="autoplay; fullscreen"></iframe>
+        
+        <div class="overlay" id="pause-overlay">
+            <h2>游戏已暂停</h2>
+            <button onclick="togglePause()">继续游戏</button>
+        </div>
+    </div>
+
+    <script>
+        let isPaused = false;
+        let isMuted = false;
+
+        function loadGame(game, element) {
+            const frame = document.getElementById('game-frame');
+            const title = document.getElementById('current-game-title');
+            
+            // Update active state
+            document.querySelectorAll('.game-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+
+            // Reset controls
+            isPaused = false;
+            document.getElementById('pause-overlay').classList.remove('visible');
+            document.getElementById('pause-btn').innerText = '暂停';
+
+            // Switch game
+            switch(game) {
+                case 'mario':
+                    frame.src = 'mario/index.html';
+                    title.innerText = '超级玛丽';
+                    break;
+                case 'sokoban':
+                    frame.src = 'sokoban/index.html';
+                    title.innerText = '推箱子';
+                    break;
+                case 'dino':
+                    frame.src = 'dino/index.html';
+                    title.innerText = 'Chrome 小恐龙';
+                    break;
+            }
+            
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
+        }
+
+        function togglePause() {
+            const overlay = document.getElementById('pause-overlay');
+            const btn = document.getElementById('pause-btn');
+            const frame = document.getElementById('game-frame');
+            
+            isPaused = !isPaused;
+            
+            if (isPaused) {
+                overlay.classList.add('visible');
+                btn.innerText = '继续';
+                // Try to pause iframe content if possible (generic approach)
+                frame.contentWindow.focus(); 
+                // Note: Real pausing depends on game implementation. 
+                // For simple HTML5 games, losing focus or covering them is often enough.
+            } else {
+                overlay.classList.remove('visible');
+                btn.innerText = '暂停';
+                frame.contentWindow.focus();
+            }
+        }
+
+        function reloadGame() {
+            const frame = document.getElementById('game-frame');
+            frame.src = frame.src;
+            isPaused = false;
+            document.getElementById('pause-overlay').classList.remove('visible');
+            document.getElementById('pause-btn').innerText = '暂停';
+        }
+
+        function toggleMute() {
+            const btn = document.getElementById('mute-btn');
+            isMuted = !isMuted;
+            
+            // Try to mute all media in iframe
+            const frame = document.getElementById('game-frame');
+            try {
+                const mediaElements = frame.contentDocument.querySelectorAll('audio, video');
+                mediaElements.forEach(el => el.muted = isMuted);
+                
+                // Also try to call global mute function if it exists (game specific)
+                // frame.contentWindow.AudioContext ...
+            } catch (e) {
+                console.warn('Cannot access iframe content for muting (CORS or other issue)');
+            }
+            
+            btn.innerText = isMuted ? '取消静音' : '静音';
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+        
+        // Listen for iframe load to apply mute state if needed
+        document.getElementById('game-frame').onload = function() {
+            if (isMuted) {
+                // Try to apply mute again
+                 try {
+                    const mediaElements = this.contentDocument.querySelectorAll('audio, video');
+                    mediaElements.forEach(el => el.muted = true);
+                } catch (e) {}
+            }
+            // Focus game for keyboard input
+            this.contentWindow.focus();
+        };
+    </script>
+</body>
+</html>
