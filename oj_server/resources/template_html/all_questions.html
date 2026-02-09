@@ -894,8 +894,20 @@
             </table>
 
             <!-- Pagination -->
+            <style>
+                /* Hide number input spinners */
+                input[type=number]::-webkit-inner-spin-button, 
+                input[type=number]::-webkit-outer-spin-button { 
+                    -webkit-appearance: none; 
+                    margin: 0; 
+                }
+                input[type=number] {
+                    -moz-appearance: textfield;
+                }
+            </style>
             <div class="pagination-container" style="display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 10px;">
                 {{#prev_page}}
+                <a href="/all_questions?page=1" class="page-link">首页</a>
                 <a href="/all_questions?page={{prev_page_num}}" class="page-link">&laquo; 上一页</a>
                 {{/prev_page}}
                 
@@ -910,10 +922,33 @@
 
                 {{#next_page}}
                 <a href="/all_questions?page={{next_page_num}}" class="page-link">下一页 &raquo;</a>
+                <a href="/all_questions?page={{total_pages}}" class="page-link">尾页</a>
                 {{/next_page}}
                 
                 <span class="page-info" style="color: var(--text-secondary); margin-left: 10px;">第 {{current_page}} 页 / 共 {{total_pages}} 页</span>
+                
+                <div class="jump-box" style="display: flex; align-items: center; gap: 5px; margin-left: 10px;">
+                    <input type="number" id="page-jump-input" min="1" max="{{total_pages}}" 
+                           style="width: 50px; padding: 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text-main); text-align: center;"
+                           onkeypress="if(event.keyCode==13) jumpToPage()">
+                    <button onclick="jumpToPage()" class="page-link" style="padding: 5px 10px; cursor: pointer;">跳转</button>
+                </div>
             </div>
+            
+            <script>
+                function jumpToPage() {
+                    const input = document.getElementById('page-jump-input');
+                    const page = parseInt(input.value);
+                    const total = {{total_pages}};
+                    if (page && page > 0) {
+                        if (page > total) {
+                            window.location.href = '/all_questions?page=' + total;
+                        } else {
+                            window.location.href = '/all_questions?page=' + page;
+                        }
+                    }
+                }
+            </script>
         </div>
 
         <!-- Discussion Views -->
