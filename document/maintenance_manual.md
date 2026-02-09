@@ -53,7 +53,7 @@
 
 | 服务名称 | 容器名称 | 端口映射 | 说明 |
 | :--- | :--- | :--- | :--- |
-| **oj_server** | `oj_server` | `8080:8080` | 核心 Web 服务，提供 API 和前端页面 |
+| **oj_server** | `oj_server` | `8088:8088` | 核心 Web 服务，提供 API 和前端页面 |
 | **compile_server_1** | `compile_server_1` | `8081:8081` | 判题服务节点 1 |
 | **compile_server_2** | `compile_server_2` | `8082:8082` | 判题服务节点 2 |
 | **db** | `oj_db` | `3306:3306` | MySQL 8.0 数据库 |
@@ -140,7 +140,7 @@ ssh -i /Users/huangqijun/Downloads/Mac.pem root@<Server_IP> "cd oj_project/docke
   - OJ Server: `docker compose logs -f oj_server`
   - Database: `docker compose logs -f db`
 - **可用性检查**:
-  - 定期访问 `http://<Server_IP>:8080/all_questions` 确认页面加载正常。
+  - 定期访问 `http://<Server_IP>:8088/all_questions` 确认页面加载正常。
 
 ---
 
@@ -169,7 +169,7 @@ docker exec oj_db mysqldump -u root -p<DB_Root_Password> oj > /root/oj_backup_$(
 ## 6. 安全维护规范
 
 1. **防火墙/安全组**:
-   - 仅开放必要端口: `8080` (Web), `22` (SSH).
+   - 仅开放必要端口: `8088` (Web), `22` (SSH).
    - `8081`, `8082`, `3306` 建议仅限内网访问或开发调试时临时开放。
 2. **数据库安全**:
    - 生产环境建议修改默认密码 (`<Default_DB_Password>`)。
@@ -196,5 +196,5 @@ docker exec oj_db mysqldump -u root -p<DB_Root_Password> oj > /root/oj_backup_$(
 
 | 版本号 | 更新日期 | 修改人 | 修改内容 |
 | :--- | :--- | :--- | :--- |
-| v1.0.1 | 2026-02-09 | AI Assistant | 更新文档版本与最近修复记录 |
+| v1.0.3 | 2026-02-09 | AI Assistant | 更新端口至8088，移除Python依赖 |
 

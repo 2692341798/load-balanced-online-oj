@@ -66,18 +66,18 @@
 - **pthread**：POSIX线程库
 - **ctemplate**：HTML模板引擎
 - **mysqlclient**：MySQL客户端库
-- **httplib**：HTTP服务器库（已包含在项目中）
-- **openssl**：加密库（用于密码哈希）
+- **http_server**：基于 cpp-httplib 的高性能 Web 服务器
+- **curl**：用于爬虫模块的网络请求
 
 ### 安装依赖（Ubuntu/Debian）
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential libjsoncpp-dev libctemplate-dev libmysqlclient-dev mysql-server libssl-dev
+sudo apt-get install -y build-essential libjsoncpp-dev libctemplate-dev libmysqlclient-dev mysql-server libssl-dev libcurl4-openssl-dev
 ```
 
 ### 安装依赖（macOS）
 ```bash
-brew install jsoncpp ctemplate mysql openssl
+brew install jsoncpp ctemplate mysql openssl curl
 ```
 
 ## 🚀 快速开始
@@ -129,7 +129,7 @@ cd compile_server && ./compile_server 8082
 # 启动第三个编译服务器（端口8083）
 cd compile_server && ./compile_server 8083
 
-# 启动OJ主服务器（默认端口8080）
+# 启动OJ主服务器（默认端口8088）
 cd oj_server && ./oj_server
 ```
 
@@ -147,20 +147,20 @@ cd oj_server && ./oj_server
 ```
 
 ### 6. 爬虫服务 (可选)
-如果需要获取竞赛数据，可以运行爬虫服务：
+如果需要获取竞赛数据或题目，可以运行爬虫服务：
 ```bash
 # 运行竞赛爬虫 (Codeforces/LeetCode)
 ./crawler/contest_crawler
 
-# 运行洛谷题目爬虫 (需Python环境)
-python3 crawler/luogu_crawler.py
+# 运行洛谷题目爬虫 (C++实现)
+./crawler/luogu_crawler
 ```
 
 ### 7. 访问系统
-- **主页**：http://localhost:8080
-- **题目列表**：http://localhost:8080/all_questions
-- **题目详情**：http://localhost:8080/question/<题号>
-- **登录页面**：http://localhost:8080/login
+- **主页**：http://localhost:8088
+- **题目列表**：http://localhost:8088/all_questions
+- **题目详情**：http://localhost:8088/question/<题号>
+- **登录页面**：http://localhost:8088/login
 
 ### 7. 基本操作
 1. **用户注册**：在登录页面点击注册，填写用户名、密码和邮箱
@@ -262,11 +262,11 @@ load-balanced-online-oj/
 - **OpenSSL**：用于 `httplib` 的 HTTPS 支持
 - **MySQL Client**：用于数据库连接
 - **Hiredis** (可选)：用于 Redis 支持 (通过 `#define ENABLE_REDIS` 开启)
-- **Python3** (可选)：用于运行洛谷题目爬虫脚本
+- **libcurl**：用于网络请求 (洛谷爬虫)
 
 #### 安装依赖 (macOS)
 ```bash
-brew install jsoncpp openssl mysql-client
+brew install jsoncpp openssl mysql-client curl
 ```
 
 ### 🚀 构建与运行
@@ -275,11 +275,16 @@ brew install jsoncpp openssl mysql-client
     ```bash
     cd crawler
     make contest_crawler
+    make luogu_crawler
     ```
 
 2.  **运行**:
     ```bash
+    # 运行竞赛爬虫
     ./contest_crawler
+    
+    # 运行洛谷爬虫
+    ./luogu_crawler
     ```
     爬虫作为守护进程运行（无限循环），默认间隔为 2-4 小时。
 
@@ -339,17 +344,17 @@ npx playwright test
 可以通过访问API接口进行功能测试：
 ```bash
 # 测试用户注册
-curl -X POST http://localhost:8080/api/register \
+curl -X POST http://localhost:8088/api/register \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"testpass123","email":"test@example.com"}'
 
 # 测试用户登录
-curl -X POST http://localhost:8080/api/login \
+curl -X POST http://localhost:8088/api/login \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"testpass123"}'
 
 # 测试代码评测
-curl -X POST http://localhost:8080/judge/1 \
+curl -X POST http://localhost:8088/judge/1 \
   -H "Content-Type: application/json" \
   -d '{"code":"#include<iostream>\nint main(){std::cout<<\"Hello World\"<<std::endl;return 0;}"}'
 ```
@@ -357,7 +362,7 @@ curl -X POST http://localhost:8080/judge/1 \
 ## 🐛 常见问题
 
 ### 端口占用
-若8080/8081/8082/8083端口被占用，请：
+若8088/8081/8082/8083端口被占用，请：
 1. 调整启动端口参数
 2. 同步更新配置文件 `service_machine.conf`
 3. 重启服务
@@ -430,5 +435,5 @@ chmod +x oj_server/oj_server compile_server/compile_server
 ---
 
 **最后更新时间**: 2026-02-09  
-**文档版本**: v1.0.2  
+**文档版本**: v1.0.3  
 **维护团队**: 在线评测系统开发团队

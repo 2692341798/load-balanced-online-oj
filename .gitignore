@@ -38,6 +38,7 @@ oj_server/oj_server
 compile_server/compile_server
 crawler/contest_crawler
 crawler/test_crawler
+crawler/luogu_crawler
 crawler/init_db
 crawler/crawler_state.json
 

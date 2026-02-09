@@ -11,7 +11,7 @@
 - **认证方式**: Cookie-based Session
 
 ### 1.2 基础信息
-- **基础URL**: `http://localhost:8080`
+- **基础URL**: `http://localhost:8088`
 - **API版本**: v1
 - **状态码**: 遵循HTTP标准状态码
 
@@ -878,7 +878,7 @@ Content-Type: multipart/form-data
 
 ```bash
 # 1. 用户注册
-curl -X POST http://localhost:8080/api/register \
+curl -X POST http://localhost:8088/api/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -887,7 +887,7 @@ curl -X POST http://localhost:8080/api/register \
   }'
 
 # 2. 用户登录
-curl -X POST http://localhost:8080/api/login \
+curl -X POST http://localhost:8088/api/login \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -896,11 +896,11 @@ curl -X POST http://localhost:8080/api/login \
   -c cookies.txt
 
 # 3. 获取题目列表（需要登录）
-curl -X GET http://localhost:8080/all_questions \
+curl -X GET http://localhost:8088/all_questions \
   -b cookies.txt
 
 # 4. 提交代码评测
-curl -X POST http://localhost:8080/judge/1 \
+curl -X POST http://localhost:8088/judge/1 \
   -H "Content-Type: application/json" \
   -b cookies.txt \
   -d '{
@@ -957,6 +957,6 @@ curl -X POST http://localhost:8080/judge/1 \
 
 ---
 
-**文档版本**: v1.0.1  
+**文档版本**: v1.0.3  
 **最后更新时间**: 2026-02-09  
 **维护团队**: 在线评测系统开发团队
