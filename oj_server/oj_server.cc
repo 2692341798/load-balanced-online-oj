@@ -17,6 +17,12 @@ void Recovery(int signo)
 
 int main()
 {
+    // Log system locale
+    const char* lang = std::getenv("LANG");
+    const char* lc_all = std::getenv("LC_ALL");
+    std::cout << "[INFO] Startup Locale Check: LANG=" << (lang ? lang : "null") 
+              << ", LC_ALL=" << (lc_all ? lc_all : "null") << std::endl;
+
     signal(SIGQUIT, Recovery);
 
     //用户请求的服务路由功能

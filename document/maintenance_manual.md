@@ -8,23 +8,23 @@
 - **操作系统**: Ubuntu / Aliyun Linux (兼容)
 
 ### 密钥信息
-- **私钥文件路径**: `<Key_Path>`
+- **私钥文件路径**: `/Users/huangqijun/Downloads/Mac.pem`
 - **密钥指纹**: `<Key_Fingerprint>`
 
 ### 连接方法
 1. **权限设置** (首次使用或权限错误时执行):
    为了安全起见，私钥文件必须仅对所有者可读。
    ```bash
-   chmod 400 <Key_Path>
+   chmod 400 /Users/huangqijun/Downloads/Mac.pem
    ```
 
 2. **SSH 连接命令**:
    ```bash
-   ssh -i <Key_Path> root@<Server_IP>
+   ssh -i /Users/huangqijun/Downloads/Mac.pem root@<Server_IP>
    ```
 
 ### 安全注意事项
-- **严禁泄露私钥文件** (`<Key_Name>`)，建议在本地做好备份。
+- **严禁泄露私钥文件** (`Mac.pem`)，建议在本地做好备份。
 - 登录服务器后，避免在非必要情况下修改 `/root/.ssh/authorized_keys` 文件。
 - 建议定期检查服务器登录日志 `/var/log/auth.log` 以监控异常访问。
 
@@ -85,19 +85,19 @@ docker compose ps
 ### 3.2 上传与部署 (本地 -> 远程)
 1. **上传压缩包**:
    ```bash
-   scp -i <Key_Path> project_deploy.tar.gz root@<Server_IP>:/root/
+   scp -i /Users/huangqijun/Downloads/Mac.pem project_deploy.tar.gz root@<Server_IP>:/root/
    ```
 
 2. **解压并重构服务**:
    ```bash
-   ssh -i <Key_Path> root@<Server_IP> "tar -xzf project_deploy.tar.gz -C oj_project && cd oj_project/docker && docker compose up -d --build"
+   ssh -i /Users/huangqijun/Downloads/Mac.pem root@<Server_IP> "tar -xzf project_deploy.tar.gz -C oj_project && cd oj_project/docker && docker compose up -d --build"
    ```
    > **注意**: 如果修改了数据库结构或需要重置数据，可添加 `--force-recreate` 参数，或先执行 `docker compose down -v` (慎用，会清空数据)。
 
 ### 3.3 健康检查
 部署完成后，执行以下命令验证服务日志：
 ```bash
-ssh -i <Key_Path> root@<Server_IP> "cd oj_project/docker && docker compose logs --tail 20"
+ssh -i /Users/huangqijun/Downloads/Mac.pem root@<Server_IP> "cd oj_project/docker && docker compose logs --tail 20"
 ```
 
 ### 3.4 自动化部署 (GitHub Actions)

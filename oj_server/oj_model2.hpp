@@ -258,7 +258,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -313,7 +313,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
                 mysql_close(my);
@@ -487,7 +487,7 @@ namespace ns_model
                  LOG(FATAL) << "连接数据库失败!" << "\n";
                  return false;
              }
-             mysql_set_character_set(my, "utf8mb4");
+             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
              if(0 != mysql_query(my, sql.c_str())) {
                  LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
                  mysql_close(my);
@@ -509,7 +509,7 @@ namespace ns_model
             }
 
             // 一定要设置该链接的编码格式, 要不然会出现乱码问题
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             // LOG(INFO) << "连接数据库成功!" << "\n";
 
@@ -566,7 +566,7 @@ namespace ns_model
                 LOG(FATAL) << "连接数据库失败!" << "\n";
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, sql.c_str()))
             {
@@ -609,7 +609,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             std::string check_sql = "SELECT user_id FROM " + oj_inline_comments + " WHERE id=" + comment_id;
             if(0 != mysql_query(my, check_sql.c_str())) {
@@ -653,7 +653,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                  return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             char* escaped_content = new char[sub.content.length() * 2 + 1];
             mysql_real_escape_string(my, escaped_content, sub.content.c_str(), sub.content.length());
@@ -712,7 +712,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
                 mysql_close(my);
@@ -769,7 +769,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                  return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -807,7 +807,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
                 mysql_close(my);
@@ -855,7 +855,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, sql.c_str()))
             {
@@ -922,7 +922,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             // Escape strings
             auto escape = [&](const std::string &s) -> std::string {
@@ -957,7 +957,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1079,7 +1079,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1119,7 +1119,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
                 mysql_close(my);
@@ -1170,7 +1170,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
                 mysql_close(my);
@@ -1220,7 +1220,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
                 mysql_close(my);
@@ -1262,7 +1262,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1296,7 +1296,7 @@ namespace ns_model
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 return false;
             }
-            mysql_set_character_set(my, "utf8mb4");
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
                 mysql_close(my);
