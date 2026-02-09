@@ -1,8 +1,8 @@
 contest_crawler:contest_crawler.cc
-	g++ -o $@ $^ -I/usr/include/jsoncpp -std=c++11 -ljsoncpp -lssl -lcrypto -lmysqlclient
+	g++ -o $@ $^ -I/usr/include/jsoncpp -I/opt/homebrew/include -L/opt/homebrew/lib -std=c++11 -ljsoncpp -lssl -lcrypto -lmysqlclient
 
 test_crawler:test_crawler.cc
-	g++ -o $@ $^ -I/usr/include/jsoncpp -std=c++11 -ljsoncpp
+	g++ -o $@ $^ -I/usr/include/jsoncpp -I/opt/homebrew/include -L/opt/homebrew/lib -std=c++11 -ljsoncpp
 
 
 .PHONY:clean

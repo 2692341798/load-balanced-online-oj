@@ -892,6 +892,28 @@
                     {{/question_list}}
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            <div class="pagination-container" style="display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 10px;">
+                {{#prev_page}}
+                <a href="/all_questions?page={{prev_page_num}}" class="page-link">&laquo; 上一页</a>
+                {{/prev_page}}
+                
+                {{#page_list}}
+                    {{#active_page}}
+                    <span class="page-link active">{{page_num}}</span>
+                    {{/active_page}}
+                    {{#normal_page}}
+                    <a href="/all_questions?page={{page_num}}" class="page-link">{{page_num}}</a>
+                    {{/normal_page}}
+                {{/page_list}}
+
+                {{#next_page}}
+                <a href="/all_questions?page={{next_page_num}}" class="page-link">下一页 &raquo;</a>
+                {{/next_page}}
+                
+                <span class="page-info" style="color: var(--text-secondary); margin-left: 10px;">第 {{current_page}} 页 / 共 {{total_pages}} 页</span>
+            </div>
         </div>
 
         <!-- Discussion Views -->

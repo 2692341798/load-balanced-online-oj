@@ -47,6 +47,9 @@ crawler/crawler_state.json
 output/
 
 
-
 # Trae AI files
 .trae/
+
+# Crawler temporary files
+cookies.txt
+page*.html

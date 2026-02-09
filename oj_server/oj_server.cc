@@ -535,6 +535,6 @@ int main()
     svr.set_base_dir("./wwwroot");
     svr.set_mount_point("/css", "./css");
     svr.set_mount_point("/uploads", "./wwwroot/uploads"); // Serve uploaded files
-    svr.listen("0.0.0.0", 8080);
+    svr.listen("0.0.0.0", 8088);
     return 0;
 } 

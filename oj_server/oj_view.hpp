@@ -24,7 +24,7 @@ namespace ns_view
         View(){}
         ~View(){}
     public:
-        void AllExpandHtml(const vector<struct Question> &questions, std::string *html, const User *u = nullptr)
+        void AllExpandHtml(const vector<struct Question> &questions, std::string *html, int total_pages, int current_page, const User *u = nullptr)
         {
             // 题目的编号 题目的标题 题目的难度
             // 推荐使用表格显示
@@ -46,6 +46,39 @@ namespace ns_view
                 sub->SetValue("number", q.number);
                 sub->SetValue("title", q.title);
                 sub->SetValue("star", q.star);
+            }
+
+            // Pagination Logic
+            root.SetValue("current_page", std::to_string(current_page));
+            root.SetValue("total_pages", std::to_string(total_pages));
+
+            if (current_page > 1) {
+                root.ShowSection("prev_page");
+                root.SetValue("prev_page_num", std::to_string(current_page - 1));
+            }
+            if (current_page < total_pages) {
+                root.ShowSection("next_page");
+                root.SetValue("next_page_num", std::to_string(current_page + 1));
+            }
+
+            // Page numbers (Simple range: current-2 to current+2)
+            int start = std::max(1, current_page - 2);
+            int end = std::min(total_pages, current_page + 2);
+            
+            // Ensure at least 5 pages if possible
+            if (end - start < 4) {
+                if (start == 1) end = std::min(total_pages, start + 4);
+                else if (end == total_pages) start = std::max(1, end - 4);
+            }
+
+            for (int i = start; i <= end; ++i) {
+                ctemplate::TemplateDictionary *page_section = root.AddSectionDictionary("page_list");
+                page_section->SetValue("page_num", std::to_string(i));
+                if (i == current_page) {
+                    page_section->ShowSection("active_page");
+                } else {
+                    page_section->ShowSection("normal_page");
+                }
             }
 
             // 3. 获取被渲染的html

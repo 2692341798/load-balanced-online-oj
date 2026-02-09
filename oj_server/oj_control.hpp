@@ -578,15 +578,29 @@ namespace ns_control
             User user;
             AuthCheck(req, &user);
 
+            // Pagination parameters
+            int page = 1;
+            int page_size = 40; // Changed to 40 per page
+            if (req.has_param("page")) {
+                try {
+                    page = std::stoi(req.get_param_value("page"));
+                    if (page < 1) page = 1;
+                } catch (...) {
+                    page = 1;
+                }
+            }
+
             bool ret = true;
             vector<struct Question> all;
-            if (model_.GetAllQuestions(&all))
+            int total_count = 0;
+
+            if (model_.GetQuestionsByPage(page, page_size, &all, &total_count))
             {
-                sort(all.begin(), all.end(), [](const struct Question &q1, const struct Question &q2){
-                    return atoi(q1.number.c_str()) < atoi(q2.number.c_str());
-                });
+                int total_pages = (total_count + page_size - 1) / page_size;
+                if (total_pages < 1) total_pages = 1; // At least 1 page even if empty
+
                 // 获取题目信息成功，将所有的题目数据构建成网页
-                view_.AllExpandHtml(all, html, &user);
+                view_.AllExpandHtml(all, html, total_pages, page, &user);
             }
             else
             {

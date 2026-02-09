@@ -890,6 +890,66 @@ namespace ns_model
             return QueryMySql(sql, out);
         }
 
+        bool GetQuestionsByPage(int page, int page_size, vector<Question> *out, int *total)
+        {
+            int offset = (page - 1) * page_size;
+            if (offset < 0) offset = 0;
+
+            // 1. Get total count
+            std::string count_sql = "select count(*) from " + oj_questions + " where status=1";
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, count_sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *total = atoi(row[0]);
+                mysql_free_result(res);
+            }
+
+            // 2. Get paginated data
+            // Note: number is varchar, so CAST AS UNSIGNED for correct numeric sorting
+            std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from " + oj_questions + " where status=1 ORDER BY CAST(number AS UNSIGNED) ASC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
+            
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            int fields = mysql_num_fields(res);
+            
+            for(int i = 0; i < rows; i++)
+            {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                
+                Question q;
+                q.number = row[0] ? row[0] : "";
+                q.title = row[1] ? row[1] : "";
+                q.star = row[2] ? row[2] : "";
+                q.cpu_limit = row[3] ? atoi(row[3]) : 0;
+                q.mem_limit = row[4] ? atoi(row[4]) : 0;
+                q.desc = row[5] ? row[5] : "";
+                q.tail = row[6] ? row[6] : "";
+                if(fields > 7) q.status = row[7] ? atoi(row[7]) : 1;
+                else q.status = 1;
+
+                out->push_back(q);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
         bool GetAllQuestionsAdmin(vector<Question> *out)
         {
             // Show all questions for admin
