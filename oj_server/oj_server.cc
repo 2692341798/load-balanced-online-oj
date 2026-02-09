@@ -128,8 +128,8 @@ int main()
              Json::Value err;
              err["status"] = -1;
              err["reason"] = "请先登录";
-             Json::FastWriter w;
-             resp.set_content(w.write(err), "application/json;charset=utf-8");
+             
+             resp.set_content(SerializeJson(err), "application/json;charset=utf-8");
              return;
         }
 
@@ -142,14 +142,14 @@ int main()
             Json::Value err;
             err["status"] = -1;
             err["reason"] = std::string("判题异常: ") + e.what();
-            Json::FastWriter w;
-            resp.set_content(w.write(err), "application/json;charset=utf-8");
+            
+            resp.set_content(SerializeJson(err), "application/json;charset=utf-8");
         } catch (...) {
             Json::Value err;
             err["status"] = -1;
             err["reason"] = "判题时发生未知错误";
-            Json::FastWriter w;
-            resp.set_content(w.write(err), "application/json;charset=utf-8");
+            
+            resp.set_content(SerializeJson(err), "application/json;charset=utf-8");
         }
     });
 
@@ -183,8 +183,8 @@ int main()
             res_json["status"] = 1;
             res_json["reason"] = "用户名或密码错误";
         }
-        Json::FastWriter w;
-        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+        
+        resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
     });
 
     // API Register
@@ -221,8 +221,8 @@ int main()
             res_json["reason"] = "注册失败：数据库错误";
         }
         
-        Json::FastWriter w;
-        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+        
+        resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
     });
 
     // API Check User Status
@@ -237,8 +237,8 @@ int main()
             res_json["status"] = 1;
             res_json["reason"] = "未登录";
         }
-        Json::FastWriter w;
-        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+        
+        resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
     });
 
     // User Profile Page
@@ -275,8 +275,8 @@ int main()
             res_json["status"] = 1;
             res_json["reason"] = "未登录";
         }
-        Json::FastWriter w;
-        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+        
+        resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
     });
 
     // API Update User Profile
@@ -287,8 +287,8 @@ int main()
         if (!ctrl.AuthCheck(req, &user)) {
             res_json["status"] = 401;
             res_json["reason"] = "Unauthorized";
-            Json::FastWriter w;
-            resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+            
+            resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
             return;
         }
         
@@ -316,8 +316,8 @@ int main()
             res_json["status"] = 500;
             res_json["reason"] = "Internal Server Error";
         }
-        Json::FastWriter w;
-        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+        
+        resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
     });
 
     // API Logout
@@ -327,8 +327,8 @@ int main()
         res_json["status"] = 0;
         res_json["reason"] = "success";
         resp.set_header("Set-Cookie", "session_id=; Path=/; Max-Age=0; HttpOnly");
-        Json::FastWriter w;
-        resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+        
+        resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
     });
     
     // API Search Submissions
@@ -338,8 +338,8 @@ int main()
         if (!ctrl.AuthCheck(req, &user)) {
              res_json["status"] = 401;
              res_json["reason"] = "Unauthorized";
-             Json::FastWriter w;
-             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             
+             resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
              return;
         }
         
@@ -355,8 +355,8 @@ int main()
         if (!ctrl.AuthCheck(req, &user)) {
              res_json["status"] = 401;
              res_json["reason"] = "请先登录";
-             Json::FastWriter w;
-             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             
+             resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
              return;
         }
 
@@ -380,8 +380,8 @@ int main()
         if (!ctrl.AuthCheck(req, &user)) {
              res_json["status"] = 401;
              res_json["reason"] = "请先登录";
-             Json::FastWriter w;
-             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             
+             resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
              return;
         }
 
@@ -459,8 +459,8 @@ int main()
         if (!ctrl.AuthCheck(req, &user)) {
              res_json["status"] = 401;
              res_json["reason"] = "Unauthorized";
-             Json::FastWriter w;
-             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             
+             resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
              return;
         }
         
@@ -499,8 +499,8 @@ int main()
         if (!ctrl.AuthCheck(req, &user)) {
              res_json["status"] = 401;
              res_json["reason"] = "Unauthorized";
-             Json::FastWriter w;
-             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             
+             resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
              return;
         }
         
@@ -522,8 +522,8 @@ int main()
         if (!ctrl.AuthCheck(req, &user)) {
              res_json["status"] = 401;
              res_json["reason"] = "Unauthorized";
-             Json::FastWriter w;
-             resp.set_content(w.write(res_json), "application/json;charset=utf-8");
+             
+             resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
              return;
         }
         

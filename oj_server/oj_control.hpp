@@ -30,6 +30,15 @@ namespace ns_control
     using namespace ns_view;
     using namespace httplib;
 
+    // Helper for UTF-8 JSON
+    std::string SerializeJson(const Json::Value &val) {
+        Json::StreamWriterBuilder builder;
+        builder["commentStyle"] = "None";
+        builder["indentation"] = "";
+        builder["emitUTF8"] = true;
+        return Json::writeString(builder, val);
+    }
+
     // Session Management
     struct Session {
         User user;
@@ -255,8 +264,8 @@ namespace ns_control
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "No image file uploaded";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
 
@@ -281,8 +290,8 @@ namespace ns_control
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Failed to save file";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
             out.write(content.c_str(), content.size());
@@ -291,8 +300,8 @@ namespace ns_control
             Json::Value res;
             res["status"] = 0;
             res["url"] = "/uploads/" + new_filename;
-            Json::FastWriter w;
-            *json_out = w.write(res);
+            
+            *json_out = SerializeJson(res);
             return true;
         }
 
@@ -388,8 +397,8 @@ namespace ns_control
                 Json::Value root;
                 root["status"] = 403;
                 root["reason"] = "Permission Denied";
-                Json::FastWriter w;
-                *json = w.write(root);
+                
+                *json = SerializeJson(root);
                 return false;
             }
 
@@ -412,8 +421,8 @@ namespace ns_control
                     list.append(item);
                 }
                 root["data"] = list;
-                Json::FastWriter w;
-                *json = w.write(root);
+                
+                *json = SerializeJson(root);
                 return true;
             }
             else
@@ -421,8 +430,8 @@ namespace ns_control
                 Json::Value root;
                 root["status"] = 1;
                 root["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json = w.write(root);
+                
+                *json = SerializeJson(root);
                 return false;
             }
         }
@@ -434,8 +443,8 @@ namespace ns_control
                 Json::Value root;
                 root["status"] = 403;
                 root["reason"] = "Permission Denied";
-                Json::FastWriter w;
-                *json = w.write(root);
+                
+                *json = SerializeJson(root);
                 return false;
             }
 
@@ -456,16 +465,16 @@ namespace ns_control
                  Json::Value res;
                  res["status"] = 0;
                  res["reason"] = "Success";
-                 Json::FastWriter w;
-                 *json = w.write(res);
+                 
+                 *json = SerializeJson(res);
                  return true;
             }
             
             Json::Value res;
             res["status"] = 1;
             res["reason"] = "Database Error";
-            Json::FastWriter w;
-            *json = w.write(res);
+            
+            *json = SerializeJson(res);
             return false;
         }
 
@@ -476,8 +485,8 @@ namespace ns_control
                 Json::Value root;
                 root["status"] = 403;
                 root["reason"] = "Permission Denied";
-                Json::FastWriter w;
-                *json = w.write(root);
+                
+                *json = SerializeJson(root);
                 return false;
             }
 
@@ -499,16 +508,16 @@ namespace ns_control
                  Json::Value res;
                  res["status"] = 0;
                  res["reason"] = "Success";
-                 Json::FastWriter w;
-                 *json = w.write(res);
+                 
+                 *json = SerializeJson(res);
                  return true;
             }
             
             Json::Value res;
             res["status"] = 1;
             res["reason"] = "Database Error";
-            Json::FastWriter w;
-            *json = w.write(res);
+            
+            *json = SerializeJson(res);
             return false;
         }
 
@@ -519,8 +528,8 @@ namespace ns_control
                 Json::Value root;
                 root["status"] = 403;
                 root["reason"] = "Permission Denied";
-                Json::FastWriter w;
-                *json = w.write(root);
+                
+                *json = SerializeJson(root);
                 return false;
             }
 
@@ -528,16 +537,16 @@ namespace ns_control
                  Json::Value res;
                  res["status"] = 0;
                  res["reason"] = "Success";
-                 Json::FastWriter w;
-                 *json = w.write(res);
+                 
+                 *json = SerializeJson(res);
                  return true;
             }
             
             Json::Value res;
             res["status"] = 1;
             res["reason"] = "Database Error";
-            Json::FastWriter w;
-            *json = w.write(res);
+            
+            *json = SerializeJson(res);
             return false;
         }
 
@@ -625,8 +634,8 @@ namespace ns_control
                      Json::Value res;
                      res["status"] = 1;
                      res["reason"] = "Question hidden";
-                     Json::FastWriter w;
-                     *json_out = w.write(res);
+                     
+                     *json_out = SerializeJson(res);
                      return false;
                 }
 
@@ -641,8 +650,8 @@ namespace ns_control
                 // Don't return full description/tail/header to save bandwidth if only needed for metadata
                 root["data"] = data;
                 
-                Json::FastWriter w;
-                *json_out = w.write(root);
+                
+                *json_out = SerializeJson(root);
                 return true;
             }
             else
@@ -650,8 +659,8 @@ namespace ns_control
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Not Found";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
@@ -710,8 +719,8 @@ namespace ns_control
                  }
                  root["data"] = list;
                  
-                 Json::FastWriter w;
-                 *json_out = w.write(root);
+                 
+                 *json_out = SerializeJson(root);
 
 #ifdef ENABLE_REDIS
                  // Set Cache
@@ -732,8 +741,8 @@ namespace ns_control
                  Json::Value res;
                  res["status"] = 1;
                  res["reason"] = "Database Error";
-                 Json::FastWriter w;
-                 *json_out = w.write(res);
+                 
+                 *json_out = SerializeJson(res);
                  return false;
             }
         }
@@ -759,8 +768,8 @@ namespace ns_control
                  Json::Value err_res;
                  err_res["status"] = -2;
                  err_res["reason"] = "Question not found";
-                 Json::FastWriter w;
-                 *out_json = w.write(err_res);
+                 
+                 *out_json = SerializeJson(err_res);
                  return;
             }
             
@@ -788,8 +797,8 @@ namespace ns_control
                      Json::Value err_res;
                      err_res["status"] = -2;
                      err_res["reason"] = "Question is not published";
-                     Json::FastWriter w;
-                     *out_json = w.write(err_res);
+                     
+                     *out_json = SerializeJson(err_res);
                      return;
                 }
             }
@@ -829,8 +838,8 @@ namespace ns_control
                 compile_value["cpu_limit"] = q.cpu_limit;
                 compile_value["mem_limit"] = q.mem_limit;
                 
-                Json::FastWriter writer;
-                std::string compile_string = writer.write(compile_value);
+                
+                std::string compile_string = SerializeJson(compile_value);
 
                 // 3. Load Balance & Request
                 while(true) {
@@ -841,8 +850,8 @@ namespace ns_control
                          Json::Value err_res;
                          err_res["status"] = -2;
                          err_res["reason"] = "No available compile server";
-                         Json::FastWriter w;
-                         *out_json = w.write(err_res);
+                         
+                         *out_json = SerializeJson(err_res);
                          return;
                     }
                     
@@ -909,11 +918,11 @@ namespace ns_control
             
             stdout_json["summary"] = summary;
             
-            Json::FastWriter w;
-            final_res["stdout"] = w.write(stdout_json);
+            
+            final_res["stdout"] = SerializeJson(stdout_json);
             final_res["stderr"] = "";
             
-            *out_json = w.write(final_res);
+            *out_json = SerializeJson(final_res);
             
             // Record Submission
              if (!user_id.empty()) {
@@ -973,14 +982,14 @@ namespace ns_control
                 }
                 root["data"] = list;
                 
-                Json::FastWriter w;
-                *json_out = w.write(root);
+                
+                *json_out = SerializeJson(root);
             } else {
                 Json::Value root;
                 root["status"] = 1;
                 root["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json_out = w.write(root);
+                
+                *json_out = SerializeJson(root);
             }
         }
 
@@ -1019,8 +1028,8 @@ namespace ns_control
             }
             root["stats"] = stats_json;
             
-            Json::FastWriter w;
-            *json = w.write(root);
+            
+            *json = SerializeJson(root);
             return true;
         }
 
@@ -1061,15 +1070,15 @@ namespace ns_control
                 Json::Value res;
                 res["status"] = 0;
                 res["reason"] = "Success";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return true;
             } else {
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
@@ -1094,15 +1103,15 @@ namespace ns_control
                     list.append(item);
                 }
                 root["data"] = list;
-                Json::FastWriter w;
-                *json_out = w.write(root);
+                
+                *json_out = SerializeJson(root);
                 return true;
             } else {
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
@@ -1113,15 +1122,15 @@ namespace ns_control
                  Json::Value res;
                  res["status"] = 0;
                  res["reason"] = "Success";
-                 Json::FastWriter w;
-                 *json_out = w.write(res);
+                 
+                 *json_out = SerializeJson(res);
                  return true;
              } else {
                  Json::Value res;
                  res["status"] = 1;
                  res["reason"] = "Failed to delete (Permission Denied or Not Found)";
-                 Json::FastWriter w;
-                 *json_out = w.write(res);
+                 
+                 *json_out = SerializeJson(res);
                  return false;
              }
         }
@@ -1149,15 +1158,15 @@ namespace ns_control
                     list.append(item);
                 }
                 root["data"] = list;
-                Json::FastWriter w;
-                *json_out = w.write(root);
+                
+                *json_out = SerializeJson(root);
                 return true;
             } else {
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
@@ -1179,15 +1188,15 @@ namespace ns_control
                 item["comments"] = d.comments_count;
                 item["isOfficial"] = d.is_official;
                 root["data"] = item;
-                Json::FastWriter w;
-                *json_out = w.write(root);
+                
+                *json_out = SerializeJson(root);
                 return true;
             } else {
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Not Found";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
@@ -1205,15 +1214,15 @@ namespace ns_control
                 Json::Value res;
                 res["status"] = 0;
                 res["reason"] = "Success";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return true;
             } else {
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
@@ -1241,15 +1250,15 @@ namespace ns_control
                     list.append(item);
                 }
                 root["data"] = list;
-                Json::FastWriter w;
-                *json_out = w.write(root);
+                
+                *json_out = SerializeJson(root);
                 return true;
             } else {
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
@@ -1265,15 +1274,15 @@ namespace ns_control
                 Json::Value res;
                 res["status"] = 0;
                 res["reason"] = "Success";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return true;
             } else {
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
@@ -1297,15 +1306,15 @@ namespace ns_control
                     list.append(item);
                 }
                 root["data"] = list;
-                Json::FastWriter w;
-                *json_out = w.write(root);
+                
+                *json_out = SerializeJson(root);
                 return true;
             } else {
                 Json::Value res;
                 res["status"] = 1;
                 res["reason"] = "Database Error";
-                Json::FastWriter w;
-                *json_out = w.write(res);
+                
+                *json_out = SerializeJson(res);
                 return false;
             }
         }
