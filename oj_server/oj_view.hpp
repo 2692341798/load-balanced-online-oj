@@ -48,10 +48,11 @@ namespace ns_view
                 sub->SetValue("star", q.star);
             }
 
-            //3. 获取被渲染的html
+            // 3. 获取被渲染的html
+            ctemplate::Template::ReloadAllIfChanged();
             ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
 
-            //4. 开始完成渲染功能
+            // 4. 开始完成渲染功能
             tpl->Expand(html, &root);
         }
         void OneExpandHtml(const struct Question &q, std::string *html, const User *u = nullptr)
@@ -92,6 +93,7 @@ namespace ns_view
             root.SetValue("pre_code", buffer);
 
             //3. 获取被渲染的html
+            ctemplate::Template::ReloadAllIfChanged();
             ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
            
             //4. 开始完成渲染功能

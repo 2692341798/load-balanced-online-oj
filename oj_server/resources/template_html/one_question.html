@@ -20,7 +20,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     
-    
+    <!-- MathJax -->
+    <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 
     <script>
@@ -109,7 +122,42 @@
                 if (descRawEl) {
                     var rawDesc = descRawEl.value;
                     if (rawDesc && typeof marked !== 'undefined') {
-                        document.getElementById('problem-desc-render').innerHTML = marked.parse(rawDesc);
+                        // Protect Math blocks before Markdown parsing
+                        // This prevents marked.js from escaping LaTeX backslashes or interpreting underscores
+                        const mathBlocks = [];
+                        const placeholderPrefix = "MATH_BLOCK_PLACEHOLDER_";
+                        
+                        // 1. Protect Display Math $$...$$
+                        let protectedDesc = rawDesc.replace(/\$\$([\s\S]*?)\$\$/g, function(match) {
+                            const id = mathBlocks.length;
+                            mathBlocks.push(match);
+                            return placeholderPrefix + id;
+                        });
+
+                        // 2. Protect Inline Math $...$
+                        // Be careful not to match standard text like "$5...$10" if possible, but for OJ usually $ means math
+                        protectedDesc = protectedDesc.replace(/\$((?:\\.|[^$])*?)\$/g, function(match) {
+                            const id = mathBlocks.length;
+                            mathBlocks.push(match);
+                            return placeholderPrefix + id;
+                        });
+
+                        // 3. Parse Markdown
+                        let html = marked.parse(protectedDesc);
+
+                        // 4. Restore Math blocks
+                        html = html.replace(new RegExp(placeholderPrefix + "(\\d+)", "g"), function(match, id) {
+                            return mathBlocks[parseInt(id)];
+                        });
+
+                        document.getElementById('problem-desc-render').innerHTML = html;
+
+                        // Trigger MathJax
+                        if (typeof MathJax !== 'undefined') {
+                             MathJax.typesetPromise([document.getElementById('problem-desc-render')]).catch(function (err) {
+                                console.log('MathJax error:', err);
+                            });
+                        }
                     } else if (rawDesc) {
                         document.getElementById('problem-desc-render').innerText = rawDesc;
                     }
