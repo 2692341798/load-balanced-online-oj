@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include <boost/algorithm/string.hpp>
 
 namespace ns_util
 {
@@ -143,8 +142,25 @@ namespace ns_util
     public:
         static void SplitString(const std::string &str, std::vector<std::string> *target, const std::string &sep)
         {
-            //boost split
-            boost::split((*target), str, boost::is_any_of(sep), boost::algorithm::token_compress_on);
+            std::string::size_type start = 0;
+            while (start < str.length())
+            {
+                auto pos = str.find_first_of(sep, start);
+                if (pos == std::string::npos)
+                {
+                    if (start < str.length())
+                    {
+                        target->push_back(str.substr(start));
+                    }
+                    break;
+                }
+                
+                if (pos > start)
+                {
+                    target->push_back(str.substr(start, pos - start));
+                }
+                start = pos + 1;
+            }
         }
     };
 }

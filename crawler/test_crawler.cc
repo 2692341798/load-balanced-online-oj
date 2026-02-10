@@ -4,21 +4,21 @@
 #include "crawler_common.hpp"
 
 void TestCodeforcesParse() {
-    std::string mock_json = R"({
-        "status": "OK",
-        "result": [
-            {
-                "id": 1077,
-                "name": "Codeforces Round 1077 (Div. 1)",
-                "type": "CF",
-                "phase": "FINISHED",
-                "frozen": false,
-                "durationSeconds": 7200,
-                "startTimeSeconds": 1769679300, 
-                "relativeTimeSeconds": -100000
-            }
-        ]
-    })";
+    std::string mock_json = "{"
+        "\"status\": \"OK\","
+        "\"result\": ["
+            "{"
+                "\"id\": 1077,"
+                "\"name\": \"Codeforces Round 1077 (Div. 1)\","
+                "\"type\": \"CF\","
+                "\"phase\": \"FINISHED\","
+                "\"frozen\": false,"
+                "\"durationSeconds\": 7200,"
+                "\"startTimeSeconds\": 1769679300,"
+                "\"relativeTimeSeconds\": -100000"
+            "}"
+        "]"
+    "}";
     
     std::vector<Contest> contests = ParseCodeforcesAPI(mock_json);
     assert(contests.size() == 1);
@@ -30,21 +30,21 @@ void TestCodeforcesParse() {
 }
 
 void TestLeetCodeParse() {
-    std::string mock_json = R"({
-        "data": {
-            "contestHistory": {
-                "contests": [
-                    {
-                        "title": "Weekly Contest 300",
-                        "titleSlug": "weekly-contest-300",
-                        "startTime": 1656813600,
-                        "duration": 5400,
-                        "originStartTime": 1656813600
-                    }
-                ]
-            }
-        }
-    })";
+    std::string mock_json = "{"
+        "\"data\": {"
+            "\"contestHistory\": {"
+                "\"contests\": ["
+                    "{"
+                        "\"title\": \"Weekly Contest 300\","
+                        "\"titleSlug\": \"weekly-contest-300\","
+                        "\"startTime\": 1656813600,"
+                        "\"duration\": 5400,"
+                        "\"originStartTime\": 1656813600"
+                    "}"
+                "]"
+            "}"
+        "}"
+    "}";
 
     std::vector<Contest> contests = ParseLeetCodeContests(mock_json);
     assert(contests.size() == 1);
@@ -67,12 +67,10 @@ void TestRobotsParser() {
     std::string my_agent = "ContestBot/2.0";
     
     // Case 1: Simple wildcard
-    std::string robots1 = R"(
-        User-agent: *
-        Disallow: /admin
-        Disallow: /private
-        Crawl-delay: 5
-    )";
+    std::string robots1 = "User-agent: *\n"
+        "Disallow: /admin\n"
+        "Disallow: /private\n"
+        "Crawl-delay: 5\n";
     parser.Parse(robots1, my_agent);
     assert(parser.IsAllowed("/public") == true);
     assert(parser.IsAllowed("/admin/login") == false);
@@ -80,27 +78,23 @@ void TestRobotsParser() {
     assert(parser.GetCrawlDelay() == 5);
     
     // Case 2: Specific agent overrides wildcard
-    std::string robots2 = R"(
-        User-agent: *
-        Disallow: /
-        
-        User-agent: ContestBot
-        Disallow: /secret
-        Crawl-delay: 2
-    )";
+    std::string robots2 = "User-agent: *\n"
+        "Disallow: /\n"
+        "\n"
+        "User-agent: ContestBot\n"
+        "Disallow: /secret\n"
+        "Crawl-delay: 2\n";
     parser.Parse(robots2, my_agent); // "ContestBot/2.0" contains "ContestBot"
     assert(parser.IsAllowed("/public") == true);
     assert(parser.IsAllowed("/secret") == false);
     assert(parser.GetCrawlDelay() == 2);
     
     // Case 3: Specific agent not matching
-    std::string robots3 = R"(
-        User-agent: Googlebot
-        Disallow: /
-        
-        User-agent: *
-        Disallow: /admin
-    )";
+    std::string robots3 = "User-agent: Googlebot\n"
+        "Disallow: /\n"
+        "\n"
+        "User-agent: *\n"
+        "Disallow: /admin\n";
     parser.Parse(robots3, my_agent);
     assert(parser.IsAllowed("/public") == true);
     assert(parser.IsAllowed("/admin") == false);
