@@ -29,6 +29,33 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 1.5. Check Remote Dependencies
+echo "[1.5/5] Checking remote build environment..."
+CHECK_CMD="
+MISSING=\"\"
+if [ ! -d /usr/include/jsoncpp ]; then MISSING=\"\$MISSING libjsoncpp-dev\"; fi
+if [ ! -d /usr/include/mysql ]; then MISSING=\"\$MISSING libmysqlclient-dev\"; fi
+if [ ! -d /usr/include/ctemplate ]; then MISSING=\"\$MISSING libctemplate-dev\"; fi
+echo \"\$MISSING\"
+"
+MISSING_DEPS=$(ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "$CHECK_CMD")
+
+if [ ! -z "$MISSING_DEPS" ]; then
+    echo "--------------------------------------------------------"
+    echo "Error: Missing dependencies on server:$MISSING_DEPS"
+    echo "The automatic deployment cannot proceed without these libraries."
+    echo ""
+    echo "ACTION REQUIRED: Please login to the server and run:"
+    echo ""
+    echo "  sudo apt-get update"
+    echo "  sudo apt-get install -y build-essential libjsoncpp-dev libmysqlclient-dev libssl-dev libctemplate-dev"
+    echo ""
+    echo "Server Login Command:"
+    echo "  ssh -i $KEY_PATH $USER@$SERVER_IP"
+    echo "--------------------------------------------------------"
+    exit 1
+fi
+
 # 2. Sync Code
 echo "[2/5] Syncing code..."
 # Ensure remote directory exists and pull latest code
