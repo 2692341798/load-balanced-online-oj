@@ -426,6 +426,82 @@ font-weight: 600;      /* 粗体 */
 }
 ```
 
+### 5.6 分页组件 (Pagination)
+
+用于长列表的分页导航。
+
+```css
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.page-btn:hover {
+    color: var(--text-main);
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.page-btn.active {
+    background: var(--accent-color);
+    color: #fff;
+    border-color: var(--accent-color);
+    font-weight: 600;
+}
+
+.page-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.page-jump {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 12px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.page-jump input {
+    width: 50px;
+    height: 36px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-main);
+    text-align: center;
+    padding: 0 4px;
+}
+
+.page-jump input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+```
+
 ## 6. 代码编辑器样式 (Code Editor)
 
 ### 6.1 主题标准
@@ -866,7 +942,7 @@ oj_server/resources/css/
 - **内联评论**: 使用绝对定位的 Tooltip (`#inline-comment-tooltip`) 实现上下文交互。
 - **Markdown渲染约束**: 使用固定版本的 `marked`（例如 `marked@4.3.0`）并在插入 DOM 前用 `DOMPurify.sanitize` 过滤，避免 CDN 自动升级与 XSS 风险。
 
-### 14.4 竞赛列表样式 (Contest List)
+### 14.5 竞赛列表样式 (Contest List)
 
 **文件**: `oj_server/resources/css/contest-list.css`
 
@@ -895,28 +971,116 @@ oj_server/resources/css/
 }
 ```
 
-## 15. 性能优化
+## 15. 娱乐中心样式 (Entertainment Center)
 
-### 15.1 CSS优化
+**文件**: `oj_server/resources/css/games.css`
+
+**设计特点**:
+- **沉浸式深色背景**: 游戏区域使用更深的背景色 (`#121212`) 以突出游戏内容。
+- **游戏卡片**: 展示游戏封面和标题，悬停时有放大效果。
+- **Iframe容器**: 嵌入游戏的容器，支持全屏模式。
+
+```css
+/* 游戏列表容器 */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    padding: 20px 0;
+}
+
+/* 游戏卡片 */
+.game-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-color);
+}
+
+.game-thumbnail {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    background: #2d2d2d;
+}
+
+.game-info {
+    padding: 16px;
+}
+
+.game-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 6px;
+}
+
+.game-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* 游戏详情页/Iframe容器 */
+.game-container {
+    width: 100%;
+    height: 80vh;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+}
+
+.game-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+.game-sidebar {
+    background: var(--card-bg);
+    border-right: 1px solid var(--border-color);
+    height: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+```
+
+## 16. 性能优化
+
+### 16.1 CSS优化
 - 使用CSS变量减少重复代码
 - 合理使用CSS选择器，避免过度嵌套
 - 压缩CSS文件，移除未使用的样式
 - 使用硬件加速的属性
 
-### 15.2 加载优化
+### 16.2 加载优化
 ```css
 /* 关键CSS内联 */
 /* 非关键CSS异步加载 */
 /* 使用font-display优化字体加载 */
 ```
 
-### 15.3 渲染优化
+### 16.3 渲染优化
 - 避免触发重排和重绘
 - 使用transform和opacity进行动画
 - 合理使用will-change属性
 
 ---
 
-**文档版本**: v1.0.1  
-**最后更新时间**: 2026-02-09  
+**文档版本**: v1.0.4  
+**最后更新时间**: 2026-02-15  
 **维护团队**: 在线评测系统开发团队
