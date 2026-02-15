@@ -10,6 +10,7 @@
 #include <json/json.h>
 #include <unordered_map>
 #include <ctime>
+#include <cstdio>
 
 #include "../comm/util.hpp"
 #include "../comm/log.hpp"
@@ -303,6 +304,106 @@ namespace ns_control
             
             *json_out = SerializeJson(res);
             return true;
+        }
+
+        bool UploadAvatar(const Request &req, const std::string &user_id, std::string *json_out)
+        {
+            if (!req.has_file("avatar")) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "No avatar file uploaded";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            const auto &file = req.get_file_value("avatar");
+            std::string filename = file.filename;
+            std::string content = file.content;
+            
+            // Check file size (2MB limit)
+            if (content.size() > 2 * 1024 * 1024) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "File size exceeds 2MB limit";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            // Check file type
+            std::string ext;
+            size_t ext_pos = filename.find_last_of('.');
+            if (ext_pos != std::string::npos) {
+                ext = filename.substr(ext_pos);
+                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+            }
+            
+            if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif") {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Invalid file type. Only JPG, PNG, GIF are allowed.";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            // Generate unique filename: avatar_<user_id>_<timestamp><ext>
+            std::string new_filename = "avatar_" + user_id + "_" + std::to_string(time(nullptr)) + ext;
+            std::string path = "./wwwroot/uploads/avatars/" + new_filename;
+            
+            // Create directory
+            system("mkdir -p ./wwwroot/uploads/avatars");
+            
+            // Save file
+            std::ofstream out(path, std::ios::binary);
+            if (!out.is_open()) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Failed to save file";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+            out.write(content.c_str(), content.size());
+            out.close();
+            
+            std::string avatar_url = "/uploads/avatars/" + new_filename;
+
+            // Update Database
+            User u;
+            u.id = user_id;
+            u.avatar = avatar_url;
+            if (model_.UpdateUser(u)) {
+                // Update Session Cache
+                std::unique_lock<std::mutex> lock(session_mtx_);
+                for (auto &kv : sessions_) {
+                    if (kv.second.user.id == user_id) {
+                        // Delete old avatar file if exists and not default
+                        if (!kv.second.user.avatar.empty()) {
+                            std::string old_path = "./wwwroot" + kv.second.user.avatar;
+                            // Basic check to ensure we don't delete something outside uploads/avatars
+                            if (old_path.find("/uploads/avatars/") != std::string::npos) {
+                                remove(old_path.c_str());
+                            }
+                        }
+                        
+                        kv.second.user.avatar = avatar_url;
+                        break;
+                    }
+                }
+                
+                Json::Value res;
+                res["status"] = 0;
+                res["url"] = avatar_url;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                // If DB update fails, maybe delete the uploaded file?
+                remove(path.c_str());
+                
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Update Failed";
+                *json_out = SerializeJson(res);
+                return false;
+            }
         }
 
     public:
@@ -1033,6 +1134,7 @@ namespace ns_control
             root["email"] = user.email;
             root["nickname"] = user.nickname;
             root["phone"] = user.phone;
+            root["avatar"] = user.avatar;
             root["created_at"] = user.created_at;
             root["role"] = user.role; // Add role to response
             
@@ -1053,6 +1155,7 @@ namespace ns_control
             u.nickname = nickname;
             u.email = email;
             u.phone = phone;
+            // Avatar is handled by UploadAvatar
             
             // 更新数据库
             if (model_.UpdateUser(u)) {
@@ -1109,6 +1212,7 @@ namespace ns_control
                     item["id"] = c.id;
                     item["user_id"] = c.user_id;
                     item["username"] = c.username;
+                    item["avatar"] = c.user_avatar;
                     item["post_id"] = c.post_id;
                     item["content"] = c.content;
                     item["selected_text"] = c.selected_text;
@@ -1162,6 +1266,8 @@ namespace ns_control
                     item["title"] = d.title;
                     item["summary"] = d.content.length() > 100 ? d.content.substr(0, 100) + "..." : d.content;
                     item["author"] = d.author_name;
+                    item["avatar"] = d.author_avatar;
+                    std::cout << "DEBUG: " << d.author_name << " avatar=" << d.author_avatar << std::endl;
                     item["date"] = d.created_at;
                     item["likes"] = d.likes;
                     item["views"] = d.views;
@@ -1196,6 +1302,7 @@ namespace ns_control
                 item["title"] = d.title;
                 item["content"] = d.content;
                 item["author"] = d.author_name;
+                item["avatar"] = d.author_avatar;
                 item["date"] = d.created_at;
                 item["likes"] = d.likes;
                 item["views"] = d.views;
@@ -1254,6 +1361,7 @@ namespace ns_control
                     item["title"] = d.title;
                     item["content"] = d.content;
                     item["author"] = d.author_name;
+                    item["avatar"] = d.author_avatar;
                     item["date"] = d.created_at;
                     item["likes"] = d.likes;
                     item["views"] = d.views;
@@ -1315,6 +1423,7 @@ namespace ns_control
                     item["username"] = c.username;
                     item["post_id"] = c.post_id;
                     item["content"] = c.content;
+                    item["avatar"] = c.user_avatar;
                     item["created_at"] = c.created_at;
                     item["likes"] = c.likes;
                     list.append(item);
