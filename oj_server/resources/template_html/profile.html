@@ -70,6 +70,10 @@
         function closeEditModal() {
             const modal = document.getElementById('edit-profile-modal');
             if (modal) modal.classList.remove('visible');
+            // Reset avatar selection
+            selectedAvatarFile = null;
+            document.getElementById('avatar-input').value = '';
+            showAvatarError('');
         }
 
         // Close modal when clicking outside
@@ -79,9 +83,70 @@
                 closeEditModal();
             }
         }
+        
+        let selectedAvatarFile = null;
+
+        function handleAvatarSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validation
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                showAvatarError('只支持 JPG, PNG, GIF 格式');
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                showAvatarError('图片大小不能超过 2MB');
+                return;
+            }
+            
+            showAvatarError(''); // Clear error
+            selectedAvatarFile = file;
+            
+            // Preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('edit-avatar-preview');
+                preview.innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showAvatarError(msg) {
+            const el = document.getElementById('avatar-error');
+            if (msg) {
+                el.innerText = msg;
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        }
 
         async function submitEditProfile(event) {
             event.preventDefault();
+            
+            // Upload avatar if selected
+            if (selectedAvatarFile) {
+                const formData = new FormData();
+                formData.append('avatar', selectedAvatarFile);
+                
+                try {
+                    const response = await fetch('/api/upload_avatar', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const res = await response.json();
+                    if (res.status !== 0) {
+                        alert('头像上传失败: ' + res.reason);
+                        return;
+                    }
+                } catch (e) {
+                    alert('头像上传请求失败');
+                    return;
+                }
+            }
+
             const form = event.target;
             const data = {
                 nickname: form.querySelector('#edit-nickname').value,
@@ -123,12 +188,16 @@
             <a href="/all_questions">题库</a>
             <a href="/contest">竞赛</a>
             <a href="/discussion">讨论</a>
+            <a href="/games/index.html">加分娱乐站</a>
             <a href="#">求职</a>
         </div>
         <div class="navbar-auth" id="auth-container">
             <!-- Already logged in, rendered by template -->
             <div class="user-profile" onclick="toggleUserMenu(event)">
-                <div class="user-avatar">{{username}}</div>
+                <div class="user-avatar">
+                    {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">{{/has_avatar}}
+                    {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
+                </div>
                 <!-- Hack: use first char of username via CSS/JS or just show full -->
                 <!-- Actually template expands {{username}} -->
                 <!-- We can use JS to take first char or just show full name next to it -->
@@ -143,13 +212,19 @@
     </nav>
     <script>
         // Update avatar text
-        document.querySelector('.user-avatar').innerText = "{{username}}".charAt(0).toUpperCase();
+        const avatarEl = document.querySelector('.user-avatar');
+        if (!avatarEl.querySelector('img')) {
+            avatarEl.innerText = "{{username}}".charAt(0).toUpperCase();
+        }
     </script>
 
     <div class="profile-container">
         <!-- Left Column: User Info -->
         <div class="user-card">
-            <div class="profile-avatar">{{username}}</div>
+            <div class="profile-avatar">
+                {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}">{{/has_avatar}}
+                {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
+            </div>
             <div class="profile-name">{{nickname}}</div>
             <div class="profile-username">@{{username}}</div>
             
@@ -212,6 +287,15 @@
             <span class="close-btn" onclick="closeEditModal()">&times;</span>
             <h2>编辑个人资料</h2>
             <form id="edit-profile-form" onsubmit="submitEditProfile(event)">
+                <div class="form-group" style="text-align: center;">
+                    <div class="profile-avatar" id="edit-avatar-preview" style="margin: 0 auto 10px; width: 80px; height: 80px; font-size: 2rem;">
+                        {{#has_avatar}}<img src="{{avatar_url}}" alt="Avatar">{{/has_avatar}}
+                        {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
+                    </div>
+                    <input type="file" id="avatar-input" accept="image/png, image/jpeg, image/gif" style="display: none;" onchange="handleAvatarSelect(event)">
+                    <button type="button" class="btn-edit" style="width: auto; padding: 5px 15px; font-size: 0.9rem;" onclick="document.getElementById('avatar-input').click()">更换头像</button>
+                    <div id="avatar-error" style="color: var(--danger-color); font-size: 0.8rem; margin-top: 5px; display: none;"></div>
+                </div>
                 <div class="form-group">
                     <label for="edit-nickname">昵称</label>
                     <input type="text" id="edit-nickname" name="nickname" value="{{nickname}}">
@@ -235,7 +319,9 @@
     <script>
         // Update avatar text again for the profile card
         document.querySelectorAll('.profile-avatar').forEach(el => {
-            el.innerText = "{{username}}".charAt(0).toUpperCase();
+            if (!el.querySelector('img')) {
+                el.innerText = "{{username}}".charAt(0).toUpperCase();
+            }
         });
         
         // Format date

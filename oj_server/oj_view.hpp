@@ -143,6 +143,14 @@ namespace ns_view
             root.SetValue("email", u.email);
             root.SetValue("nickname", u.nickname.empty() ? u.username : u.nickname);
             root.SetValue("phone", u.phone);
+            
+            if (!u.avatar.empty()) {
+                root.ShowSection("has_avatar");
+                root.SetValue("avatar_url", u.avatar);
+            } else {
+                root.ShowSection("no_avatar");
+            }
+            
             root.SetValue("created_at", u.created_at);
             
             // Stats

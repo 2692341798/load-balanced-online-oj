@@ -43,7 +43,7 @@ WORKDIR /app/crawler
 RUN make clean && make contest_crawler
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8088
 
 # Run the server
 # Note: make output moves things to output/oj_server, but we can just run from the build dir or structure it manually.

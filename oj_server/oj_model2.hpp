@@ -47,6 +47,7 @@ namespace ns_model
         std::string email;
         std::string nickname;
         std::string phone;
+        std::string avatar;   // Avatar URL
         std::string created_at;
         int role;             // 0: User, 1: Admin
     };
@@ -70,6 +71,7 @@ namespace ns_model
         std::string id;
         std::string user_id;
         std::string username; // Join query result
+        std::string user_avatar; // Join query result
         std::string post_id;
         std::string content;
         std::string selected_text;
@@ -84,6 +86,7 @@ namespace ns_model
         std::string content;
         std::string author_id;
         std::string author_name; // Join result
+        std::string author_avatar; // Join result
         std::string question_id; // Related question ID (0 if none)
         std::string question_title; // Join result
         std::string created_at;
@@ -99,6 +102,7 @@ namespace ns_model
         std::string post_id;
         std::string user_id;
         std::string username; // Join result
+        std::string user_avatar; // Join result
         std::string content;
         std::string created_at;
         int likes;
@@ -160,6 +164,7 @@ namespace ns_model
                               "`email` varchar(100) DEFAULT NULL,"
                               "`nickname` varchar(100) DEFAULT NULL,"
                               "`phone` varchar(20) DEFAULT NULL,"
+                              "`avatar` varchar(255) DEFAULT NULL,"
                               "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
                               "`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
                               "PRIMARY KEY (`id`)"
@@ -418,6 +423,21 @@ namespace ns_model
                 }
             }
 
+            // Check avatar column in users
+            std::string check_avatar = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_users + "' AND COLUMN_NAME = 'avatar'";
+            if(0 == mysql_query(my, check_avatar.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_users + " ADD COLUMN avatar VARCHAR(255) DEFAULT NULL";
+                    LOG(INFO) << "Upgrading users table: adding avatar column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
             // Check created_at column in users
             std::string check_created = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_users + "' AND COLUMN_NAME = 'created_at'";
             if(0 == mysql_query(my, check_created.c_str())) {
@@ -592,6 +612,7 @@ namespace ns_model
                 if(fields > 6) u.created_at = row[6] ? row[6] : "";
                 if(fields > 7) u.role = row[7] ? atoi(row[7]) : 0;
                 else u.role = 0;
+                if(fields > 8) u.avatar = row[8] ? row[8] : "";
                 
                 out->push_back(u);
             }
@@ -799,7 +820,7 @@ namespace ns_model
 
         bool GetInlineComments(const std::string &post_id, std::vector<InlineComment> *out)
         {
-            std::string sql = "SELECT c.id, c.user_id, u.username, c.post_id, c.content, c.selected_text, c.created_at, c.parent_id FROM " 
+            std::string sql = "SELECT c.id, c.user_id, u.username, c.post_id, c.content, c.selected_text, c.created_at, c.parent_id, u.avatar FROM " 
                               + oj_inline_comments + " c LEFT JOIN " + oj_users + " u ON c.user_id = u.id " 
                               + "WHERE c.post_id='" + post_id + "' ORDER BY c.created_at ASC";
             
@@ -831,8 +852,8 @@ namespace ns_model
                 c.content = row[4] ? row[4] : "";
                 c.selected_text = row[5] ? row[5] : "";
                 c.created_at = row[6] ? row[6] : "";
-                if(fields > 7) c.parent_id = row[7] ? row[7] : "0";
-                else c.parent_id = "0";
+                c.parent_id = (fields > 7 && row[7]) ? row[7] : "0";
+                c.user_avatar = (fields > 8 && row[8]) ? row[8] : "";
                 
                 out->push_back(c);
             }
@@ -1069,7 +1090,7 @@ namespace ns_model
 
         bool RegisterUser(const std::string &username, const std::string &password, const std::string &email, const std::string &nickname = "", const std::string &phone = "") {
             // Check if exists
-            std::string sql_check = "select id, username, password, email, nickname, phone, created_at, role from " + oj_users + " where username='" + username + "'";
+            std::string sql_check = "select id, username, password, email, nickname, phone, created_at, role, avatar from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
             if (!QueryUserMySql(sql_check, &users)) {
                 LOG(ERROR) << "查询用户失败，数据库错误: " << username << "\n";
@@ -1095,7 +1116,7 @@ namespace ns_model
         }
 
         bool LoginUser(const std::string &username, const std::string &password, User *user) {
-            std::string sql = "select id, username, password, email, nickname, phone, created_at, role from " + oj_users + " where username='" + username + "'";
+            std::string sql = "select id, username, password, email, nickname, phone, created_at, role, avatar from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
             if (QueryUserMySql(sql, &users) && users.size() == 1) {
                 std::string pwd_hash = SHA256Hash(password);
@@ -1122,6 +1143,11 @@ namespace ns_model
             if (!user.phone.empty()) {
                 if (!first) sql += ", ";
                 sql += "phone='" + user.phone + "'";
+                first = false;
+            }
+            if (!user.avatar.empty()) {
+                if (!first) sql += ", ";
+                sql += "avatar='" + user.avatar + "'";
                 first = false;
             }
             
@@ -1169,7 +1195,7 @@ namespace ns_model
         {
             // Join with users to get author name and questions to get title
             std::string sql = "SELECT d.id, d.title, d.content, d.author_id, u.username, d.created_at, d.likes, d.views, d.is_official, "
-                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title "
+                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title, u.avatar "
                               "FROM " + oj_discussions + " d "
                               "LEFT JOIN " + oj_users + " u ON d.author_id = u.id "
                               "LEFT JOIN " + oj_questions + " q ON d.question_id = q.number "
@@ -1208,6 +1234,7 @@ namespace ns_model
                 d.comments_count = row[9] ? atoi(row[9]) : 0;
                 d.question_id = row[10] ? row[10] : "0";
                 if (fields > 11) d.question_title = row[11] ? row[11] : "";
+                d.author_avatar = (fields > 12 && row[12]) ? row[12] : "";
                 
                 out->push_back(d);
             }
@@ -1219,7 +1246,7 @@ namespace ns_model
         bool GetDiscussionsByQuestionId(const std::string &qid, std::vector<Discussion> *out)
         {
             std::string sql = "SELECT d.id, d.title, d.content, d.author_id, u.username, d.created_at, d.likes, d.views, d.is_official, "
-                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title "
+                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title, u.avatar "
                               "FROM " + oj_discussions + " d "
                               "LEFT JOIN " + oj_users + " u ON d.author_id = u.id "
                               "LEFT JOIN " + oj_questions + " q ON d.question_id = q.number "
@@ -1259,6 +1286,7 @@ namespace ns_model
                 d.comments_count = row[9] ? atoi(row[9]) : 0;
                 d.question_id = row[10] ? row[10] : "0";
                 if (fields > 11) d.question_title = row[11] ? row[11] : "";
+                d.author_avatar = (fields > 12 && row[12]) ? row[12] : "";
                 
                 out->push_back(d);
             }
@@ -1270,7 +1298,7 @@ namespace ns_model
         bool GetOneDiscussion(const std::string &id, Discussion *d)
         {
             std::string sql = "SELECT d.id, d.title, d.content, d.author_id, u.username, d.created_at, d.likes, d.views, d.is_official, "
-                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title "
+                              "(SELECT COUNT(*) FROM " + oj_article_comments + " WHERE post_id = d.id) as comments_count, d.question_id, q.title, u.avatar "
                               "FROM " + oj_discussions + " d "
                               "LEFT JOIN " + oj_users + " u ON d.author_id = u.id "
                               "LEFT JOIN " + oj_questions + " q ON d.question_id = q.number "
@@ -1304,6 +1332,7 @@ namespace ns_model
                     d->comments_count = row[9] ? atoi(row[9]) : 0;
                     d->question_id = row[10] ? row[10] : "0";
                     if (fields > 11) d->question_title = row[11] ? row[11] : "";
+                    d->author_avatar = (fields > 12 && row[12]) ? row[12] : "";
                     
                     mysql_free_result(res);
                     mysql_close(my);
@@ -1348,7 +1377,7 @@ namespace ns_model
 
         bool GetArticleComments(const std::string &post_id, std::vector<ArticleComment> *out)
         {
-            std::string sql = "SELECT c.id, c.user_id, u.username, c.post_id, c.content, c.created_at, c.likes FROM " 
+            std::string sql = "SELECT c.id, c.user_id, u.username, c.post_id, c.content, c.created_at, c.likes, u.avatar FROM " 
                               + oj_article_comments + " c LEFT JOIN " + oj_users + " u ON c.user_id = u.id " 
                               + "WHERE c.post_id='" + post_id + "' ORDER BY c.created_at DESC";
             
@@ -1365,6 +1394,7 @@ namespace ns_model
             
             MYSQL_RES *res = mysql_store_result(my);
             int rows = mysql_num_rows(res);
+            int fields = mysql_num_fields(res);
             
             for(int i = 0; i < rows; i++)
             {
@@ -1379,6 +1409,7 @@ namespace ns_model
                 c.content = row[4] ? row[4] : "";
                 c.created_at = row[5] ? row[5] : "";
                 c.likes = row[6] ? atoi(row[6]) : 0;
+                c.user_avatar = (fields > 7 && row[7]) ? row[7] : "";
                 
                 out->push_back(c);
             }
