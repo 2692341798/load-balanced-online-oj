@@ -177,7 +177,6 @@ load-balanced-online-oj/
 │   └── util.hpp                   # 工具函数
 ├── crawler/                       # 竞赛爬虫
 │   ├── contest_crawler.cc        # 竞赛爬虫主程序 (核心)
-│   ├── luogu_crawler.cc          # 洛谷题目爬虫 (核心)
 │   ├── crawler_common.hpp        # 爬虫公共头文件
 │   └── makefile                  # 编译配置
 ├── compile_server/                # 编译服务器
@@ -189,7 +188,7 @@ load-balanced-online-oj/
 ├── oj_server/                     # OJ主服务器
 │   ├── oj_server.cc              # 主程序
 │   ├── oj_control.hpp            # 业务逻辑控制
-│   ├── oj_model2.hpp             # 数据模型（MySQL版）
+│   ├── oj_model.hpp              # 数据模型（MySQL版）
 │   ├── oj_view.hpp               # 视图渲染
 │   ├── conf/                     # 配置文件
 │   │   └── service_machine.conf  # 编译服务器列表
@@ -200,6 +199,9 @@ load-balanced-online-oj/
 │   │       └── games/            # 娱乐中心游戏资源 (New)
 │   ├── contest_utils.hpp         # 竞赛工具类
 │   └── makefile                  # 编译配置
+├── tests/                         # 测试代码
+│   ├── oj_server/                # OJ服务测试
+│   └── crawler/                  # 爬虫测试
 ├── docker/                        # Docker部署配置
 │   ├── Dockerfile.oj
 │   ├── Dockerfile.compile
@@ -261,10 +263,16 @@ load-balanced-online-oj/
 
 ## 📅 版本历史
 
+- **v1.0.5** (2026-02-16):
+  - 🔧 项目结构优化：整合爬虫模块至 `crawler/` 目录
 - **v1.0.4** (2026-02-15):
   - ✨ 新增娱乐中心 (Beta)，集成超级玛丽复刻版
   - 👤 用户中心增强：支持头像上传、个人资料修改
   - 📄 分页功能优化
+  - 🔧 项目结构重构：分离测试与工具代码
+    - 测试代码迁移至 `tests/`
+    - 爬虫工具迁移至 `tools/crawler/`
+    - 清理构建产物与冗余文件
 - **v1.0.3**:
   - 🕷️ 引入C++竞赛爬虫 (Codeforces/LeetCode)
   - 🔧 统一服务端口为 8088
@@ -281,6 +289,6 @@ load-balanced-online-oj/
 
 ---
 
-**最后更新时间**: 2026-02-15  
-**文档版本**: v1.0.4  
+**最后更新时间**: 2026-02-16  
+**文档版本**: v1.0.5  
 **维护团队**: 在线评测系统开发团队

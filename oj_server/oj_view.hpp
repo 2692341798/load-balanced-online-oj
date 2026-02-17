@@ -8,8 +8,7 @@
 #include <iomanip>
 #include <ctemplate/template.h>
 
-// #include "oj_model.hpp"
-#include "oj_model2.hpp"
+#include "oj_model.hpp"
 #include "contest_utils.hpp"
 
 namespace ns_view
@@ -36,6 +35,12 @@ namespace ns_view
             if (u && !u->username.empty()) {
                 root.ShowSection("user_logged_in");
                 root.SetValue("username", u->username);
+                if (!u->avatar.empty()) {
+                    root.ShowSection("has_avatar");
+                    root.SetValue("avatar_url", u->avatar);
+                } else {
+                    root.ShowSection("no_avatar");
+                }
             } else {
                 root.ShowSection("user_not_logged_in");
             }
@@ -99,6 +104,12 @@ namespace ns_view
             if (u && !u->username.empty()) {
                 root.ShowSection("user_logged_in");
                 root.SetValue("username", u->username);
+                if (!u->avatar.empty()) {
+                    root.ShowSection("has_avatar");
+                    root.SetValue("avatar_url", u->avatar);
+                } else {
+                    root.ShowSection("no_avatar");
+                }
             } else {
                 root.ShowSection("user_not_logged_in");
             }
@@ -180,6 +191,12 @@ namespace ns_view
             if (u && !u->username.empty()) {
                 root.ShowSection("user_logged_in");
                 root.SetValue("username", u->username);
+                if (!u->avatar.empty()) {
+                    root.ShowSection("has_avatar");
+                    root.SetValue("avatar_url", u->avatar);
+                } else {
+                    root.ShowSection("no_avatar");
+                }
             } else {
                 root.ShowSection("user_not_logged_in");
             }
@@ -196,6 +213,12 @@ namespace ns_view
             if (u && !u->username.empty()) {
                 root.ShowSection("user_logged_in");
                 root.SetValue("username", u->username);
+                if (!u->avatar.empty()) {
+                    root.ShowSection("has_avatar");
+                    root.SetValue("avatar_url", u->avatar);
+                } else {
+                    root.ShowSection("no_avatar");
+                }
             } else {
                 root.ShowSection("user_not_logged_in");
             }

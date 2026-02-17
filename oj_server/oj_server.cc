@@ -237,6 +237,7 @@ int main()
             res_json["status"] = 0;
             res_json["username"] = user.username;
             res_json["email"] = user.email;
+            res_json["avatar"] = user.avatar;
         } else {
             res_json["status"] = 1;
             res_json["reason"] = "未登录";
@@ -555,7 +556,6 @@ int main()
 
     svr.set_base_dir("./wwwroot");
     svr.set_mount_point("/css", "./css");
-    svr.set_mount_point("/uploads", "./wwwroot/uploads"); // Serve uploaded files
     svr.listen("0.0.0.0", 8088);
     return 0;
 } 

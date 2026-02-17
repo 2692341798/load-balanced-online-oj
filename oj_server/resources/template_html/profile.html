@@ -195,12 +195,9 @@
             <!-- Already logged in, rendered by template -->
             <div class="user-profile" onclick="toggleUserMenu(event)">
                 <div class="user-avatar">
-                    {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">{{/has_avatar}}
+                    {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='{{username}}'.charAt(0).toUpperCase();">{{/has_avatar}}
                     {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
                 </div>
-                <!-- Hack: use first char of username via CSS/JS or just show full -->
-                <!-- Actually template expands {{username}} -->
-                <!-- We can use JS to take first char or just show full name next to it -->
                 <span>{{username}}</span>
             </div>
             <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
@@ -222,7 +219,7 @@
         <!-- Left Column: User Info -->
         <div class="user-card">
             <div class="profile-avatar">
-                {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}">{{/has_avatar}}
+                {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}" onerror="this.style.display='none';this.parentNode.innerText='{{username}}'.charAt(0).toUpperCase();">{{/has_avatar}}
                 {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
             </div>
             <div class="profile-name">{{nickname}}</div>
@@ -289,7 +286,7 @@
             <form id="edit-profile-form" onsubmit="submitEditProfile(event)">
                 <div class="form-group" style="text-align: center;">
                     <div class="profile-avatar" id="edit-avatar-preview" style="margin: 0 auto 10px; width: 80px; height: 80px; font-size: 2rem;">
-                        {{#has_avatar}}<img src="{{avatar_url}}" alt="Avatar">{{/has_avatar}}
+                        {{#has_avatar}}<img src="{{avatar_url}}" alt="Avatar" onerror="this.style.display='none';this.parentNode.innerText='{{username}}'.charAt(0).toUpperCase();">{{/has_avatar}}
                         {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
                     </div>
                     <input type="file" id="avatar-input" accept="image/png, image/jpeg, image/gif" style="display: none;" onchange="handleAvatarSelect(event)">

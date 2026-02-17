@@ -81,6 +81,7 @@ INSERT INTO oj_questions (number, title, star, cpu_limit, mem_limit, description
 | email | VARCHAR(100) | DEFAULT NULL | NULL | 用户邮箱地址 |
 | nickname | VARCHAR(100) | DEFAULT NULL | NULL | 用户昵称 |
 | phone | VARCHAR(20) | DEFAULT NULL | NULL | 用户手机号 |
+| avatar | VARCHAR(255) | DEFAULT NULL | NULL | 用户头像URL |
 | role | INT | DEFAULT 0 | 0 | 用户角色 (0:User, 1:Admin) |
 | created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 更新时间 |
@@ -551,8 +552,12 @@ FLUSH PRIVILEGES;
     - 移除冗余的 `tail_code` 字段
   - 更新 `submissions` 表说明，明确支持多语言 (cpp, java, python)
 
+- **v1.0.4 (2026-02-15)**:
+  - 更新 `users` 表结构：
+    - 新增 `avatar` 字段 (`VARCHAR(255) DEFAULT NULL`) 用于存储用户头像URL。
+
 ---
 
-**最后更新时间**: 2026-02-09  
-**文档版本**: v1.0.1  
+**最后更新时间**: 2026-02-15  
+**文档版本**: v1.0.4  
 **维护团队**: 在线评测系统开发团队

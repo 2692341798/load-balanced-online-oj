@@ -98,9 +98,16 @@
         function updateNavAuth(data) {
             const authContainer = document.getElementById('auth-container');
             if (data.status === 0 && data.username) {
+                let avatarHtml = '';
+                if (data.avatar) {
+                    avatarHtml = `<img src="${data.avatar}" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='${data.username.charAt(0).toUpperCase()}';">`;
+                } else {
+                    avatarHtml = data.username.charAt(0).toUpperCase();
+                }
+
                 authContainer.innerHTML = `
                     <div class="user-profile" onclick="toggleUserMenu(event)">
-                        <div class="user-avatar">${data.username.charAt(0).toUpperCase()}</div>
+                        <div class="user-avatar">${avatarHtml}</div>
                         <span>${escapeHtml(data.username)}</span>
                     </div>
                     <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>

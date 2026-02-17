@@ -67,9 +67,16 @@
         function updateNavAuth(data) {
             const authContainer = document.getElementById('auth-container');
             if (data.status === 0 && data.username) {
+                let avatarHtml = '';
+                if (data.avatar) {
+                    avatarHtml = `<img src="${data.avatar}" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='${data.username.charAt(0).toUpperCase()}';">`;
+                } else {
+                    avatarHtml = data.username.charAt(0).toUpperCase();
+                }
+
                 authContainer.innerHTML = `
                     <div class="user-profile" onclick="toggleUserMenu(event)">
-                        <div class="user-avatar">${data.username.charAt(0).toUpperCase()}</div>
+                        <div class="user-avatar">${avatarHtml}</div>
                         <span>${escapeHtml(data.username)}</span>
                     </div>
                     <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
@@ -86,10 +93,12 @@
         window.addEventListener('DOMContentLoaded', () => {
             const authContainer = document.getElementById('auth-container');
             if (authContainer) {
-                authContainer.innerHTML = '<span class="btn-text loading">加载中...</span>';
+                // authContainer.innerHTML = '<span class="btn-text loading">加载中...</span>';
                 fetch('/api/user')
                     .then(res => res.json())
-                    .then(data => updateNavAuth(data))
+                    .then(data => {
+                        // updateNavAuth(data)
+                    })
                     .catch(err => updateNavAuth({status: -1}));
             }
         });
@@ -111,10 +120,21 @@
             <a href="#">求职</a>
         </div>
         <div class="navbar-auth" id="auth-container">
-            <!-- JS will populate this -->
-            {{#user_logged_in}}
-             <!-- Server-side fallback/hydration if needed, but JS will overwrite -->
-            {{/user_logged_in}}
+            <div class="user-profile" onclick="toggleUserMenu(event)">
+                <div class="user-avatar">
+                    {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='{{username}}'.charAt(0).toUpperCase();">{{/has_avatar}}
+                    {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
+                </div>
+                <span>{{username}}</span>
+            </div>
+            <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
+            <div class="user-menu" id="user-menu">
+                <a href="/profile" class="user-menu-item">个人中心</a>
+                <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
+            </div>
+            {{#user_not_logged_in}}
+            <a href="/login" class="btn-text">登录 / 注册</a>
+            {{/user_not_logged_in}}
         </div>
     </nav>
 
