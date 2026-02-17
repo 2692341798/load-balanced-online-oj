@@ -938,6 +938,22 @@ document/
 
 ---
 
-*最后更新：2026年2月15日  
+## 📅 2026-02-16 | V1.0.5 Crawler Directory Consolidation
+
+### 🎯 核心目标
+统一爬虫模块的存放位置，简化项目结构。
+
+### 🔧 结构变更
+- **目录合并**: 将 `tools/crawler/luogu_crawler.cc` 移回 `crawler/` 目录。
+- **构建更新**: 更新 `crawler/makefile` 以包含 `luogu_crawler` 的构建目标。
+- **路径修正**: 修正了 `luogu_crawler.cc` 中的头文件引用路径。
+
+### 📊 版本统计
+- **标签状态**: ✅ Directory Fix
+- **核心变更**: Consolidated all crawler code into `crawler/` directory.
+
+---
+
+*最后更新：2026年2月16日  
 维护者：AI Assistant  
 文档状态：活跃维护*
