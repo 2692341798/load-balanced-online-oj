@@ -16,10 +16,13 @@ endif
 
 .PHONY: all clean
 
-all: contest_crawler
+all: contest_crawler luogu_crawler
 
 contest_crawler:contest_crawler.cc
 	g++ -o $@ $^ $(INCLUDE_DIRS) $(LIB_DIRS) -std=c++11 $(LIBS_COMMON) $(LIBS_SSL) $(LIBS_MYSQL)
 
+luogu_crawler:luogu_crawler.cc
+	g++ -o $@ $^ $(INCLUDE_DIRS) $(LIB_DIRS) -std=c++11 $(LIBS_COMMON) $(LIBS_SSL) -lpthread
+
 clean:
-	rm -f contest_crawler
+	rm -f contest_crawler luogu_crawler

@@ -268,7 +268,7 @@ namespace ns_log {
 #### 3.5.2 洛谷题目爬虫 (Luogu Crawler)
 - **职责**: 抓取洛谷题目详情（标题、描述、测试用例）
 - **技术**: C++, libcurl, jsoncpp (已重构为C++版本，替代原Python实现)
-- **位置**: `tools/crawler/luogu_crawler.cc`
+- **位置**: `crawler/luogu_crawler.cc`
 - **存储**: 生成 SQL 插入语句或直接写入数据库
 - **运行模式**: 命令行工具，按需执行
 

@@ -157,7 +157,7 @@ cd oj_server && ./oj_server
 ./crawler/contest_crawler
 
 # 运行洛谷题目爬虫 (C++实现)
-./tools/crawler/luogu_crawler
+./crawler/luogu_crawler
 ```
 
 ### 7. 访问系统
