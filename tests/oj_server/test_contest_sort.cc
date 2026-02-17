@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
-#include "contest_utils.hpp"
+#include "../../oj_server/contest_utils.hpp"
 
 void TestSorting() {
     std::vector<ContestEntry> contests;

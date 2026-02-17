@@ -914,3 +914,30 @@ document/
 *最后更新：2026年2月9日  
 维护者：AI Assistant  
 文档状态：活跃维护*
+
+## 📅 2026-02-15 | Project Cleanup & Refactoring
+
+### 🎯 核心目标
+优化项目结构，清理冗余代码，提升代码库的可维护性和清晰度。
+
+### 🔧 结构优化
+- **测试代码迁移**:
+  - `oj_server/test_contest_sort.cc` -> `tests/oj_server/`
+  - `crawler/test_crawler.cc` -> `tests/crawler/`
+- **工具代码迁移**:
+  - `crawler/luogu_crawler.cc` -> `tools/crawler/`
+- **文件重命名**:
+  - `oj_server/oj_model2.hpp` -> `oj_server/oj_model.hpp` (统一命名规范)
+- **构建清理**:
+  - 清理了 `output/` 目录和构建产物。
+  - 更新了 Makefiles 以适应新的目录结构。
+
+### 📊 版本统计
+- **标签状态**: ✅ Project Cleanup
+- **核心变更**: Directory restructuring, test/tool isolation.
+
+---
+
+*最后更新：2026年2月15日  
+维护者：AI Assistant  
+文档状态：活跃维护*

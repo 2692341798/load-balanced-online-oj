@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include <thread>
-#include "crawler_common.hpp"
+#include "../../crawler/crawler_common.hpp"
 
 void TestCodeforcesParse() {
     std::string mock_json = "{"

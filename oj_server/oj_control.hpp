@@ -15,8 +15,7 @@
 #include "../comm/util.hpp"
 #include "../comm/log.hpp"
 #include "../comm/httplib.h"
-// #include "oj_model.hpp"
-#include "oj_model2.hpp"
+#include "oj_model.hpp"
 #include "oj_view.hpp"
 #ifdef ENABLE_REDIS
 #include <hiredis/hiredis.h>

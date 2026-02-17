@@ -54,3 +54,4 @@ output/
 # Crawler temporary files
 cookies.txt
 page*.html
+backup/
