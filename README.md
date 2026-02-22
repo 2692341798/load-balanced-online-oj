@@ -176,30 +176,35 @@ load-balanced-online-oj/
 │   ├── httplib.h                  # HTTP服务器库
 │   ├── log.hpp                    # 日志系统
 │   └── util.hpp                   # 工具函数
-├── crawler/                       # 竞赛爬虫
-│   ├── contest_crawler.cc        # 竞赛爬虫主程序 (核心)
-│   ├── crawler_common.hpp        # 爬虫公共头文件
-│   └── makefile                  # 编译配置
 ├── compile_server/                # 编译服务器
 │   ├── compile_server.cc         # 主程序
 │   ├── compile_run.hpp           # 编译运行核心
 │   ├── compiler.hpp              # 编译器封装
 │   ├── runner.hpp                # 程序运行器
 │   └── makefile                  # 编译配置
+├── crawler/                       # 竞赛爬虫
+│   ├── contest_crawler.cc        # 竞赛爬虫主程序 (核心)
+│   ├── luogu_crawler.cc          # 洛谷题目爬虫
+│   ├── crawler_common.hpp        # 爬虫公共头文件
+│   └── makefile                  # 编译配置
 ├── oj_server/                     # OJ主服务器
 │   ├── oj_server.cc              # 主程序
 │   ├── oj_control.hpp            # 业务逻辑控制
 │   ├── oj_model.hpp              # 数据模型（MySQL版）
 │   ├── oj_view.hpp               # 视图渲染
+│   ├── contest_utils.hpp         # 竞赛工具类
 │   ├── conf/                     # 配置文件
 │   │   └── service_machine.conf  # 编译服务器列表
 │   ├── resources/                # 静态资源与模板
 │   │   ├── css/                  # 样式文件
 │   │   ├── template_html/        # HTML模板
 │   │   └── wwwroot/              # 静态资源(JS/Images)
-│   │       └── games/            # 娱乐中心游戏资源 (New)
-│   ├── contest_utils.hpp         # 竞赛工具类
+│   │       └── games/            # 娱乐中心游戏资源
 │   └── makefile                  # 编译配置
+├── document/                      # 项目文档
+│   ├── architecture.md           # 架构设计
+│   ├── database.md               # 数据库设计
+│   └── ...                       # 其他文档
 ├── tests/                         # 测试代码
 │   ├── oj_server/                # OJ服务测试
 │   └── crawler/                  # 爬虫测试
@@ -209,11 +214,13 @@ load-balanced-online-oj/
 │   └── docker-compose.yml
 ├── scripts/                       # 运维脚本
 │   ├── start.sh                  # 一键启动
-│   └── stop.sh                   # 一键停止
+│   ├── stop.sh                   # 一键停止
+│   └── deploy_docker.sh          # Docker部署脚本
+├── sql/                           # 数据库脚本
+│   └── setup_database.sql        # 数据库初始化
 ├── data/                          # 数据文件
 │   └── contests.json             # 竞赛数据缓存
 ├── makefile                       # 主编译文件
-├── setup_database.sql            # 数据库初始化脚本
 ├── .gitignore                    # Git忽略规则
 ├── LICENSE                       # 许可证文件
 └── README.md                     # 项目说明
