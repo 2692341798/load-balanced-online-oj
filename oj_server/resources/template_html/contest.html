@@ -4,139 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>竞赛列表 - 冻梨OJ</title>
-    <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/css/contest-list.css">
-    <script>
-        // XSS防护
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
-        }
-
-        function hideUserMenu() {
-            const menu = document.getElementById('user-menu');
-            const backdrop = document.getElementById('user-menu-backdrop');
-            if (menu) menu.classList.remove('visible');
-            if (backdrop) backdrop.classList.remove('visible');
-            document.removeEventListener('click', onUserMenuDocumentClick);
-        }
-
-        function onUserMenuDocumentClick(event) {
-            const profile = document.querySelector('.user-profile');
-            const menu = document.getElementById('user-menu');
-            if (!profile || !menu) {
-                hideUserMenu();
-                return;
-            }
-            if (!profile.contains(event.target) && !menu.contains(event.target)) {
-                hideUserMenu();
-            }
-        }
-
-        function toggleUserMenu(event) {
-            event.stopPropagation();
-            const menu = document.getElementById('user-menu');
-            const backdrop = document.getElementById('user-menu-backdrop');
-            if (!menu || !backdrop) return;
-            
-            const isVisible = menu.classList.contains('visible');
-            if (isVisible) {
-                hideUserMenu();
-            } else {
-                menu.classList.add('visible');
-                backdrop.classList.add('visible');
-                document.addEventListener('click', onUserMenuDocumentClick);
-            }
-        }
-
-        async function handleLogout(event) {
-            event.stopPropagation();
-            try {
-                const response = await fetch('/api/logout', { method: 'GET' });
-                const data = await response.json();
-                if (data.status === 0) {
-                    window.location.reload();
-                } else {
-                    alert('登出失败：' + (data.reason || '未知错误'));
-                }
-            } catch (e) {
-                alert('登出请求失败，请稍后重试');
-            }
-        }
-
-        function updateNavAuth(data) {
-            const authContainer = document.getElementById('auth-container');
-            if (data.status === 0 && data.username) {
-                let avatarHtml = '';
-                if (data.avatar) {
-                    avatarHtml = `<img src="${data.avatar}" alt="${escapeHtml(data.username)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='${data.username.charAt(0).toUpperCase()}';">`;
-                } else {
-                    avatarHtml = data.username.charAt(0).toUpperCase();
-                }
-
-                authContainer.innerHTML = `
-                    <div class="user-profile" onclick="toggleUserMenu(event)">
-                        <div class="user-avatar">${avatarHtml}</div>
-                        <span>${escapeHtml(data.username)}</span>
-                    </div>
-                    <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
-                    <div class="user-menu" id="user-menu">
-                        <a href="/profile" class="user-menu-item">个人中心</a>
-                        <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
-                    </div>
-                `;
-            } else {
-                authContainer.innerHTML = `<a href="/login" class="btn-text">登录 / 注册</a>`;
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const authContainer = document.getElementById('auth-container');
-            if (authContainer) {
-                // authContainer.innerHTML = '<span class="btn-text loading">加载中...</span>';
-                fetch('/api/user')
-                    .then(res => res.json())
-                    .then(data => {
-                        // updateNavAuth(data)
-                    })
-                    .catch(err => updateNavAuth({status: -1}));
-            }
-        });
-    </script>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/nav.css">
+    <script src="/js/common.js"></script>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-brand">
-            <a href="/">
-                <span>&lt;/&gt;</span> 冻梨OJ
-            </a>
-        </div>
-        <div class="navbar-links">
-            <a href="/">首页</a>
-            <a href="/all_questions">题库</a>
-            <a href="/contest" class="active">竞赛</a>
-            <a href="/discussion">讨论</a>
-            <a href="/games/index.html">加分娱乐站</a>
-            <a href="#">求职</a>
-        </div>
-        <div class="navbar-auth" id="auth-container">
-            <div class="user-profile" onclick="toggleUserMenu(event)">
-                <div class="user-avatar">
-                    {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='{{username}}'.charAt(0).toUpperCase();">{{/has_avatar}}
-                    {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
-                </div>
-                <span>{{username}}</span>
-            </div>
-            <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
-            <div class="user-menu" id="user-menu">
-                <a href="/profile" class="user-menu-item">个人中心</a>
-                <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
-            </div>
-            {{#user_not_logged_in}}
-            <a href="/login" class="btn-text">登录 / 注册</a>
-            {{/user_not_logged_in}}
-        </div>
-    </nav>
+    <!-- Navbar -->
+    {{>navbar}}
 
     <div class="contest-container">
         <div class="contest-header">

@@ -1,4 +1,4 @@
-/* 依赖 index.css */
+/* 依赖 common.css */
 
 .login-page {
     display: flex;
@@ -183,3 +183,27 @@ button.btn-block:hover {
 }
 .form-validation.error { color: #ff4d4f; }
 .form-validation.success { color: #2cbb5d; }
+
+/* Background Shapes */
+.bg-shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: -1;
+}
+
+.shape-1 {
+    width: 300px;
+    height: 300px;
+    background: rgba(44, 187, 93, 0.2);
+    top: 10%;
+    left: -5%;
+}
+
+.shape-2 {
+    width: 400px;
+    height: 400px;
+    background: rgba(44, 187, 93, 0.1);
+    bottom: 10%;
+    right: -5%;
+}

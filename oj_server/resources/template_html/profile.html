@@ -4,64 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>个人中心 - {{nickname}} - 冻梨OJ</title>
-    <link rel="stylesheet" href="/css/index.css">
     <link rel="stylesheet" href="/css/profile.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/nav.css">
+    <script src="/js/common.js"></script>
     <script>
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
-        }
-
-        function hideUserMenu() {
-            const menu = document.getElementById('user-menu');
-            const backdrop = document.getElementById('user-menu-backdrop');
-            if (menu) menu.classList.remove('visible');
-            if (backdrop) backdrop.classList.remove('visible');
-            document.removeEventListener('click', onUserMenuDocumentClick);
-        }
-
-        function onUserMenuDocumentClick(event) {
-            const profile = document.querySelector('.user-profile');
-            const menu = document.getElementById('user-menu');
-            if (!profile || !menu) {
-                hideUserMenu();
-                return;
-            }
-            if (!profile.contains(event.target) && !menu.contains(event.target)) {
-                hideUserMenu();
-            }
-        }
-
-        function toggleUserMenu(event) {
-            event.stopPropagation();
-            const menu = document.getElementById('user-menu');
-            const backdrop = document.getElementById('user-menu-backdrop');
-            if (!menu || !backdrop) return;
-            const isVisible = menu.classList.contains('visible');
-            if (isVisible) {
-                hideUserMenu();
-            } else {
-                menu.classList.add('visible');
-                backdrop.classList.add('visible');
-                document.addEventListener('click', onUserMenuDocumentClick);
-            }
-        }
-
-        async function handleLogout(event) {
-            event.stopPropagation();
-            try {
-                const response = await fetch('/api/logout', { method: 'GET' });
-                const data = await response.json();
-                if (data.status === 0) {
-                    window.location.href = '/';
-                } else {
-                    alert('登出失败：' + (data.reason || '未知错误'));
-                }
-            } catch (e) {
-                alert('登出请求失败，请稍后重试');
-            }
-        }
-
         function handleEditProfile() {
             const modal = document.getElementById('edit-profile-modal');
             if (modal) modal.classList.add('visible');
@@ -177,36 +124,7 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-brand">
-            <a href="/">
-                <span>&lt;/&gt;</span> 冻梨OJ
-            </a>
-        </div>
-        <div class="navbar-links">
-            <a href="/">首页</a>
-            <a href="/all_questions">题库</a>
-            <a href="/contest">竞赛</a>
-            <a href="/discussion">讨论</a>
-            <a href="/games/index.html">加分娱乐站</a>
-            <a href="#">求职</a>
-        </div>
-        <div class="navbar-auth" id="auth-container">
-            <!-- Already logged in, rendered by template -->
-            <div class="user-profile" onclick="toggleUserMenu(event)">
-                <div class="user-avatar">
-                    {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='{{username}}'.charAt(0).toUpperCase();">{{/has_avatar}}
-                    {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
-                </div>
-                <span>{{username}}</span>
-            </div>
-            <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
-            <div class="user-menu" id="user-menu">
-                <a href="/profile" class="user-menu-item">个人中心</a>
-                <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
-            </div>
-        </div>
-    </nav>
+    {{>navbar}}
     <script>
         // Update avatar text
         const avatarEl = document.querySelector('.user-avatar');
@@ -266,8 +184,8 @@
             </div>
             
             <!-- Recent Activity -->
-            <div class="stats-card" style="margin-top: 24px;">
-                <div class="stats-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="stats-card recent-activity-card">
+                <div class="stats-header recent-activity-header">
                     <span>最近提交</span>
                     <!-- <a href="/submissions" style="font-size: 0.9rem; color: var(--primary-color);">查看全部</a> -->
                 </div>
@@ -284,14 +202,14 @@
             <span class="close-btn" onclick="closeEditModal()">&times;</span>
             <h2>编辑个人资料</h2>
             <form id="edit-profile-form" onsubmit="submitEditProfile(event)">
-                <div class="form-group" style="text-align: center;">
-                    <div class="profile-avatar" id="edit-avatar-preview" style="margin: 0 auto 10px; width: 80px; height: 80px; font-size: 2rem;">
+                <div class="form-group text-center">
+                    <div class="profile-avatar profile-avatar-edit" id="edit-avatar-preview">
                         {{#has_avatar}}<img src="{{avatar_url}}" alt="Avatar" onerror="this.style.display='none';this.parentNode.innerText='{{username}}'.charAt(0).toUpperCase();">{{/has_avatar}}
                         {{#no_avatar}}<span>{{username}}</span>{{/no_avatar}}
                     </div>
                     <input type="file" id="avatar-input" accept="image/png, image/jpeg, image/gif" style="display: none;" onchange="handleAvatarSelect(event)">
-                    <button type="button" class="btn-edit" style="width: auto; padding: 5px 15px; font-size: 0.9rem;" onclick="document.getElementById('avatar-input').click()">更换头像</button>
-                    <div id="avatar-error" style="color: var(--danger-color); font-size: 0.8rem; margin-top: 5px; display: none;"></div>
+                    <button type="button" class="btn-edit btn-change-avatar" onclick="document.getElementById('avatar-input').click()">更换头像</button>
+                    <div id="avatar-error" class="avatar-error"></div>
                 </div>
                 <div class="form-group">
                     <label for="edit-nickname">昵称</label>

@@ -143,3 +143,38 @@
 .stat-medium .stat-value { color: #ffa116; }
 .stat-hard .stat-value { color: #f44336; }
 .stat-total .stat-value { color: var(--text-main); }
+
+/* Extracted Inline Styles */
+.profile-avatar-edit {
+    margin: 0 auto 10px;
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+}
+
+.btn-change-avatar {
+    width: auto;
+    padding: 5px 15px;
+    font-size: 0.9rem;
+}
+
+.avatar-error {
+    color: #ff4d4f; /* var(--danger-color) might not be defined in common.css? It usually is --error-color or similar. */
+    font-size: 0.8rem;
+    margin-top: 5px;
+    display: none;
+}
+
+.recent-activity-card {
+    margin-top: 24px;
+}
+
+.recent-activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.text-center {
+    text-align: center;
+}

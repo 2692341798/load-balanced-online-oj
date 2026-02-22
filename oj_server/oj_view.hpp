@@ -22,16 +22,19 @@ namespace ns_view
     public:
         View(){}
         ~View(){}
-    public:
-        void AllExpandHtml(const vector<struct Question> &questions, std::string *html, int total_pages, int current_page, const User *u = nullptr)
+    
+    private:
+        void SetupTemplate(ctemplate::TemplateDictionary &root, const User *u, const std::string &active_page = "")
         {
-            // 题目的编号 题目的标题 题目的难度
-            // 推荐使用表格显示
-            // 1. 形成路径
-            std::string src_html = template_path + "all_questions.html";
-            // 2. 形成数字典
-            ctemplate::TemplateDictionary root("all_questions");
+            // Navbar Template Include
+            root.SetFilename("navbar", template_path + "shared/navbar.html");
             
+            // Active Page Highlighting
+            if (!active_page.empty()) {
+                root.ShowSection("nav_active_" + active_page);
+            }
+
+            // User Info
             if (u && !u->username.empty()) {
                 root.ShowSection("user_logged_in");
                 root.SetValue("username", u->username);
@@ -44,7 +47,20 @@ namespace ns_view
             } else {
                 root.ShowSection("user_not_logged_in");
             }
+        }
 
+    public:
+        void AllExpandHtml(const vector<struct Question> &questions, std::string *html, int total_pages, int current_page, const User *u = nullptr)
+        {
+            // 题目的编号 题目的标题 题目的难度
+            // 推荐使用表格显示
+            // 1. 形成路径
+            std::string src_html = template_path + "all_questions.html";
+            // 2. 形成数字典
+            ctemplate::TemplateDictionary root("all_questions");
+            
+            SetupTemplate(root, u, "questions");
+            
             for (const auto& q : questions)
             {
                 ctemplate::TemplateDictionary *sub = root.AddSectionDictionary("question_list");
@@ -101,18 +117,7 @@ namespace ns_view
             // 2. 形成数字典
             ctemplate::TemplateDictionary root("one_question");
             
-            if (u && !u->username.empty()) {
-                root.ShowSection("user_logged_in");
-                root.SetValue("username", u->username);
-                if (!u->avatar.empty()) {
-                    root.ShowSection("has_avatar");
-                    root.SetValue("avatar_url", u->avatar);
-                } else {
-                    root.ShowSection("no_avatar");
-                }
-            } else {
-                root.ShowSection("user_not_logged_in");
-            }
+            SetupTemplate(root, u, "questions"); // Keep questions active
 
             root.SetValue("number", q.number);
             root.SetValue("title", q.title);
@@ -149,20 +154,9 @@ namespace ns_view
             std::string src_html = template_path + "profile.html";
             ctemplate::TemplateDictionary root("profile");
             
+            SetupTemplate(root, &u); // Profile page doesn't highlight any main nav link usually, or highlight none
+
             root.SetValue("user_id", u.id);
-            root.SetValue("username", u.username);
-            root.SetValue("email", u.email);
-            root.SetValue("nickname", u.nickname.empty() ? u.username : u.nickname);
-            root.SetValue("phone", u.phone);
-            
-            if (!u.avatar.empty()) {
-                root.ShowSection("has_avatar");
-                root.SetValue("avatar_url", u.avatar);
-            } else {
-                root.ShowSection("no_avatar");
-            }
-            
-            root.SetValue("created_at", u.created_at);
             
             // Stats
             int total_solved = 0;
@@ -188,18 +182,7 @@ namespace ns_view
             std::string src_html = template_path + "discussion.html";
             ctemplate::TemplateDictionary root("discussion");
             
-            if (u && !u->username.empty()) {
-                root.ShowSection("user_logged_in");
-                root.SetValue("username", u->username);
-                if (!u->avatar.empty()) {
-                    root.ShowSection("has_avatar");
-                    root.SetValue("avatar_url", u->avatar);
-                } else {
-                    root.ShowSection("no_avatar");
-                }
-            } else {
-                root.ShowSection("user_not_logged_in");
-            }
+            SetupTemplate(root, u, "discussion");
 
             ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
             tpl->Expand(html, &root);
@@ -210,18 +193,7 @@ namespace ns_view
             std::string src_html = template_path + "contest.html";
             ctemplate::TemplateDictionary root("contest");
 
-            if (u && !u->username.empty()) {
-                root.ShowSection("user_logged_in");
-                root.SetValue("username", u->username);
-                if (!u->avatar.empty()) {
-                    root.ShowSection("has_avatar");
-                    root.SetValue("avatar_url", u->avatar);
-                } else {
-                    root.ShowSection("no_avatar");
-                }
-            } else {
-                root.ShowSection("user_not_logged_in");
-            }
+            SetupTemplate(root, u, "contest");
             
             // Server side rendering of the list (optional, but good for SEO or initial state)
             // But since we are moving to AJAX pagination, we might leave this empty or populate first page.

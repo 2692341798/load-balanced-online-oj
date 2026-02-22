@@ -4,26 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登录 / 注册 - 冻梨OJ</title>
-    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/nav.css">
     <link rel="stylesheet" href="/css/login.css">
+    <script src="/js/common.js"></script>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-brand">
-            <a href="/">
-                <span>&lt;/&gt;</span> 冻梨OJ
-            </a>
-        </div>
-        <div class="navbar-links">
-            <a href="/">首页</a>
-        </div>
-    </nav>
+    {{>navbar}}
 
     <div class="login-page">
         <!-- 背景装饰 -->
-        <div class="bg-shape shape-1" style="top: 10%; left: -5%;"></div>
-        <div class="bg-shape shape-2" style="bottom: 10%; right: -5%;"></div>
+        <div class="bg-shape shape-1"></div>
+        <div class="bg-shape shape-2"></div>
 
         <div class="login-card">
             <div class="tabs">

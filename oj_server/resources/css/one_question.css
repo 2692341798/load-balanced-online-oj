@@ -616,3 +616,12 @@
 .editor-preview {
     background-color: #1e1e1e;
 }
+
+/* Secondary Solution Button */
+.btn-solution.secondary {
+    background-color: #444;
+    text-decoration: none;
+}
+.btn-solution.secondary:hover {
+    background-color: #555;
+}
