@@ -27,7 +27,8 @@ namespace ns_view
         void SetupTemplate(ctemplate::TemplateDictionary &root, const User *u, const std::string &active_page = "")
         {
             // Navbar Template Include
-            root.SetFilename("navbar", template_path + "shared/navbar.html");
+            ctemplate::TemplateDictionary *navbar_dict = root.AddIncludeDictionary("navbar");
+            navbar_dict->SetFilename(template_path + "shared/navbar.html");
             
             // Active Page Highlighting
             if (!active_page.empty()) {
@@ -223,6 +224,80 @@ namespace ns_view
             char buf[64];
             strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&t));
             root.SetValue("updated_at", buf);
+
+            ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
+            tpl->Expand(html, &root);
+        }
+
+        void TrainingListHtml(std::string *html, const User *u = nullptr)
+        {
+            std::string src_html = template_path + "training_list.html";
+            ctemplate::TemplateDictionary root("training_list");
+            
+            SetupTemplate(root, u, "training");
+
+            ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
+            tpl->Expand(html, &root);
+        }
+
+        void TrainingDetailHtml(const TrainingList &list, const std::vector<TrainingListItem> &items, std::string *html, const User *u = nullptr)
+        {
+            std::string src_html = template_path + "training_detail.html";
+            ctemplate::TemplateDictionary root("training_detail");
+            
+            SetupTemplate(root, u, "training");
+
+            root.SetValue("list_id", list.id);
+            root.SetValue("title", list.title);
+            root.SetValue("description", list.description);
+            root.SetValue("difficulty", list.difficulty);
+            root.SetValue("author_name", list.author_name);
+            root.SetValue("author_avatar", list.author_avatar);
+            root.SetValue("problem_count", std::to_string(list.problem_count));
+            root.SetValue("likes", std::to_string(list.likes));
+            root.SetValue("collections", std::to_string(list.collections));
+            
+            // Check permissions
+            bool is_author = (u && u->id == list.author_id);
+            if (is_author) {
+                root.ShowSection("is_author");
+            }
+
+            int solved_count = 0;
+            for (const auto &item : items) {
+                ctemplate::TemplateDictionary *sub = root.AddSectionDictionary("problem_list");
+                sub->SetValue("problem_id", item.question_id);
+                sub->SetValue("problem_title", item.question_title);
+                sub->SetValue("problem_difficulty", item.question_difficulty);
+                sub->SetValue("status", item.user_status);
+                
+                if (item.user_status == "Solved") {
+                    sub->ShowSection("solved");
+                    solved_count++;
+                } else {
+                    sub->ShowSection("unsolved");
+                }
+
+                if (is_author) {
+                    sub->ShowSection("author_actions");
+                }
+            }
+
+            // Progress
+            int progress = (list.problem_count > 0) ? (solved_count * 100 / list.problem_count) : 0;
+            root.SetValue("progress", std::to_string(progress));
+
+            ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
+            tpl->Expand(html, &root);
+        }
+
+        void LoginHtml(std::string *html)
+        {
+            std::string src_html = template_path + "login.html";
+            ctemplate::TemplateDictionary root("login");
+            
+            // Login page usually doesn't have a logged-in user context, but SetupTemplate handles nullptr
+            SetupTemplate(root, nullptr);
 
             ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
             tpl->Expand(html, &root);

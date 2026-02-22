@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>训练题单 - 冻梨OJ</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/nav.css">
+    <link rel="stylesheet" href="/css/training.css">
+</head>
+<body>
+    {{>navbar}}
+
+    <div class="training-container">
+        <div class="training-header">
+            <h1>精选训练题单</h1>
+            <div class="training-actions">
+                <select id="filter-difficulty" class="form-control" style="width: auto;" onchange="loadLists()">
+                    <option value="">所有难度</option>
+                    <option value="Easy">简单</option>
+                    <option value="Medium">中等</option>
+                    <option value="Hard">困难</option>
+                </select>
+                <button class="btn-primary" onclick="showCreateModal()">+ 创建题单</button>
+            </div>
+        </div>
+
+        <div class="training-grid" id="list-grid">
+            <!-- Loaded by JS -->
+        </div>
+        
+        <div id="loading" style="text-align: center; margin-top: 50px;">加载中...</div>
+    </div>
+
+    <!-- Create Modal -->
+    <div class="modal" id="create-modal">
+        <div class="modal-content">
+            <h2>创建新题单</h2>
+            <div class="form-group">
+                <label>标题</label>
+                <input type="text" id="new-title" class="form-control" placeholder="请输入题单标题">
+            </div>
+            <div class="form-group">
+                <label>描述</label>
+                <textarea id="new-desc" class="form-control" rows="3" placeholder="请输入题单描述"></textarea>
+            </div>
+            <div class="form-group">
+                <label>难度标签</label>
+                <select id="new-diff" class="form-control">
+                    <option value="Unrated">未评级</option>
+                    <option value="Easy">简单</option>
+                    <option value="Medium">中等</option>
+                    <option value="Hard">困难</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>可见性</label>
+                <select id="new-visibility" class="form-control">
+                    <option value="public">公开</option>
+                    <option value="private">私有</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-secondary" onclick="hideCreateModal()">取消</button>
+                <button class="btn-primary" onclick="createList()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLists();
+        });
+
+        async function loadLists() {
+            const grid = document.getElementById('list-grid');
+            const loading = document.getElementById('loading');
+            const diff = document.getElementById('filter-difficulty').value;
+            
+            loading.style.display = 'block';
+            grid.innerHTML = '';
+
+            try {
+                // Determine filter query (simplified for now, filter logic can be improved)
+                // Assuming backend doesn't filter difficulty yet, or we can filter client side if small list
+                // Or update backend GetTrainingLists to accept difficulty filter. 
+                // For now just fetch all public.
+                const response = await fetch('/api/training/list?limit=100');
+                const result = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (result.status === 0) {
+                    result.data.forEach(list => {
+                        // Client side filter
+                        if (diff && list.difficulty !== diff) return;
+
+                        const card = document.createElement('a');
+                        card.className = 'training-card';
+                        card.href = `/training/${list.id}`;
+                        card.style.textDecoration = 'none'; // Ensure card link style
+                        
+                        card.innerHTML = `
+                            <div class="card-header">
+                                <span class="card-title">${list.title}</span>
+                                <span class="card-difficulty diff-${list.difficulty}">${list.difficulty}</span>
+                            </div>
+                            <div class="card-desc">${list.description || '暂无描述'}</div>
+                            <div class="card-footer">
+                                <div class="author-info">
+                                    <img src="${list.author_avatar || '/images/default_avatar.png'}" class="author-avatar" onerror="this.src='/images/default_avatar.png'">
+                                    <span>${list.author_name}</span>
+                                </div>
+                                <div class="stats">
+                                    <span>📚 ${list.problem_count}</span>
+                                    <span>❤️ ${list.likes}</span>
+                                </div>
+                            </div>
+                        `;
+                        grid.appendChild(card);
+                    });
+                    
+                    if (grid.children.length === 0) {
+                        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #888;">暂无题单</div>';
+                    }
+                } else {
+                    grid.innerHTML = `<div style="color: red;">加载失败: ${result.reason}</div>`;
+                }
+            } catch (e) {
+                loading.style.display = 'none';
+                console.error(e);
+                grid.innerHTML = '<div style="color: red;">网络错误</div>';
+            }
+        }
+
+        function showCreateModal() {
+            document.getElementById('create-modal').classList.add('active');
+        }
+
+        function hideCreateModal() {
+            document.getElementById('create-modal').classList.remove('active');
+        }
+
+        async function createList() {
+            const title = document.getElementById('new-title').value;
+            const desc = document.getElementById('new-desc').value;
+            const diff = document.getElementById('new-diff').value;
+            const visibility = document.getElementById('new-visibility').value;
+
+            if (!title) {
+                alert('请输入标题');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/training/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        description: desc,
+                        difficulty: diff,
+                        visibility: visibility
+                    })
+                });
+                const result = await response.json();
+                
+                if (result.status === 0) {
+                    hideCreateModal();
+                    loadLists(); // Reload
+                    // Or navigate to detail
+                    window.location.href = `/training/${result.id}`;
+                } else {
+                    alert('创建失败: ' + result.reason);
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+    </script>
+</body>
+</html>

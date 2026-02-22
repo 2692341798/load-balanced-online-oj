@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - 训练题单</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/nav.css">
+    <link rel="stylesheet" href="/css/training.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+</head>
+<body>
+    {{>navbar}}
+
+    <div class="training-container">
+        <div class="detail-header">
+            <div class="card-difficulty diff-{{difficulty}}" style="display: inline-block; margin-bottom: 10px;">{{difficulty}}</div>
+            <h1 class="detail-title">{{title}}</h1>
+            <div class="detail-meta">
+                <div class="author-info">
+                    <img src="{{author_avatar}}" class="author-avatar" onerror="this.src='/images/default_avatar.png'">
+                    <span>{{author_name}}</span>
+                </div>
+                <span>题数: {{problem_count}}</span>
+                <span>收藏: {{collections}}</span>
+                <span>点赞: {{likes}}</span>
+            </div>
+            <div class="card-desc">{{description}}</div>
+            
+            {{#is_author}}
+            <div style="position: absolute; top: 30px; right: 30px;">
+                <button class="btn-secondary" onclick="showEditModal()">编辑信息</button>
+                <button class="btn-secondary" style="background: #ff4d4f;" onclick="deleteList()">删除题单</button>
+                <button class="btn-primary" onclick="showAddProblemModal()">+ 添加题目</button>
+            </div>
+            {{/is_author}}
+
+            <div class="progress-section">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>完成进度</span>
+                    <span>{{progress}}%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" style="width: {{progress}}%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="problem-list" id="problem-list">
+            {{#problem_list}}
+            <div class="problem-item" data-id="{{problem_id}}">
+                <div class="problem-info">
+                    {{#solved}}<div class="problem-status status-solved">✓</div>{{/solved}}
+                    {{#unsolved}}<div class="problem-status"></div>{{/unsolved}}
+                    <a href="/question/{{problem_id}}" class="problem-link">{{problem_id}}. {{problem_title}}</a>
+                    <span class="card-difficulty diff-{{problem_difficulty}}" style="font-size: 0.7rem;">{{problem_difficulty}}</span>
+                </div>
+                {{#author_actions}}
+                <div class="item-actions">
+                    <span style="cursor: move; color: #666; margin-right: 10px;" class="handle">☰</span>
+                    <button class="btn-secondary" style="padding: 2px 8px; font-size: 0.8rem; background: #ff4d4f;" onclick="removeProblem('{{problem_id}}')">移除</button>
+                </div>
+                {{/author_actions}}
+            </div>
+            {{/problem_list}}
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <h2>编辑题单信息</h2>
+            <div class="form-group">
+                <label>标题</label>
+                <input type="text" id="edit-title" class="form-control" value="{{title}}">
+            </div>
+            <div class="form-group">
+                <label>描述</label>
+                <textarea id="edit-desc" class="form-control" rows="3">{{description}}</textarea>
+            </div>
+            <div class="form-group">
+                <label>难度</label>
+                <select id="edit-diff" class="form-control">
+                    <option value="Unrated">未评级</option>
+                    <option value="Easy">简单</option>
+                    <option value="Medium">中等</option>
+                    <option value="Hard">困难</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-secondary" onclick="document.getElementById('edit-modal').classList.remove('active')">取消</button>
+                <button class="btn-primary" onclick="saveEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Problem Modal -->
+    <div class="modal" id="add-modal">
+        <div class="modal-content">
+            <h2>添加题目</h2>
+            <div class="form-group">
+                <label>题目ID</label>
+                <input type="number" id="add-pid" class="form-control" placeholder="请输入题目ID">
+            </div>
+            <!-- In future: Add search functionality -->
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-secondary" onclick="document.getElementById('add-modal').classList.remove('active')">取消</button>
+                <button class="btn-primary" onclick="addProblem()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script>
+        const listId = "{{list_id}}";
+        
+        // Initialize Sortable
+        {{#is_author}}
+        new Sortable(document.getElementById('problem-list'), {
+            handle: '.handle',
+            animation: 150,
+            onEnd: function (evt) {
+                const items = document.querySelectorAll('.problem-item');
+                const ids = Array.from(items).map(item => item.getAttribute('data-id'));
+                
+                fetch('/api/training/reorder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        training_list_id: listId,
+                        problem_ids: ids
+                    })
+                }).then(res => res.json()).then(res => {
+                    if (res.status !== 0) alert('排序保存失败');
+                });
+            }
+        });
+        
+        // Set initial diff value
+        document.getElementById('edit-diff').value = "{{difficulty}}";
+        {{/is_author}}
+
+        function showEditModal() {
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        async function saveEdit() {
+            const title = document.getElementById('edit-title').value;
+            const desc = document.getElementById('edit-desc').value;
+            const diff = document.getElementById('edit-diff').value;
+
+            try {
+                const response = await fetch('/api/training/edit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: listId,
+                        title: title,
+                        description: desc,
+                        difficulty: diff
+                    })
+                });
+                const result = await response.json();
+                if (result.status === 0) {
+                    location.reload();
+                } else {
+                    alert('保存失败: ' + result.reason);
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+
+        async function deleteList() {
+            if (!confirm('确定要删除这个题单吗？此操作不可恢复。')) return;
+            try {
+                const response = await fetch('/api/training/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: listId })
+                });
+                const result = await response.json();
+                if (result.status === 0) {
+                    window.location.href = '/training';
+                } else {
+                    alert('删除失败: ' + result.reason);
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+
+        function showAddProblemModal() {
+            document.getElementById('add-modal').classList.add('active');
+        }
+
+        async function addProblem() {
+            const pid = document.getElementById('add-pid').value;
+            if (!pid) return;
+
+            try {
+                const response = await fetch('/api/training/add_problem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        training_list_id: listId,
+                        question_id: pid
+                    })
+                });
+                const result = await response.json();
+                if (result.status === 0) {
+                    location.reload();
+                } else {
+                    alert('添加失败: ' + result.reason);
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+
+        async function removeProblem(pid) {
+            if (!confirm('确定要移除这道题目吗？')) return;
+            try {
+                const response = await fetch('/api/training/remove_problem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        training_list_id: listId,
+                        question_id: pid
+                    })
+                });
+                const result = await response.json();
+                if (result.status === 0) {
+                    location.reload();
+                } else {
+                    alert('移除失败: ' + result.reason);
+                }
+            } catch (e) {
+                alert('网络错误');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1440,5 +1440,459 @@ namespace ns_control
                 return false;
             }
         }
+
+        // Training List Pages
+
+        bool TrainingListPage(const Request &req, std::string *html)
+        {
+            User user;
+            AuthCheck(req, &user);
+            
+            // Just render the page structure, JS will fetch data
+            view_.TrainingListHtml(html, &user);
+            return true;
+        }
+
+        bool TrainingDetail(const std::string &id, const Request &req, std::string *html)
+        {
+            User user;
+            AuthCheck(req, &user);
+            
+            TrainingList list;
+            if (!model_.GetTrainingList(id, &list)) {
+                *html = "Training List Not Found";
+                return false;
+            }
+
+            // Check visibility
+            if (list.visibility == "private") {
+                if (user.id != list.author_id) {
+                    *html = "Access Denied (Private List)";
+                    return false;
+                }
+            }
+
+            std::vector<TrainingListItem> items;
+            model_.GetTrainingListProblems(id, user.id, &items);
+
+            view_.TrainingDetailHtml(list, items, html, &user);
+            return true;
+        }
+
+        bool LoginPage(const Request &req, std::string *html)
+        {
+            // Just render the page
+            view_.LoginHtml(html);
+            return true;
+        }
+
+        // Training List APIs
+
+        bool CreateTrainingList(const Request &req, std::string *json_out) {
+            User user;
+            if (!AuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 401;
+                res["reason"] = "Unauthorized";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            
+            TrainingList list;
+            list.title = root["title"].asString();
+            list.description = root.get("description", "").asString();
+            list.difficulty = root.get("difficulty", "Unrated").asString();
+            list.tags = root.get("tags", "[]").asString(); // Should be JSON string
+            list.visibility = root.get("visibility", "public").asString();
+            list.author_id = user.id;
+
+            int new_id = 0;
+            if (model_.CreateTrainingList(list, &new_id)) {
+                Json::Value res;
+                res["status"] = 0;
+                res["id"] = new_id;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool UpdateTrainingList(const Request &req, std::string *json_out) {
+            User user;
+            if (!AuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 401;
+                res["reason"] = "Unauthorized";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            
+            std::string id = root["id"].asString();
+            TrainingList list;
+            if (!model_.GetTrainingList(id, &list)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "List Not Found";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (list.author_id != user.id) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (root.isMember("title")) list.title = root["title"].asString();
+            if (root.isMember("description")) list.description = root["description"].asString();
+            if (root.isMember("difficulty")) list.difficulty = root["difficulty"].asString();
+            if (root.isMember("tags")) list.tags = root["tags"].asString();
+            if (root.isMember("visibility")) list.visibility = root["visibility"].asString();
+
+            if (model_.UpdateTrainingList(list)) {
+                Json::Value res;
+                res["status"] = 0;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool DeleteTrainingList(const Request &req, std::string *json_out) {
+            User user;
+            if (!AuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 401;
+                res["reason"] = "Unauthorized";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string id = root["id"].asString();
+
+            TrainingList list;
+            if (!model_.GetTrainingList(id, &list)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "List Not Found";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (list.author_id != user.id) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (model_.DeleteTrainingList(id)) {
+                Json::Value res;
+                res["status"] = 0;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool AddProblemToTrainingList(const Request &req, std::string *json_out) {
+            User user;
+            if (!AuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 401;
+                res["reason"] = "Unauthorized";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string list_id = root["training_list_id"].asString();
+            std::string question_id = root["question_id"].asString();
+
+            TrainingList list;
+            if (!model_.GetTrainingList(list_id, &list)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "List Not Found";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (list.author_id != user.id) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (model_.AddProblemToTrainingList(list_id, question_id)) {
+                Json::Value res;
+                res["status"] = 0;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error or Already Exists";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool RemoveProblemFromTrainingList(const Request &req, std::string *json_out) {
+            User user;
+            if (!AuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 401;
+                res["reason"] = "Unauthorized";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string list_id = root["training_list_id"].asString();
+            std::string question_id = root["question_id"].asString();
+
+            TrainingList list;
+            if (!model_.GetTrainingList(list_id, &list)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "List Not Found";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (list.author_id != user.id) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (model_.RemoveProblemFromTrainingList(list_id, question_id)) {
+                Json::Value res;
+                res["status"] = 0;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool ReorderTrainingListProblems(const Request &req, std::string *json_out) {
+            User user;
+            if (!AuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 401;
+                res["reason"] = "Unauthorized";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string list_id = root["training_list_id"].asString();
+            Json::Value problem_ids_json = root["problem_ids"];
+            
+            std::vector<std::string> problem_ids;
+            if (problem_ids_json.isArray()) {
+                for (const auto &id : problem_ids_json) {
+                    problem_ids.push_back(id.asString());
+                }
+            }
+
+            TrainingList list;
+            if (!model_.GetTrainingList(list_id, &list)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "List Not Found";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (list.author_id != user.id) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (model_.ReorderTrainingListProblems(list_id, problem_ids)) {
+                Json::Value res;
+                res["status"] = 0;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool GetTrainingLists(const Request &req, std::string *json_out) {
+            // Public API (or with auth for private lists?)
+            // Spec says: Filters: Difficulty, Tags, Author.
+            // And user's own lists.
+            
+            User user;
+            AuthCheck(req, &user); // Optional auth
+            
+            int page = 1;
+            int page_size = 20;
+            if (req.has_param("page")) page = std::stoi(req.get_param_value("page"));
+            if (req.has_param("limit")) page_size = std::stoi(req.get_param_value("limit"));
+            
+            std::string visibility = req.get_param_value("visibility");
+            std::string author_id = req.get_param_value("author_id");
+            
+            // If fetching "my lists", visibility can be empty (all) but author_id must be me.
+            if (author_id == "me") {
+                if (user.id.empty()) {
+                    Json::Value res;
+                    res["status"] = 401;
+                    res["reason"] = "Unauthorized";
+                    *json_out = SerializeJson(res);
+                    return false;
+                }
+                author_id = user.id;
+                // visibility can be ignored or set to empty to get all
+                visibility = ""; 
+            } else {
+                // Fetching public lists
+                visibility = "public";
+            }
+
+            std::vector<TrainingList> lists;
+            int total = 0;
+            if (model_.GetTrainingLists(page, page_size, visibility, author_id, &lists, &total)) {
+                Json::Value root;
+                root["status"] = 0;
+                root["total"] = total;
+                root["page"] = page;
+                
+                Json::Value data;
+                for (const auto &l : lists) {
+                    Json::Value item;
+                    item["id"] = l.id;
+                    item["title"] = l.title;
+                    item["description"] = l.description;
+                    item["difficulty"] = l.difficulty;
+                    item["author_name"] = l.author_name;
+                    item["author_avatar"] = l.author_avatar;
+                    item["problem_count"] = l.problem_count;
+                    item["likes"] = l.likes;
+                    item["collections"] = l.collections;
+                    item["created_at"] = l.created_at;
+                    data.append(item);
+                }
+                root["data"] = data;
+                
+                *json_out = SerializeJson(root);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool GetTrainingListDetailJson(const std::string &id, const Request &req, std::string *json_out) {
+            // For API calls to get detail
+            User user;
+            AuthCheck(req, &user);
+
+            TrainingList list;
+            if (!model_.GetTrainingList(id, &list)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Not Found";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (list.visibility == "private" && list.author_id != user.id) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            std::vector<TrainingListItem> items;
+            model_.GetTrainingListProblems(id, user.id, &items);
+
+            Json::Value root;
+            root["status"] = 0;
+            Json::Value data;
+            data["id"] = list.id;
+            data["title"] = list.title;
+            data["description"] = list.description;
+            data["difficulty"] = list.difficulty;
+            data["tags"] = list.tags;
+            data["author_id"] = list.author_id;
+            data["author_name"] = list.author_name;
+            data["visibility"] = list.visibility;
+            
+            Json::Value problems;
+            for (const auto &item : items) {
+                Json::Value p;
+                p["id"] = item.question_id;
+                p["title"] = item.question_title;
+                p["difficulty"] = item.question_difficulty;
+                p["status"] = item.user_status;
+                problems.append(p);
+            }
+            data["problems"] = problems;
+            root["data"] = data;
+
+            *json_out = SerializeJson(root);
+            return true;
+        }
+
     };
 } // namespace ns_control

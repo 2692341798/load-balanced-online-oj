@@ -121,6 +121,37 @@ namespace ns_model
         std::string last_crawl_time;
     };
 
+    struct TrainingList
+    {
+        std::string id;
+        std::string title;
+        std::string description;
+        std::string difficulty; // Easy, Medium, Hard, Unrated
+        std::string tags;       // JSON array
+        std::string author_id;
+        std::string visibility; // public, private
+        std::string created_at;
+        std::string updated_at;
+        int likes;
+        int collections;
+        // Join fields
+        std::string author_name;
+        std::string author_avatar;
+        int problem_count;
+    };
+
+    struct TrainingListItem
+    {
+        std::string id;
+        std::string training_list_id;
+        std::string question_id;
+        int order_index;
+        // Join fields
+        std::string question_title;
+        std::string question_difficulty;
+        std::string user_status; // Solved status for current user
+    };
+
     const std::string oj_questions = "oj_questions";
     const std::string oj_users = "users";
     const std::string oj_submissions = "submissions";
@@ -128,6 +159,8 @@ namespace ns_model
     const std::string oj_discussions = "discussions";
     const std::string oj_article_comments = "article_comments";
     const std::string oj_contests = "contests";
+    const std::string oj_training_lists = "training_lists";
+    const std::string oj_training_list_items = "training_list_items";
 
     inline std::string GetEnv(const std::string& key, const std::string& default_value) {
         const char* val = std::getenv(key.c_str());
@@ -152,7 +185,43 @@ namespace ns_model
             InitDiscussionTable();
             InitArticleCommentTable();
             InitContestTable();
+            InitTrainingListTable();
+            InitTrainingListItemTable();
             CheckAndUpgradeTable();
+        }
+
+        void InitTrainingListTable() {
+            std::string sql = "CREATE TABLE IF NOT EXISTS `training_lists` ("
+                              "`id` INT PRIMARY KEY AUTO_INCREMENT,"
+                              "`title` VARCHAR(255) NOT NULL,"
+                              "`description` TEXT,"
+                              "`difficulty` VARCHAR(50) DEFAULT 'Unrated',"
+                              "`tags` TEXT,"
+                              "`author_id` INT NOT NULL,"
+                              "`visibility` ENUM('public', 'private') DEFAULT 'public',"
+                              "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+                              "`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
+                              "`likes` INT DEFAULT 0,"
+                              "`collections` INT DEFAULT 0,"
+                              "INDEX `idx_author_id` (`author_id`)"
+                              // "FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON DELETE CASCADE"
+                              ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+            ExecuteSql(sql);
+        }
+
+        void InitTrainingListItemTable() {
+            std::string sql = "CREATE TABLE IF NOT EXISTS `training_list_items` ("
+                              "`id` INT PRIMARY KEY AUTO_INCREMENT,"
+                              "`training_list_id` INT NOT NULL,"
+                              "`question_id` INT NOT NULL,"
+                              "`order_index` INT NOT NULL DEFAULT 0,"
+                              "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+                              // "FOREIGN KEY (`training_list_id`) REFERENCES `training_lists`(`id`) ON DELETE CASCADE,"
+                              "INDEX `idx_list_id` (`training_list_id`),"
+                              "INDEX `idx_question_id` (`question_id`),"
+                              "UNIQUE KEY `unique_item` (`training_list_id`, `question_id`)"
+                              ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+            ExecuteSql(sql);
         }
 
         void InitUserTable() {
@@ -498,6 +567,96 @@ namespace ns_model
                 }
             }
 
+            // Check difficulty column in training_lists
+            std::string check_tl_diff = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_training_lists + "' AND COLUMN_NAME = 'difficulty'";
+            if(0 == mysql_query(my, check_tl_diff.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_training_lists + " ADD COLUMN difficulty VARCHAR(50) DEFAULT 'Unrated'";
+                    LOG(INFO) << "Upgrading training_lists table: adding difficulty column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check tags column in training_lists
+            std::string check_tl_tags = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_training_lists + "' AND COLUMN_NAME = 'tags'";
+            if(0 == mysql_query(my, check_tl_tags.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_training_lists + " ADD COLUMN tags TEXT";
+                    LOG(INFO) << "Upgrading training_lists table: adding tags column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check visibility column in training_lists
+            std::string check_tl_vis = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_training_lists + "' AND COLUMN_NAME = 'visibility'";
+            if(0 == mysql_query(my, check_tl_vis.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_training_lists + " ADD COLUMN visibility ENUM('public', 'private') DEFAULT 'public'";
+                    LOG(INFO) << "Upgrading training_lists table: adding visibility column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check likes column in training_lists
+            std::string check_tl_likes = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_training_lists + "' AND COLUMN_NAME = 'likes'";
+            if(0 == mysql_query(my, check_tl_likes.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_training_lists + " ADD COLUMN likes INT DEFAULT 0";
+                    LOG(INFO) << "Upgrading training_lists table: adding likes column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check collections column in training_lists
+            std::string check_tl_col = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_training_lists + "' AND COLUMN_NAME = 'collections'";
+            if(0 == mysql_query(my, check_tl_col.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_training_lists + " ADD COLUMN collections INT DEFAULT 0";
+                    LOG(INFO) << "Upgrading training_lists table: adding collections column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
+            // Check order_index column in training_list_items
+            std::string check_tli_order = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_training_list_items + "' AND COLUMN_NAME = 'order_index'";
+            if(0 == mysql_query(my, check_tli_order.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_training_list_items + " ADD COLUMN order_index INT NOT NULL DEFAULT 0";
+                    LOG(INFO) << "Upgrading training_list_items table: adding order_index column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
             mysql_close(my);
         }
 
@@ -509,7 +668,9 @@ namespace ns_model
              }
              if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
              if(0 != mysql_query(my, sql.c_str())) {
-                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
+                 std::string err_msg = mysql_error(my);
+                 LOG(WARNING) << sql << " execute error: " << err_msg << "\n";
+                 std::cerr << "SQL Execute Error: " << err_msg << "\nSQL: " << sql << std::endl;
                  mysql_close(my);
                  return false;
              }
@@ -1412,6 +1573,300 @@ namespace ns_model
                 c.user_avatar = (fields > 7 && row[7]) ? row[7] : "";
                 
                 out->push_back(c);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        // Training List Methods
+
+        bool CreateTrainingList(const TrainingList &list, int *new_id) {
+            if (list.author_id.empty()) {
+                LOG(WARNING) << "CreateTrainingList failed: author_id is empty" << "\n";
+                return false;
+            }
+
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                std::cerr << "Connect failed: " << mysql_error(my) << std::endl;
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            auto escape = [&](const std::string &s) -> std::string {
+                char *buf = new char[s.length() * 2 + 1];
+                mysql_real_escape_string(my, buf, s.c_str(), s.length());
+                std::string res(buf);
+                delete[] buf;
+                return res;
+            };
+
+            std::string sql = "INSERT INTO " + oj_training_lists + " (title, description, difficulty, tags, author_id, visibility) VALUES ('"
+                + escape(list.title) + "', '"
+                + escape(list.description) + "', '"
+                + escape(list.difficulty) + "', '"
+                + escape(list.tags) + "', "
+                + list.author_id + ", '"
+                + escape(list.visibility) + "')";
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                std::string err_msg = mysql_error(my);
+                LOG(WARNING) << sql << " execute error: " << err_msg << "\n";
+                std::cerr << "SQL Error in CreateTrainingList: " << err_msg << "\nSQL: " << sql << std::endl;
+                mysql_close(my);
+                return false;
+            }
+            
+            *new_id = (int)mysql_insert_id(my);
+            mysql_close(my);
+            return true;
+        }
+
+        bool UpdateTrainingList(const TrainingList &list) {
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            auto escape = [&](const std::string &s) -> std::string {
+                char *buf = new char[s.length() * 2 + 1];
+                mysql_real_escape_string(my, buf, s.c_str(), s.length());
+                std::string res(buf);
+                delete[] buf;
+                return res;
+            };
+
+            std::string sql = "UPDATE " + oj_training_lists + " SET "
+                + "title='" + escape(list.title) + "', "
+                + "description='" + escape(list.description) + "', "
+                + "difficulty='" + escape(list.difficulty) + "', "
+                + "tags='" + escape(list.tags) + "', "
+                + "visibility='" + escape(list.visibility) + "' "
+                + "WHERE id=" + list.id;
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                std::string err_msg = mysql_error(my);
+                LOG(WARNING) << sql << " execute error: " << err_msg << "\n";
+                std::cerr << "SQL Error in UpdateTrainingList: " << err_msg << "\nSQL: " << sql << std::endl;
+                mysql_close(my);
+                return false;
+            }
+            mysql_close(my);
+            return true;
+        }
+
+        bool DeleteTrainingList(const std::string &id) {
+            std::string sql = "DELETE FROM " + oj_training_lists + " WHERE id=" + id;
+            return ExecuteSql(sql);
+        }
+
+        bool GetTrainingList(const std::string &id, TrainingList *list) {
+            std::string sql = "SELECT t.id, t.title, t.description, t.difficulty, t.tags, t.author_id, t.visibility, t.created_at, t.updated_at, t.likes, t.collections, u.username, u.avatar, "
+                              "(SELECT COUNT(*) FROM " + oj_training_list_items + " WHERE training_list_id = t.id) as problem_count "
+                              "FROM " + oj_training_lists + " t "
+                              "LEFT JOIN " + oj_users + " u ON t.author_id = u.id "
+                              "WHERE t.id=" + id;
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(my);
+            if (mysql_num_rows(res) == 1) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row) {
+                    list->id = row[0] ? row[0] : "";
+                    list->title = row[1] ? row[1] : "";
+                    list->description = row[2] ? row[2] : "";
+                    list->difficulty = row[3] ? row[3] : "Unrated";
+                    list->tags = row[4] ? row[4] : "[]";
+                    list->author_id = row[5] ? row[5] : "";
+                    list->visibility = row[6] ? row[6] : "public";
+                    list->created_at = row[7] ? row[7] : "";
+                    list->updated_at = row[8] ? row[8] : "";
+                    list->likes = row[9] ? atoi(row[9]) : 0;
+                    list->collections = row[10] ? atoi(row[10]) : 0;
+                    list->author_name = row[11] ? row[11] : "Unknown";
+                    list->author_avatar = row[12] ? row[12] : "";
+                    list->problem_count = row[13] ? atoi(row[13]) : 0;
+                    
+                    mysql_free_result(res);
+                    mysql_close(my);
+                    return true;
+                }
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return false;
+        }
+
+        bool GetTrainingLists(int page, int page_size, const std::string &visibility, const std::string &author_id, std::vector<TrainingList> *out, int *total) {
+            int offset = (page - 1) * page_size;
+            if (offset < 0) offset = 0;
+
+            std::string where = " WHERE 1=1 ";
+            if (!visibility.empty()) {
+                where += " AND t.visibility='" + visibility + "' ";
+            }
+            if (!author_id.empty()) {
+                where += " AND t.author_id=" + author_id + " ";
+            }
+
+            // Count
+            std::string count_sql = "SELECT COUNT(*) FROM " + oj_training_lists + " t " + where;
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, count_sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *total = atoi(row[0]);
+                mysql_free_result(res);
+            }
+
+            // Fetch
+            std::string sql = "SELECT t.id, t.title, t.description, t.difficulty, t.tags, t.author_id, t.visibility, t.created_at, t.updated_at, t.likes, t.collections, u.username, u.avatar, "
+                              "(SELECT COUNT(*) FROM " + oj_training_list_items + " WHERE training_list_id = t.id) as problem_count "
+                              "FROM " + oj_training_lists + " t "
+                              "LEFT JOIN " + oj_users + " u ON t.author_id = u.id "
+                              + where + " ORDER BY t.created_at DESC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+
+            res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+
+            for(int i = 0; i < rows; i++) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                TrainingList list;
+                list.id = row[0] ? row[0] : "";
+                list.title = row[1] ? row[1] : "";
+                list.description = row[2] ? row[2] : "";
+                list.difficulty = row[3] ? row[3] : "Unrated";
+                list.tags = row[4] ? row[4] : "[]";
+                list.author_id = row[5] ? row[5] : "";
+                list.visibility = row[6] ? row[6] : "public";
+                list.created_at = row[7] ? row[7] : "";
+                list.updated_at = row[8] ? row[8] : "";
+                list.likes = row[9] ? atoi(row[9]) : 0;
+                list.collections = row[10] ? atoi(row[10]) : 0;
+                list.author_name = row[11] ? row[11] : "Unknown";
+                list.author_avatar = row[12] ? row[12] : "";
+                list.problem_count = row[13] ? atoi(row[13]) : 0;
+                out->push_back(list);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        bool AddProblemToTrainingList(const std::string &list_id, const std::string &question_id) {
+            // Check if exists first to avoid error? Or just let INSERT fail (UNIQUE constraint)
+            // But we need to handle "already exists" gracefully?
+            // INSERT IGNORE? Or just INSERT and catch error.
+            std::string sql = "INSERT IGNORE INTO " + oj_training_list_items + " (training_list_id, question_id, order_index) "
+                              "SELECT " + list_id + ", " + question_id + ", COALESCE(MAX(order_index), 0) + 1 FROM " + oj_training_list_items + " WHERE training_list_id=" + list_id;
+            return ExecuteSql(sql);
+        }
+
+        bool RemoveProblemFromTrainingList(const std::string &list_id, const std::string &question_id) {
+            std::string sql = "DELETE FROM " + oj_training_list_items + " WHERE training_list_id=" + list_id + " AND question_id=" + question_id;
+            return ExecuteSql(sql);
+        }
+
+        bool ReorderTrainingListProblems(const std::string &list_id, const std::vector<std::string> &problem_ids) {
+            // This is tricky. Multiple updates.
+            // Transaction recommended.
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            mysql_autocommit(my, 0); // Start transaction
+
+            for (size_t i = 0; i < problem_ids.size(); ++i) {
+                std::string sql = "UPDATE " + oj_training_list_items + " SET order_index=" + std::to_string(i + 1) + 
+                                  " WHERE training_list_id=" + list_id + " AND question_id=" + problem_ids[i];
+                if(0 != mysql_query(my, sql.c_str())) {
+                    mysql_rollback(my);
+                    mysql_close(my);
+                    return false;
+                }
+            }
+
+            mysql_commit(my);
+            mysql_close(my);
+            return true;
+        }
+
+        bool GetTrainingListProblems(const std::string &list_id, const std::string &user_id, std::vector<TrainingListItem> *out) {
+            // Need to join with oj_questions to get title/difficulty
+            // And join with submissions (or use subquery) to get user status.
+            // User status: Solved (0), Attempted (non-0), Unsolved (no submission).
+            // For simplicity, just check if solved.
+            
+            std::string user_status_sql = "";
+            if (!user_id.empty()) {
+                user_status_sql = ", (SELECT count(*) FROM " + oj_submissions + " WHERE user_id=" + user_id + " AND question_id=i.question_id AND result='0') as solved ";
+            } else {
+                user_status_sql = ", 0 as solved ";
+            }
+
+            std::string sql = "SELECT i.id, i.training_list_id, i.question_id, i.order_index, q.title, q.star " + user_status_sql +
+                              "FROM " + oj_training_list_items + " i "
+                              "LEFT JOIN " + oj_questions + " q ON i.question_id = q.number "
+                              "WHERE i.training_list_id=" + list_id + " "
+                              "ORDER BY i.order_index ASC";
+
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            
+            for(int i = 0; i < rows; i++) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                TrainingListItem item;
+                item.id = row[0] ? row[0] : "";
+                item.training_list_id = row[1] ? row[1] : "";
+                item.question_id = row[2] ? row[2] : "";
+                item.order_index = row[3] ? atoi(row[3]) : 0;
+                item.question_title = row[4] ? row[4] : "";
+                item.question_difficulty = row[5] ? row[5] : "";
+                int solved = row[6] ? atoi(row[6]) : 0;
+                item.user_status = (solved > 0) ? "Solved" : "Unsolved";
+                
+                out->push_back(item);
             }
             mysql_free_result(res);
             mysql_close(my);

@@ -203,6 +203,52 @@ INSERT INTO submissions (user_id, question_id, language, result, cpu_time, mem_u
 
 ## 4. 数据访问层设计
 
+### 3.8 题单表 (training_lists)
+
+**表描述**: 存储训练计划/题单的元数据信息
+
+**表结构**:
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | - | 题单ID |
+| title | VARCHAR(255) | NOT NULL | - | 题单标题 |
+| description | TEXT | - | NULL | 题单描述 |
+| difficulty | VARCHAR(50) | - | 'Unrated' | 难度等级 |
+| tags | TEXT | - | NULL | 标签（JSON或逗号分隔） |
+| author_id | INT | NOT NULL | - | 创建者ID |
+| visibility | ENUM | - | 'public' | 可见性 ('public', 'private') |
+| likes | INT | DEFAULT 0 | 0 | 点赞数 |
+| collections | INT | DEFAULT 0 | 0 | 收藏数 |
+| created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 更新时间 |
+
+**索引设计**:
+- `PRIMARY KEY (id)`: 主键索引
+- `INDEX idx_author_id (author_id)`: 作者ID索引
+
+### 3.9 题单题目关联表 (training_list_items)
+
+**表描述**: 存储题单中包含的题目及其顺序
+
+**表结构**:
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | - | 关联ID |
+| training_list_id | INT | NOT NULL | - | 题单ID |
+| question_id | INT | NOT NULL | - | 题目ID |
+| order_index | INT | NOT NULL | 0 | 排序索引 |
+| created_at | TIMESTAMP | - | CURRENT_TIMESTAMP | 创建时间 |
+
+**索引设计**:
+- `PRIMARY KEY (id)`: 主键索引
+- `INDEX idx_list_id (training_list_id)`: 题单ID索引
+- `INDEX idx_question_id (question_id)`: 题目ID索引
+- `UNIQUE KEY unique_item (training_list_id, question_id)`: 唯一性约束，防止重复添加
+
+## 4. 数据访问层设计
+
 ### 4.1 核心类结构
 
 系统采用C++实现数据访问层，主要类包括：
@@ -552,12 +598,16 @@ FLUSH PRIVILEGES;
     - 移除冗余的 `tail_code` 字段
   - 更新 `submissions` 表说明，明确支持多语言 (cpp, java, python)
 
+- **v1.1.0 (2026-02-22)**:
+  - 新增题单模块表结构：
+    - `training_lists`: 题单元数据
+    - `training_list_items`: 题单题目关联表
 - **v1.0.4 (2026-02-15)**:
   - 更新 `users` 表结构：
     - 新增 `avatar` 字段 (`VARCHAR(255) DEFAULT NULL`) 用于存储用户头像URL。
 
 ---
 
-**最后更新时间**: 2026-02-15  
-**文档版本**: v1.0.4  
+**最后更新时间**: 2026-02-22
+**文档版本**: v1.1.0
 **维护团队**: 在线评测系统开发团队

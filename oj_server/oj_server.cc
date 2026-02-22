@@ -99,6 +99,76 @@ int main()
         resp.set_content(json, "application/json;charset=utf-8");
     });
 
+    // Training List Pages
+    svr.Get("/training", [&ctrl](const Request &req, Response &resp){
+        std::string html;
+        if (ctrl.TrainingListPage(req, &html)) {
+            resp.set_content(html, "text/html; charset=utf-8");
+        } else {
+            resp.set_content(html, "text/plain; charset=utf-8"); // Error message
+        }
+    });
+
+    svr.Get(R"(/training/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string id = req.matches[1];
+        std::string html;
+        if (ctrl.TrainingDetail(id, req, &html)) {
+            resp.set_content(html, "text/html; charset=utf-8");
+        } else {
+            resp.set_content(html, "text/plain; charset=utf-8"); // Error message
+        }
+    });
+
+    // Training List APIs
+    svr.Post("/api/training/create", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.CreateTrainingList(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Post("/api/training/edit", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.UpdateTrainingList(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Post("/api/training/delete", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.DeleteTrainingList(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Post("/api/training/add_problem", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.AddProblemToTrainingList(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Post("/api/training/remove_problem", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.RemoveProblemFromTrainingList(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Post("/api/training/reorder", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.ReorderTrainingListProblems(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Get("/api/training/list", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.GetTrainingLists(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    svr.Get(R"(/api/training/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string id = req.matches[1];
+        std::string json;
+        ctrl.GetTrainingListDetailJson(id, req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
     // 用户要根据题目编号，获取题目的内容
     // /question/100 -> 正则匹配
     // R"()", 原始字符串raw string,保持字符串内容的原貌，不用做相关的转义
@@ -158,12 +228,10 @@ int main()
     });
 
     // Login Page
-    svr.Get("/login", [](const Request &req, Response &resp){
-        std::ifstream in("./template_html/login.html");
-        if(in.is_open()) {
-            std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-            resp.set_content(content, "text/html; charset=utf-8");
-            in.close();
+    svr.Get("/login", [&ctrl](const Request &req, Response &resp){
+        std::string html;
+        if (ctrl.LoginPage(req, &html)) {
+            resp.set_content(html, "text/html; charset=utf-8");
         } else {
             resp.set_content("Login Page Not Found", "text/plain");
         }
