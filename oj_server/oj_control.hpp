@@ -372,19 +372,22 @@ namespace ns_control
             if (model_.UpdateUser(u)) {
                 // Update Session Cache
                 std::unique_lock<std::mutex> lock(session_mtx_);
+                bool old_avatar_deleted = false;
                 for (auto &kv : sessions_) {
                     if (kv.second.user.id == user_id) {
                         // Delete old avatar file if exists and not default
-                        if (!kv.second.user.avatar.empty()) {
+                        // Only delete once to avoid redundant filesystem calls
+                        if (!old_avatar_deleted && !kv.second.user.avatar.empty()) {
                             std::string old_path = "./wwwroot" + kv.second.user.avatar;
                             // Basic check to ensure we don't delete something outside uploads/avatars
                             if (old_path.find("/uploads/avatars/") != std::string::npos) {
                                 remove(old_path.c_str());
+                                old_avatar_deleted = true;
                             }
                         }
                         
                         kv.second.user.avatar = avatar_url;
-                        break;
+                        // Do NOT break here! Update ALL sessions for this user.
                     }
                 }
                 
@@ -1165,7 +1168,7 @@ namespace ns_control
                         if (!nickname.empty()) kv.second.user.nickname = nickname;
                         if (!email.empty()) kv.second.user.email = email;
                         if (!phone.empty()) kv.second.user.phone = phone;
-                        break;
+                        // Do NOT break here! Update ALL sessions for this user.
                     }
                 }
                 return true;
