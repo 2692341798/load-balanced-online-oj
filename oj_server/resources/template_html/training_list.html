@@ -109,7 +109,7 @@
                             <div class="card-desc">${list.description || '暂无描述'}</div>
                             <div class="card-footer">
                                 <div class="author-info">
-                                    <img src="${list.author_avatar || '/images/default_avatar.png'}" class="author-avatar" onerror="this.src='/images/default_avatar.png'">
+                                    <img src="${list.author_avatar || '/images/default_avatar.png'}" class="author-avatar" onerror="this.onerror=null;this.src='/images/default_avatar.png'">
                                     <span>${list.author_name}</span>
                                 </div>
                                 <div class="stats">

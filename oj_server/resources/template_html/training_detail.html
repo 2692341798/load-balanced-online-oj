@@ -18,7 +18,7 @@
             <h1 class="detail-title">{{title}}</h1>
             <div class="detail-meta">
                 <div class="author-info">
-                    <img src="{{author_avatar}}" class="author-avatar" onerror="this.src='/images/default_avatar.png'">
+                    <img src="{{author_avatar}}" class="author-avatar" onerror="this.onerror=null;this.src='/images/default_avatar.png'">
                     <span>{{author_name}}</span>
                 </div>
                 <span>题数: {{problem_count}}</span>
