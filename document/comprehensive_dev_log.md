@@ -1001,6 +1001,40 @@ document/
 
 ---
 
+## 📅 2026-03-04 | V1.1.2 视觉优化与样式修复 (Visual & CSS Optimization)
+
+### 🎯 核心目标
+优化题单卡片和讨论区卡片的视觉层次，解决对比度不足问题，修复讨论页样式缺失。
+
+### 🛠️ 变更详情
+
+#### 1. CSS 变量系统升级 (`common.css`)
+- **新增主题支持**: 引入 `[data-theme="light"]` 预设，为未来浅色模式铺路。
+- **新增语义变量**: 定义 `--bg-secondary` (#2d2d2d) 用于次级容器背景，提升层次感。
+- **规范边框颜色**: 统一 `--border-color` 为 `rgba(255, 255, 255, 0.1)`。
+
+#### 2. 题单卡片优化 (`training.css`)
+- **背景增强**: 使用 `--bg-secondary` 代替透明背景，与页面主体区分。
+- **边框定义**: 添加微弱边框，增强轮廓感。
+- **交互反馈**: 悬停时边框高亮 (`--accent-color`) 并增加阴影深度。
+- **对比度**: 确保卡片文字与背景对比度 > 14:1 (WCAG AAA)。
+
+#### 3. 讨论区样式修复 (`discussion.css` & `all_questions.css`)
+- **样式迁移**: 将 `.discussion-card` 相关样式从 `all_questions.css` 迁移至 `discussion.css`，修复 `/discussion` 页面卡片样式丢失的问题。
+- **视觉统一**: 讨论卡片采用与题单卡片一致的边框和悬停效果，保持设计语言统一。
+- **兼容性**: 确保在 `/all_questions?view=discussion` 和 `/discussion` 页面显示一致。
+
+### 📊 版本统计
+- **标签状态**: ✅ V1.1.2
+- **核心变更**: CSS Refactoring, Visual Enhancement, Markdown Summary Cleanup.
+- **测试验证**: Playwright 截图对比验证，通过对比度检查。
+
+#### 4. 讨论区摘要清理 (Summary Cleanup)
+- **后端处理**: 在 `StringUtil` 中新增 `GetSummaryFromMarkdown` 方法，自动过滤 Markdown 代码块 (` ``` `) 和标题标记 (`#`)。
+- **UI 变更**: 应用户要求，最终在讨论卡片中完全移除了摘要（正文预览）显示，仅保留标题、作者、日期及统计数据，使界面更简洁。
+
+---
+
 *最后更新：2026年3月4日  
 维护者：AI Assistant  
 文档状态：活跃维护*

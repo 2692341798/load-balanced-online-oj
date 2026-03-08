@@ -6,8 +6,24 @@
     --accent-hover: #e69114;
     --nav-bg: #282828;
     --card-bg: #282828;
+    --bg-secondary: #2d2d2d;
     --success: #2cbb5d;
     --error: #f44336;
+    --border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] {
+    --bg-color: #ffffff;
+    --text-main: #1a1a1a;
+    --text-secondary: #666666;
+    --accent-color: #ffa116;
+    --accent-hover: #e69114;
+    --nav-bg: #f8f9fa;
+    --card-bg: #f5f5f5;
+    --bg-secondary: #eeeeee;
+    --success: #2cbb5d;
+    --error: #f44336;
+    --border-color: rgba(0, 0, 0, 0.1);
 }
 
 * {

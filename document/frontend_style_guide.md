@@ -20,6 +20,7 @@
 | 变量名 | 色值 | 描述 | 使用场景 |
 |--------|------|------|----------|
 | `--bg-color` | `#1a1a1a` | 主背景色 | 页面背景、主要容器 |
+| `--bg-secondary` | `#2d2d2d` | 次级背景 | 次级容器、列表项 |
 | `--text-main` | `#ffffff` | 主要文字 | 标题、重要内容 |
 | `--text-secondary` | `#8c8c8c` | 次要文字 | 描述、辅助信息 |
 | `--accent-color` | `#ffa116` | 强调色 | 品牌色、重要按钮 |
@@ -349,6 +350,47 @@ font-weight: 600;      /* 粗体 */
     background: rgba(244, 67, 54, 0.2);
     color: #f44336;
 }
+
+#### 5.4.3 列表卡片 (List Cards)
+用于题单和讨论区列表。
+
+```css
+.training-card,
+.discussion-card {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+}
+
+.training-card:hover,
+.discussion-card:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 12px rgba(255, 161, 22, 0.1);
+}
+
+.training-title,
+.discussion-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.training-stats,
+.discussion-meta {
+    display: flex;
+    gap: 16px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-top: 12px;
+}
+```
 ```
 
 ### 5.5 布局组件 (Layout Components)
@@ -777,6 +819,7 @@ font-weight: 600;      /* 粗体 */
 :root {
     /* 深色主题 */
     --bg-color: #1a1a1a;
+    --bg-secondary: #2d2d2d;
     --text-main: #ffffff;
     --text-secondary: #8c8c8c;
     --card-bg: #282828;
@@ -786,6 +829,7 @@ font-weight: 600;      /* 粗体 */
 /* 浅色主题（未来扩展） */
 [data-theme="light"] {
     --bg-color: #ffffff;
+    --bg-secondary: #f0f0f0;
     --text-main: #1a1a1a;
     --text-secondary: #666666;
     --card-bg: #f5f5f5;
@@ -813,6 +857,8 @@ oj_server/resources/css/
 ├── login.css          # 登录页面样式
 ├── all_questions.css  # 题目列表样式
 ├── one_question.css   # 题目详情样式
+├── training.css       # 题单/训练计划样式
+├── discussion.css     # 讨论区样式
 ├── admin.css          # 管理员后台样式
 └── components.css     # 通用组件样式（可选）
 ```
@@ -1081,6 +1127,6 @@ oj_server/resources/css/
 
 ---
 
-**文档版本**: v1.0.4  
-**最后更新时间**: 2026-02-15  
+**文档版本**: v1.1.2
+**最后更新时间**: 2026-03-04
 **维护团队**: 在线评测系统开发团队

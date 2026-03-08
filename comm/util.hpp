@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <cctype>
 
 namespace ns_util
 {
@@ -161,6 +162,47 @@ namespace ns_util
                 }
                 start = pos + 1;
             }
+        }
+
+        static std::string GetSummaryFromMarkdown(const std::string &md, size_t max_len = 150)
+        {
+            std::string res;
+            bool in_code_block = false;
+            size_t n = md.size();
+            for (size_t i = 0; i < n; ++i)
+            {
+                if (res.size() >= max_len)
+                {
+                    res += "...";
+                    break;
+                }
+
+                // Check for code block ```
+                if (i + 2 < n && md[i] == '`' && md[i+1] == '`' && md[i+2] == '`')
+                {
+                    in_code_block = !in_code_block;
+                    i += 2; 
+                    if (!in_code_block) res += " [代码] ";
+                    continue;
+                }
+
+                if (in_code_block) continue;
+
+                // Skip heading markers
+                if (md[i] == '#') continue;
+                
+                // Collapse whitespace
+                if (isspace(md[i]))
+                {
+                    if (!res.empty() && res.back() != ' ') res += ' ';
+                }
+                else
+                {
+                    res += md[i];
+                }
+            }
+            if (res.empty()) return "点击查看详情";
+            return res;
         }
     };
 }

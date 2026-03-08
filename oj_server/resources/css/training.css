@@ -31,16 +31,18 @@
     background: var(--bg-secondary);
     border-radius: 8px;
     padding: 20px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
     border: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     height: 100%;
+    color: var(--text-main);
 }
 
 .training-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    border-color: var(--accent-color);
 }
 
 .card-header {

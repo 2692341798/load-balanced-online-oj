@@ -1266,7 +1266,7 @@ namespace ns_control
                     Json::Value item;
                     item["id"] = d.id;
                     item["title"] = d.title;
-                    item["summary"] = d.content.length() > 100 ? d.content.substr(0, 100) + "..." : d.content;
+                    item["summary"] = StringUtil::GetSummaryFromMarkdown(d.content);
                     item["author"] = d.author_name;
                     item["avatar"] = d.author_avatar;
                     std::cout << "DEBUG: " << d.author_name << " avatar=" << d.author_avatar << std::endl;
