@@ -676,6 +676,14 @@ namespace ns_control
 
         //根据题目数据构建网页
         // html: 输出型参数
+        bool Home(const Request &req, string *html)
+        {
+             User user;
+             AuthCheck(req, &user);
+             view_.HomeHtml(html, &user);
+             return true;
+        }
+
         bool AllQuestions(const Request &req, string *html)
         {
             User user;

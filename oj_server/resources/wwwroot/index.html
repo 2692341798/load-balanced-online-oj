@@ -20,13 +20,20 @@
             return text ? text.replace(/[&<>"']/g, function(m) { return map[m]; }) : '';
         }
 
-        function updateAuthUI(isLoggedIn, username = '') {
+        function updateAuthUI(isLoggedIn, username = '', avatar = '') {
             const authContainer = document.getElementById('auth-container');
             
             if (isLoggedIn) {
+                let avatarHtml = '';
+                if (avatar) {
+                     avatarHtml = `<img src="${avatar}" alt="${username}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='${username.charAt(0).toUpperCase()}';">`;
+                } else {
+                     avatarHtml = username.charAt(0).toUpperCase();
+                }
+
                 authContainer.innerHTML = `
                     <div class="user-profile" title="个人中心" onclick="toggleUserMenu(event)">
-                        <div class="user-avatar">${username.charAt(0).toUpperCase()}</div>
+                        <div class="user-avatar">${avatarHtml}</div>
                         <span>${escapeHtml(username)}</span>
                     </div>
                     <div class="user-menu-backdrop" id="user-menu-backdrop" onclick="hideUserMenu()"></div>
@@ -113,7 +120,7 @@
                 .then(data => {
                     console.log('[index] /api/user response', data);
                     if (data.status === 0 && data.username) {
-                        updateAuthUI(true, data.username);
+                        updateAuthUI(true, data.username, data.avatar);
                     } else {
                         updateAuthUI(false);
                     }

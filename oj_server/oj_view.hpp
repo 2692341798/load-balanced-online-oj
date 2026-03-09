@@ -32,25 +32,36 @@ namespace ns_view
             
             // Active Page Highlighting
             if (!active_page.empty()) {
-                root.ShowSection("nav_active_" + active_page);
+                navbar_dict->ShowSection("nav_active_" + active_page);
             }
 
             // User Info
             if (u && !u->username.empty()) {
-                root.ShowSection("user_logged_in");
-                root.SetValue("username", u->username);
+                navbar_dict->ShowSection("user_logged_in");
+                navbar_dict->SetValue("username", u->username);
                 if (!u->avatar.empty()) {
-                    root.ShowSection("has_avatar");
-                    root.SetValue("avatar_url", u->avatar);
+                    navbar_dict->ShowSection("has_avatar");
+                    navbar_dict->SetValue("avatar_url", u->avatar);
                 } else {
-                    root.ShowSection("no_avatar");
+                    navbar_dict->ShowSection("no_avatar");
                 }
             } else {
-                root.ShowSection("user_not_logged_in");
+                navbar_dict->ShowSection("user_not_logged_in");
             }
         }
 
     public:
+        void HomeHtml(std::string *html, const User *u = nullptr)
+        {
+            std::string src_html = template_path + "index.html";
+            ctemplate::TemplateDictionary root("index");
+            
+            SetupTemplate(root, u, "index");
+
+            ctemplate::Template *tpl = ctemplate::Template::GetTemplate(src_html, ctemplate::DO_NOT_STRIP);
+            tpl->Expand(html, &root);
+        }
+
         void AllExpandHtml(const vector<struct Question> &questions, std::string *html, int total_pages, int current_page, const User *u = nullptr)
         {
             // 题目的编号 题目的标题 题目的难度

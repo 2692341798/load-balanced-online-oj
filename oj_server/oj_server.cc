@@ -11,6 +11,13 @@ using namespace ns_control;
 
 static Control *ctrl_ptr = nullptr;
 
+// Helper function to disable browser caching for dynamic pages
+void SetNoCache(Response &resp) {
+    resp.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    resp.set_header("Pragma", "no-cache");
+    resp.set_header("Expires", "0");
+}
+
 void Recovery(int signo)
 {
     ctrl_ptr->RecoveryMachine();
@@ -42,11 +49,15 @@ int main()
     // 4. 配置路由
     // 4.1 首页
     svr.Get("/", [&ctrl](const Request &req, Response &resp){
-        resp.set_redirect("/all_questions");
+        SetNoCache(resp);
+        std::string html;
+        ctrl.Home(req, &html);
+        resp.set_content(html, "text/html; charset=utf-8");
     });
 
     // 获取所有的题目列表
     svr.Get("/all_questions", [&ctrl](const Request &req, Response &resp){
+        SetNoCache(resp);
         // 权限检查
         User user;
         if (!ctrl.AuthCheck(req, &user)) {
@@ -63,6 +74,7 @@ int main()
 
     // 讨论区页面
     svr.Get("/discussion", [&ctrl](const Request &req, Response &resp){
+        SetNoCache(resp);
         // 权限检查
         User user;
         if (!ctrl.AuthCheck(req, &user)) {
@@ -77,6 +89,7 @@ int main()
 
     // 竞赛页面
     svr.Get("/contest", [&ctrl](const Request &req, Response &resp){
+        SetNoCache(resp);
         // 权限检查 (可选，是否需要登录才能看？通常竞赛列表是公开的，但为了保持一致性可以要求登录)
         // Codeforces allows viewing contests without login.
         // But my implementation of `Contest` calls `AuthCheck` to get user info for navbar.
@@ -101,6 +114,7 @@ int main()
 
     // Training List Pages
     svr.Get("/training", [&ctrl](const Request &req, Response &resp){
+        SetNoCache(resp);
         std::string html;
         if (ctrl.TrainingListPage(req, &html)) {
             resp.set_content(html, "text/html; charset=utf-8");
@@ -110,6 +124,7 @@ int main()
     });
 
     svr.Get(R"(/training/(\d+))", [&ctrl](const Request &req, Response &resp){
+        SetNoCache(resp);
         std::string id = req.matches[1];
         std::string html;
         if (ctrl.TrainingDetail(id, req, &html)) {
@@ -173,6 +188,7 @@ int main()
     // /question/100 -> 正则匹配
     // R"()", 原始字符串raw string,保持字符串内容的原貌，不用做相关的转义
     svr.Get(R"(/question/(\d+))", [&ctrl](const Request &req, Response &resp){
+        SetNoCache(resp);
         // 权限检查
         User user;
         if (!ctrl.AuthCheck(req, &user)) {
@@ -229,6 +245,7 @@ int main()
 
     // Login Page
     svr.Get("/login", [&ctrl](const Request &req, Response &resp){
+        SetNoCache(resp);
         std::string html;
         if (ctrl.LoginPage(req, &html)) {
             resp.set_content(html, "text/html; charset=utf-8");
@@ -316,6 +333,7 @@ int main()
 
     // User Profile Page
     svr.Get("/profile", [&ctrl](const Request &req, Response &resp){
+        SetNoCache(resp);
         // 权限检查
         User user;
         if (!ctrl.AuthCheck(req, &user)) {
@@ -624,6 +642,6 @@ int main()
 
     svr.set_base_dir("./wwwroot");
     svr.set_mount_point("/css", "./css");
-    svr.listen("0.0.0.0", 8088);
+    svr.listen("0.0.0.0", 8090);
     return 0;
 } 

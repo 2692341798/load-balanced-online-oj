@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Judge - 开启你的编程之旅</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/nav.css">
+    <link rel="stylesheet" href="/css/index.css">
+    <script src="/js/common.js"></script>
+</head>
+<body>
+    <!-- Background Shapes -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <!-- Navbar -->
+    {{>navbar}}
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">探索代码的<br>无限可能</h1>
+            <p class="hero-subtitle">
+                加入我们的在线编程社区，提升你的算法技能，
+                为技术面试做好准备。这里有海量题目等你来挑战。
+            </p>
+            <a href="/all_questions" class="btn-primary">开始刷题 ></a>
+        </div>
+        
+        <div class="hero-graphic">
+            <div class="graphic-card">
+                <div class="code-block">
+                    <span class="code-line"><span class="keyword">class</span> <span class="function">Solution</span> {</span>
+                    <span class="code-line">&nbsp;&nbsp;<span class="keyword">public</span>:</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">vector</span>&lt;<span class="keyword">int</span>&gt; <span class="function">twoSum</span>(<span class="keyword">vector</span>&lt;<span class="keyword">int</span>&gt;& nums, <span class="keyword">int</span> target) {</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 寻找数组中和为目标值的两个数</span></span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">unordered_map</span>&lt;<span class="keyword">int</span>, <span class="keyword">int</span>&gt; map;</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">for</span> (<span class="keyword">int</span> i = 0; i < nums.size(); i++) {</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> (map.count(target - nums[i])) {</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> {map[target - nums[i]], i};</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;map[nums[i]] = i;</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span> {};</span>
+                    <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;}</span>
+                    <span class="code-line">};</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>

@@ -14,6 +14,7 @@
         <a href="#">求职</a>
     </div>
     <div class="navbar-auth" id="auth-container">
+        {{#user_logged_in}}
         <div class="user-profile" onclick="toggleUserMenu(event)">
             <div class="user-avatar">
                 {{#has_avatar}}<img src="{{avatar_url}}" alt="{{username}}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentNode.innerText='{{username}}'.charAt(0).toUpperCase();">{{/has_avatar}}
@@ -26,6 +27,7 @@
             <a href="/profile" class="user-menu-item">个人中心</a>
             <button type="button" class="user-menu-item" onclick="handleLogout(event)">退出登录</button>
         </div>
+        {{/user_logged_in}}
         {{#user_not_logged_in}}
         <a href="/login" class="btn-text">登录 / 注册</a>
         {{/user_not_logged_in}}
