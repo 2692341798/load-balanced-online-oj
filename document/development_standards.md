@@ -925,7 +925,7 @@ protected:
     void SetUp() override {
         // 启动测试服务器
         server_thread_ = std::thread([this]() {
-            test_server_.listen("localhost", 8088);
+            test_server_.listen("localhost", 8094);
         });
         
         // 等待服务器启动
@@ -942,7 +942,7 @@ protected:
 };
 
 TEST_F(ApiTest, RegisterUserSuccessfully) {
-    httplib::Client client("localhost", 8088);
+    httplib::Client client("localhost", 8094);
     
     // 准备请求数据
     Json::Value request_data;
@@ -976,7 +976,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('用户注册和登录流程', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:8088/login');
+        await page.goto('http://localhost:8094/login');
     });
     
     test('用户能够成功注册', async ({ page }) => {
@@ -1004,7 +1004,7 @@ test.describe('用户注册和登录流程', () => {
         await page.click('#login-submit');
         
         // 验证登录成功并重定向到题库
-        await expect(page).toHaveURL('http://localhost:8088/all_questions');
+        await expect(page).toHaveURL('http://localhost:8094/all_questions');
         await expect(page.locator('.user-profile')).toContainText('testuser');
     });
     
@@ -1015,7 +1015,7 @@ test.describe('用户注册和登录流程', () => {
         await page.click('#login-submit');
         
         // 进入题目详情页
-        await page.goto('http://localhost:8088/question/1');
+        await page.goto('http://localhost:8094/question/1');
         
         // 输入代码
         await page.fill('#code-editor', '#include<iostream>\nint main(){std::cout<<"Hello"<<std::endl;return 0;}');
@@ -1267,6 +1267,6 @@ git log --pretty=format:"- %s" v2.0.0..v2.1.0 > CHANGELOG.md
 
 ---
 
-**文档版本**: v1.0.3  
-**最后更新时间**: 2026-02-09  
+**文档版本**: v1.2.0  
+**最后更新时间**: 2026-03-09  
 **维护团队**: 在线评测系统开发团队

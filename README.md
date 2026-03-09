@@ -30,6 +30,16 @@
 - **负载均衡器**：智能选择负载最低的编译服务器处理请求
 - **会话管理**：基于Token的用户认证和会话维护
 
+```mermaid
+    graph TD
+    Client[Web浏览器] -->|HTTP| OJ[OJ主服务器:8094]
+    OJ -->|Load Balance| CS1[编译服务器1:8081]
+    OJ -->|Load Balance| CS2[编译服务器2:8082]
+    OJ -->|Load Balance| CS3[编译服务器3:8083]
+    OJ -->|SQL| DB[(MySQL数据库)]
+    Crawler[C++爬虫] -->|SQL| DB
+```
+
 ### 🛠️ 核心技术栈
 - **后端**：C++11, 多线程编程, Socket网络编程, JSON处理
 - **Web框架**：httplib.h（轻量级C++ HTTP服务器）
@@ -134,7 +144,7 @@ cd compile_server && ./compile_server 8082
 # 启动第三个编译服务器（端口8083）
 cd compile_server && ./compile_server 8083
 
-# 启动OJ主服务器（默认端口8088）
+# 启动OJ主服务器（默认端口8094）
 cd oj_server && ./oj_server
 ```
 
@@ -162,11 +172,11 @@ cd oj_server && ./oj_server
 ```
 
 ### 7. 访问系统
-- **主页**：http://localhost:8088
-- **题目列表**：http://localhost:8088/all_questions
-- **题目详情**：http://localhost:8088/question/<题号>
-- **登录页面**：http://localhost:8088/login
-- **娱乐中心**：http://localhost:8088/entertainment (或侧边栏入口)
+- **主页**：http://localhost:8094
+- **题目列表**：http://localhost:8094/all_questions
+- **题目详情**：http://localhost:8094/question/<题号>
+- **登录页面**：http://localhost:8094/login
+- **娱乐中心**：http://localhost:8094/entertainment (或侧边栏入口)
 
 ## 🏗️ 项目结构
 
@@ -272,6 +282,10 @@ load-balanced-online-oj/
 
 ## 📅 版本历史
 
+- **v1.2.0** (2026-03-09):
+  - 📝 文档全面同步：校对并更新了 API、数据库、架构等所有技术文档，确保与代码完全一致
+  - 🔧 端口修正：明确主服务默认端口为 8094
+  - 🔄 数据库结构更新：补全了所有新功能模块的表结构定义
 - **v1.1.4** (2026-03-09):
   - ✨ 题单功能增强：支持批量添加题目到训练计划，提升管理效率
   - 📝 文档更新：完善 API 文档与架构说明
@@ -315,5 +329,5 @@ load-balanced-online-oj/
 ---
 
 **最后更新时间**: 2026-03-09  
-**文档版本**: v1.1.4  
+**文档版本**: v1.2.0  
 **维护团队**: 在线评测系统开发团队
