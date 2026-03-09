@@ -96,16 +96,38 @@
 
     <!-- Add Problem Modal -->
     <div class="modal" id="add-modal">
-        <div class="modal-content">
+        <div class="modal-content" style="width: 600px; max-width: 90%;">
             <h2>添加题目</h2>
-            <div class="form-group">
-                <label>题目ID</label>
-                <input type="number" id="add-pid" class="form-control" placeholder="请输入题目ID">
+            
+            <div class="problem-selection-container">
+                <div id="problem-loading" style="text-align: center; padding: 20px;">加载中...</div>
+                <div class="problem-table-container" style="max-height: 400px; overflow-y: auto; margin: 15px 0; border: 1px solid #444; border-radius: 4px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #2d2d2d; text-align: left;">
+                                <th style="padding: 10px; width: 40px;"><input type="checkbox" id="select-all" onchange="toggleSelectAll()"></th>
+                                <th style="padding: 10px;">ID</th>
+                                <th style="padding: 10px;">标题</th>
+                                <th style="padding: 10px;">难度</th>
+                            </tr>
+                        </thead>
+                        <tbody id="problem-table-body">
+                            <!-- Items will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center;">
+                    <button class="btn-secondary" id="prev-page" onclick="changePage(-1)" disabled>上一页</button>
+                    <span id="page-info">第 1 页</span>
+                    <button class="btn-secondary" id="next-page" onclick="changePage(1)">下一页</button>
+                </div>
             </div>
-            <!-- In future: Add search functionality -->
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button class="btn-secondary" onclick="document.getElementById('add-modal').classList.remove('active')">取消</button>
-                <button class="btn-primary" onclick="addProblem()">添加</button>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <span id="selected-count" style="line-height: 32px; color: #888; margin-right: 10px;">已选择 0 题</span>
+                <button class="btn-secondary" onclick="closeAddModal()">取消</button>
+                <button class="btn-primary" onclick="addSelectedProblems()">添加选中</button>
             </div>
         </div>
     </div>
@@ -190,21 +212,117 @@
             }
         }
 
+        // New Add Problem Logic
+        let currentPage = 1;
+        let selectedProblems = new Set();
+        const pageSize = 20;
+
         function showAddProblemModal() {
             document.getElementById('add-modal').classList.add('active');
+            loadProblemList(1);
         }
 
-        async function addProblem() {
-            const pid = document.getElementById('add-pid').value;
-            if (!pid) return;
+        function closeAddModal() {
+            document.getElementById('add-modal').classList.remove('active');
+            selectedProblems.clear();
+            updateSelectedCount();
+        }
+
+        async function loadProblemList(page) {
+            currentPage = page;
+            document.getElementById('problem-loading').style.display = 'block';
+            document.getElementById('problem-table-body').innerHTML = '';
+            
+            try {
+                const res = await fetch(`/api/problems?page=${page}&page_size=${pageSize}`);
+                const data = await res.json();
+                
+                document.getElementById('problem-loading').style.display = 'none';
+                
+                if (data.status === 0) {
+                    renderProblemList(data.data);
+                    updatePagination(data.total);
+                } else {
+                    document.getElementById('problem-table-body').innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">加载失败</td></tr>';
+                }
+            } catch (e) {
+                document.getElementById('problem-loading').style.display = 'none';
+                document.getElementById('problem-table-body').innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">网络错误</td></tr>';
+            }
+        }
+
+        function renderProblemList(problems) {
+            const tbody = document.getElementById('problem-table-body');
+            tbody.innerHTML = problems.map(p => `
+                <tr style="border-bottom: 1px solid #333;">
+                    <td style="padding: 10px;"><input type="checkbox" class="problem-checkbox" value="${p.number}" onchange="toggleProblem('${p.number}')" ${selectedProblems.has(p.number) ? 'checked' : ''}></td>
+                    <td style="padding: 10px;">${p.number}</td>
+                    <td style="padding: 10px;">${p.title}</td>
+                    <td style="padding: 10px;"><span class="card-difficulty diff-${p.star}">${p.star}</span></td>
+                </tr>
+            `).join('');
+            
+            // Update select all checkbox state
+            const allCheckboxes = document.querySelectorAll('.problem-checkbox');
+            const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+            const selectAll = document.getElementById('select-all');
+            if (selectAll) {
+                selectAll.checked = allChecked && allCheckboxes.length > 0;
+            }
+        }
+
+        function toggleProblem(id) {
+            if (selectedProblems.has(id)) {
+                selectedProblems.delete(id);
+            } else {
+                selectedProblems.add(id);
+            }
+            updateSelectedCount();
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('select-all');
+            const checkboxes = document.querySelectorAll('.problem-checkbox');
+            
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll.checked;
+                if (selectAll.checked) {
+                    selectedProblems.add(cb.value);
+                } else {
+                    selectedProblems.delete(cb.value);
+                }
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selected-count').innerText = `已选择 ${selectedProblems.size} 题`;
+        }
+
+        function updatePagination(total) {
+            const totalPages = Math.ceil(total / pageSize);
+            document.getElementById('page-info').innerText = `第 ${currentPage} / ${totalPages} 页`;
+            document.getElementById('prev-page').disabled = currentPage <= 1;
+            document.getElementById('next-page').disabled = currentPage >= totalPages;
+        }
+
+        function changePage(delta) {
+            loadProblemList(currentPage + delta);
+        }
+
+        async function addSelectedProblems() {
+            if (selectedProblems.size === 0) {
+                alert('请先选择题目');
+                return;
+            }
 
             try {
-                const response = await fetch('/api/training/add_problem', {
+                const response = await fetch('/api/training/add_problems', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         training_list_id: listId,
-                        question_id: pid
+                        question_ids: Array.from(selectedProblems)
                     })
                 });
                 const result = await response.json();

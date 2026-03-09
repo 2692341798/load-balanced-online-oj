@@ -49,4 +49,14 @@ jobs:
             echo "Cleaning up unused images..."
             docker image prune -f
             
+            # 4. Verify deployment
+            echo "Verifying service status on port 8094..."
+            sleep 10
+            if curl -s --head --request GET http://localhost:8094 | grep "200 OK" > /dev/null; then 
+               echo "Service is up and running on port 8094!"
+            else
+               echo "Warning: Service check returned non-200 status or failed. Please check logs."
+               # Don't fail the build yet as startup might take longer, just warn
+            fi
+            
             echo "Deployment finished successfully!"

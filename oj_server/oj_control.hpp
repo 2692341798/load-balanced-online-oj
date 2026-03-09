@@ -279,11 +279,11 @@ namespace ns_control
             std::string new_filename = std::to_string(time(nullptr)) + "_" + std::to_string(rand()) + ext;
             
             // Save path
-            std::string path = "./wwwroot/uploads/" + new_filename;
+            std::string path = "./resources/wwwroot/uploads/" + new_filename;
             
             // Create uploads directory if not exists
             // Assuming wwwroot exists, mkdir uploads
-            system("mkdir -p ./wwwroot/uploads");
+            system("mkdir -p ./resources/wwwroot/uploads");
             
             std::ofstream out(path, std::ios::binary);
             if (!out.is_open()) {
@@ -346,10 +346,10 @@ namespace ns_control
 
             // Generate unique filename: avatar_<user_id>_<timestamp><ext>
             std::string new_filename = "avatar_" + user_id + "_" + std::to_string(time(nullptr)) + ext;
-            std::string path = "./wwwroot/uploads/avatars/" + new_filename;
+            std::string path = "./resources/wwwroot/uploads/avatars/" + new_filename;
             
             // Create directory
-            system("mkdir -p ./wwwroot/uploads/avatars");
+            system("mkdir -p ./resources/wwwroot/uploads/avatars");
             
             // Save file
             std::ofstream out(path, std::ios::binary);
@@ -378,7 +378,7 @@ namespace ns_control
                         // Delete old avatar file if exists and not default
                         // Only delete once to avoid redundant filesystem calls
                         if (!old_avatar_deleted && !kv.second.user.avatar.empty()) {
-                            std::string old_path = "./wwwroot" + kv.second.user.avatar;
+                            std::string old_path = "./resources/wwwroot" + kv.second.user.avatar;
                             // Basic check to ensure we don't delete something outside uploads/avatars
                             if (old_path.find("/uploads/avatars/") != std::string::npos) {
                                 remove(old_path.c_str());
@@ -1635,6 +1635,128 @@ namespace ns_control
             }
         }
 
+        bool GetQuestionsByPageJson(const Request &req, std::string *json_out)
+        {
+            int page = 1;
+            int page_size = 20;
+            if (req.has_param("page")) {
+                try {
+                    page = std::stoi(req.get_param_value("page"));
+                } catch (...) { page = 1; }
+            }
+            if (req.has_param("page_size")) {
+                try {
+                    page_size = std::stoi(req.get_param_value("page_size"));
+                } catch (...) { page_size = 20; }
+            }
+            if (page < 1) page = 1;
+            if (page_size < 1) page_size = 20;
+            
+            std::vector<struct Question> questions;
+            int total = 0;
+            
+            if (model_.GetQuestionsByPage(page, page_size, &questions, &total)) {
+                Json::Value root;
+                root["status"] = 0;
+                root["total"] = total;
+                root["page"] = page;
+                root["page_size"] = page_size;
+                
+                Json::Value list(Json::arrayValue);
+                for (const auto &q : questions) {
+                    Json::Value item;
+                    item["number"] = q.number;
+                    item["title"] = q.title;
+                    item["star"] = q.star;
+                    list.append(item);
+                }
+                root["data"] = list;
+                
+                *json_out = SerializeJson(root);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool AddProblemsToTrainingList(const Request &req, std::string *json_out) {
+            User user;
+            if (!AuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 401;
+                res["reason"] = "Unauthorized";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string list_id = root["training_list_id"].asString();
+            Json::Value question_ids = root["question_ids"];
+
+            if (list_id.empty()) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Training list ID cannot be empty";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (!question_ids.isArray()) {
+                 Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Invalid question_ids format";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+            
+            for (const auto& qid : question_ids) {
+                if (qid.asString().empty()) {
+                    Json::Value res;
+                    res["status"] = 1;
+                    res["reason"] = "Question ID cannot be empty string";
+                    *json_out = SerializeJson(res);
+                    return false;
+                }
+            }
+
+            TrainingList list;
+            if (!model_.GetTrainingList(list_id, &list)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "List Not Found";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (list.author_id != user.id) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            int success_count = 0;
+            for (const auto& qid : question_ids) {
+                if (model_.AddProblemToTrainingList(list_id, qid.asString())) {
+                    success_count++;
+                }
+            }
+
+            Json::Value res;
+            res["status"] = 0;
+            res["added_count"] = success_count;
+            *json_out = SerializeJson(res);
+            return true;
+        }
+
         bool AddProblemToTrainingList(const Request &req, std::string *json_out) {
             User user;
             if (!AuthCheck(req, &user)) {
@@ -1650,6 +1772,22 @@ namespace ns_control
             reader.parse(req.body, root);
             std::string list_id = root["training_list_id"].asString();
             std::string question_id = root["question_id"].asString();
+
+            if (list_id.empty()) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Training list ID cannot be empty";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            if (question_id.empty()) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Question ID cannot be empty";
+                *json_out = SerializeJson(res);
+                return false;
+            }
 
             TrainingList list;
             if (!model_.GetTrainingList(list_id, &list)) {

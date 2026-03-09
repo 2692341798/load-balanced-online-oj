@@ -127,8 +127,8 @@ rm full_db_dump.sql
 ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "rm $REMOTE_DIR/full_db_dump.sql"
 
 echo "=== Deployment Complete! ==="
-echo "Access your service at: http://$SERVER_IP:8088"
+echo "Access your service at: http://$SERVER_IP:8094"
 echo "Verify functionality:"
-echo "1. Question List: http://$SERVER_IP:8088/all_questions"
+echo "1. Question List: http://$SERVER_IP:8094/all_questions"
 echo "2. Login/Register"
 echo "3. Submit Code"

@@ -171,6 +171,20 @@ int main()
         resp.set_content(json, "application/json;charset=utf-8");
     });
 
+    // API Get Problem List (JSON)
+    svr.Get("/api/problems", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.GetQuestionsByPageJson(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
+    // API Batch Add Problems to Training List
+    svr.Post("/api/training/add_problems", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.AddProblemsToTrainingList(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
     svr.Get("/api/training/list", [&ctrl](const Request &req, Response &resp){
         std::string json;
         ctrl.GetTrainingLists(req, &json);
@@ -640,8 +654,9 @@ int main()
         resp.set_content(json, "application/json;charset=utf-8");
     });
 
-    svr.set_base_dir("./wwwroot");
-    svr.set_mount_point("/css", "./css");
-    svr.listen("0.0.0.0", 8090);
+    svr.set_base_dir("./resources/wwwroot");
+    svr.set_mount_point("/css", "./resources/css");
+    std::cout << "[INFO] Server binding to 0.0.0.0:8094..." << std::endl;
+    svr.listen("0.0.0.0", 8094);
     return 0;
 } 

@@ -119,6 +119,8 @@ font-weight: 600;      /* 粗体 */
 
 ### 5.1 导航栏 (Navbar)
 
+> **组件说明**: 导航栏已封装为公共组件 `oj_server/resources/template_html/shared/navbar.html`，在所有页面中通过 CTemplate 的 `{{>navbar}}` 语法引用，确保全站导航一致性。
+
 #### 5.1.1 结构规范
 ```html
 <nav class="navbar">

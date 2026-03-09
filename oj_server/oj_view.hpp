@@ -15,7 +15,7 @@ namespace ns_view
 {
     using namespace ns_model;
 
-    const std::string template_path = "./template_html/";
+    const std::string template_path = "./resources/template_html/";
 
     class View
     {

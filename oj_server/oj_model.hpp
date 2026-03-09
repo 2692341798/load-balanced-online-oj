@@ -330,6 +330,7 @@ namespace ns_model
         bool UpsertContest(const Contest &c) {
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -385,6 +386,7 @@ namespace ns_model
             std::string count_sql = "SELECT COUNT(*) FROM " + oj_contests + where;
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -444,6 +446,7 @@ namespace ns_model
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(), db.c_str(), port, nullptr, 0)){
                 LOG(ERROR) << "Upgrade Check: Connect failed" << "\n";
+                mysql_close(my);
                 return;
             }
 
@@ -663,7 +666,8 @@ namespace ns_model
         bool ExecuteSql(const std::string &sql) {
              MYSQL *my = mysql_init(nullptr);
              if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                 LOG(FATAL) << "连接数据库失败!" << "\n";
+                 LOG(ERROR) << "连接数据库失败!" << "\n";
+                 mysql_close(my);
                  return false;
              }
              if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -685,7 +689,8 @@ namespace ns_model
 
             // 连接数据库
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                LOG(FATAL) << "连接数据库失败!" << "\n";
+                LOG(ERROR) << "连接数据库失败!" << "\n";
+                mysql_close(my);
                 return false;
             }
 
@@ -744,7 +749,8 @@ namespace ns_model
         {
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                LOG(FATAL) << "连接数据库失败!" << "\n";
+                LOG(ERROR) << "连接数据库失败!" << "\n";
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -789,6 +795,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -833,6 +840,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                 mysql_close(my);
                  return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -892,6 +900,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -949,6 +958,7 @@ namespace ns_model
         {
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                 mysql_close(my);
                  return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -987,6 +997,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1035,6 +1046,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1081,6 +1093,7 @@ namespace ns_model
             std::string count_sql = "select count(*) from " + oj_questions + " where status=1";
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1162,6 +1175,7 @@ namespace ns_model
         {
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1197,6 +1211,7 @@ namespace ns_model
         {
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1324,6 +1339,7 @@ namespace ns_model
         {
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1364,6 +1380,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1416,6 +1433,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1467,6 +1485,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1510,6 +1529,7 @@ namespace ns_model
         {
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1544,6 +1564,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1590,6 +1611,7 @@ namespace ns_model
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
                 std::cerr << "Connect failed: " << mysql_error(my) << std::endl;
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1626,6 +1648,7 @@ namespace ns_model
         bool UpdateTrainingList(const TrainingList &list) {
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1671,6 +1694,7 @@ namespace ns_model
             
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1725,6 +1749,7 @@ namespace ns_model
             std::string count_sql = "SELECT COUNT(*) FROM " + oj_training_lists + " t " + where;
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1799,6 +1824,7 @@ namespace ns_model
             // Transaction recommended.
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
@@ -1841,6 +1867,7 @@ namespace ns_model
 
             MYSQL *my = mysql_init(nullptr);
             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
                 return false;
             }
             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
