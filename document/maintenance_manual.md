@@ -196,5 +196,6 @@ docker exec oj_db mysqldump -u root -p<DB_Root_Password> oj > /root/oj_backup_$(
 
 | 版本号 | 更新日期 | 修改人 | 修改内容 |
 | :--- | :--- | :--- | :--- |
+| v1.1.4 | 2026-03-09 | AI Assistant | 题单批量添加功能支持 |
 | v1.0.3 | 2026-02-09 | AI Assistant | 更新端口至8088，移除Python依赖 |
 

@@ -1069,17 +1069,50 @@ Content-Type: application/json
 **请求信息**:
 ```http
 POST /api/training/add_problem
+POST /api/training/add_problems
 POST /api/training/remove_problem
 POST /api/training/reorder
 ```
 
-**请求体 (添加/移除)**:
-- `training_list_id`: 题单ID
-- `question_id`: 题目ID
+**请求体 (单题添加)**:
+```json
+{
+    "training_list_id": 1,
+    "question_id": 100
+}
+```
+
+**请求体 (批量添加)**:
+```json
+{
+    "training_list_id": 1,
+    "question_ids": [101, 102, 103]
+}
+```
+
+**请求体 (移除题目)**:
+```json
+{
+    "training_list_id": 1,
+    "question_id": 100
+}
+```
 
 **请求体 (重排序)**:
-- `training_list_id`: 题单ID
-- `question_ids`: [1, 3, 2] (题目ID数组，按新顺序)
+```json
+{
+    "training_list_id": 1,
+    "question_ids": [101, 103, 102]
+}
+```
+
+**响应信息**:
+```json
+{
+    "status": 0,
+    "reason": "success"
+}
+```
 
 ## 11. 错误处理
 

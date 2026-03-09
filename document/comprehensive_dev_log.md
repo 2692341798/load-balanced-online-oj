@@ -1057,3 +1057,26 @@ document/
 *最后更新：2026年3月9日  
 维护者：AI Assistant  
 文档状态：活跃维护*
+
+## 📅 2026-03-09 | V1.1.4 题单功能拓展 (Training List Extension)
+
+### 🎯 核心目标
+完善题单管理功能，支持批量添加题目，提升用户创建和管理训练计划的效率。
+
+### 🔧 核心变更
+
+#### 1. 批量添加接口
+- **API**: 新增 `POST /api/training/add_problems` 接口。
+- **逻辑**: 接收 `question_ids` 数组，循环调用底层添加逻辑。
+- **优化**: 使用 `INSERT IGNORE` 避免重复添加，自动计算 `order_index` 保持列表顺序。
+
+#### 2. 接口文档更新
+- 更新 `api_reference.md`，补充了批量添加接口的请求/响应示例。
+- 完善了题单管理相关接口的描述。
+
+### 📊 版本统计
+- **标签状态**: ✅ V1.1.4
+- **核心变更**: Batch add problems API.
+- **文档更新**: API Reference, Architecture.
+
+---

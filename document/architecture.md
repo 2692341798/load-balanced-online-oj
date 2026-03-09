@@ -131,6 +131,17 @@ public:
     
     // 竞赛相关方法
     bool Contest(string *html); // 获取竞赛列表页面
+
+    // 题单/训练计划相关方法
+    bool GetTrainingLists(string *json); // 获取题单列表
+    bool GetTrainingList(const string &id, string *json); // 获取题单详情
+    bool CreateTrainingList(const string &json_str, int author_id); // 创建题单
+    bool DeleteTrainingList(const string &id, int author_id); // 删除题单
+    bool UpdateTrainingList(const string &json_str, int author_id); // 更新题单
+    bool AddProblemToTrainingList(const string &json_str, int author_id); // 添加单题
+    bool AddProblemsToTrainingList(const string &json_str, int author_id); // 批量添加题目
+    bool RemoveProblemFromTrainingList(const string &json_str, int author_id); // 移除题目
+    bool ReorderTrainingList(const string &json_str, int author_id); // 题目重排序
 };
 ```
 
