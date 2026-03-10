@@ -26,8 +26,8 @@ output: all
 	@cp -rf backend/compile_server/compile_server output/compile_server/
 	@if [ -d backend/compile_server/temp ]; then cp -rf backend/compile_server/temp output/compile_server/; fi
 	@cp -rf backend/oj_server/conf output/oj_server/
-	@cp -rf backend/oj_server/wwwroot output/oj_server/
-	@cp -rf backend/oj_server/questions output/oj_server/
+	@if [ -d backend/oj_server/wwwroot ]; then cp -rf backend/oj_server/wwwroot output/oj_server/; else mkdir -p output/oj_server/wwwroot; fi
+	@if [ -d backend/oj_server/questions ]; then cp -rf backend/oj_server/questions output/oj_server/; else mkdir -p output/oj_server/questions; fi
 	@cp -rf backend/oj_server/oj_server output/oj_server/
 	@cp -rf backend/crawler/contest_crawler output/crawler/
 	@mkdir -p output/logs
