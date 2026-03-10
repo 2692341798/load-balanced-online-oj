@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
+import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register'
@@ -21,15 +22,19 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/problems" element={<ProblemList />} />
-          <Route path="/problem/:id" element={<ProblemDetail />} />
-          <Route path="/training" element={<TrainingList />} />
-          <Route path="/training/:id" element={<TrainingDetail />} />
-          <Route path="/contest" element={<ContestList />} />
-          <Route path="/discussion" element={<DiscussionList />} />
-          <Route path="/discussion/:id" element={<DiscussionDetail />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/games" element={<Games />} />
+          
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/problems" element={<ProblemList />} />
+            <Route path="/problem/:id" element={<ProblemDetail />} />
+            <Route path="/training" element={<TrainingList />} />
+            <Route path="/training/:id" element={<TrainingDetail />} />
+            <Route path="/contest" element={<ContestList />} />
+            <Route path="/discussion" element={<DiscussionList />} />
+            <Route path="/discussion/:id" element={<DiscussionDetail />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/games" element={<Games />} />
+          </Route>
         </Route>
       </Routes>
     </div>

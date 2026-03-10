@@ -12,7 +12,7 @@
 为了保持技术栈一致性、简化部署运维（无需维护 Python/Node.js 环境）以及利用现有的 C++ 基础设施，所有爬虫均采用 C++ 编写。
 
 ## 2. 编译爬虫
-爬虫源代码位于 `crawler/` 目录下。
+爬虫源代码位于 `backend/crawler/` 目录下。
 
 **依赖**：
 - `jsoncpp`
@@ -22,7 +22,7 @@
 
 **编译命令**：
 ```bash
-cd crawler
+cd backend/crawler
 # 编译竞赛爬虫
 make contest_crawler
 # 编译洛谷爬虫
@@ -33,7 +33,7 @@ make luogu_crawler
 ## 3. Redis 配置 (可选)
 如果需要启用 Redis 缓存同步：
 1. 确保系统已安装 `hiredis` 库。
-2. 修改 `crawler/contest_crawler.cc`，取消 `// #define ENABLE_REDIS` 的注释。
+2. 修改 `backend/crawler/contest_crawler.cc`，取消 `// #define ENABLE_REDIS` 的注释。
 3. 重新执行 `make`。
 4. 确保本地 Redis 服务运行在默认端口 6379。
 
@@ -47,7 +47,7 @@ crontab -e
 
 添加如下行（请修改路径为实际路径）：
 ```bash
-0 2 * * * cd /Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/crawler && ./contest_crawler >> ../logs/crawler.log 2>&1
+0 2 * * * cd /Users/huangqijun/Documents/毕业设计/load-balanced-online-oj/backend/crawler && ./contest_crawler >> ../../logs/crawler.log 2>&1
 ```
 
 ## 5. 洛谷爬虫使用
@@ -63,9 +63,9 @@ crontab -e
 注意：洛谷有严格的反爬机制，建议控制抓取频率。
 
 ## 6. 目录结构
-- `crawler/`: 爬虫源码及 Makefile
+- `backend/crawler/`: 爬虫源码及 Makefile
 - `logs/`: 存放爬虫日志
-- `oj_server/resources/template_html/contest.html`: 前端模板
+- `backend/oj_server/wwwroot/`: 前端资源
 
 ## 7. 法律风险与合规说明
 1. **仅公开数据**：本爬虫仅抓取 Codeforces 和 LeetCode 公开的竞赛列表（名称、时间、链接），不涉及用户隐私数据或受版权保护的题目内容。
@@ -81,6 +81,6 @@ crontab -e
 
 ---
 
-**文档版本**: v1.2.0
-**最后更新时间**: 2026-03-09  
+**文档版本**: v1.2.2
+**最后更新时间**: 2026-03-10
 **维护团队**: 在线评测系统开发团队

@@ -1098,3 +1098,53 @@ document/
 - **核心变更**: Full documentation synchronization.
 - **文档一致性**: 100%
 
+---
+
+## 📅 2026-03-10 | V1.2.2 项目结构重构
+
+### 🎯 核心目标
+优化项目目录结构，将所有后端组件移动到 `backend/` 目录，以支持前后端分离架构，并更新构建脚本和相关文档。
+
+### 🔧 结构变更
+- **后端迁移**: 将 `oj_server`, `compile_server`, `crawler`, `comm`, `tests` 等目录统一移动至 `backend/` 下。
+- **静态资源清理**: 删除了 `backend/oj_server/wwwroot/` 下的 `admin`, `css`, `games`, `images` 等冗余目录，由 React/Tailwind 构建产物接管。
+- **构建系统**: 更新根目录 `Makefile` 及各子模块 `makefile` 以适配新路径。
+- **Docker**: 更新 `Dockerfile.oj` 和 `Dockerfile.compile` 以使用新的源码路径。
+- **文档**: 更新部署文档和维护手册中的路径引用。
+
+### 📊 版本统计
+- **标签状态**: ✅ V1.2.2
+- **核心变更**: Project Structure Refactor: Moved all backend components to `backend/` directory. Updated build scripts and documentation.
+
+---
+
+## 📅 2026-03-10 | V1.3.0 前端架构重构 (Frontend Architecture Refactoring)
+
+### 🎯 核心目标
+将传统的 CTemplate 服务端渲染 (SSR) 替换为现代化的 React 单页应用 (SPA)，以提升用户体验和代码可维护性。
+
+### 🔧 技术栈升级 (Tech Stack)
+- **核心框架**: React 19, Vite, TypeScript
+- **样式与组件**: TailwindCSS, Shadcn UI
+- **状态管理**: Zustand
+
+### 🏗️ 架构变更 (Architecture)
+- **前后端分离**: 前端构建产物作为静态资源由 OJ Server (C++ httplib) 统一托管服务。
+- **CI/CD 升级**:
+  - **Dockerfile**: 采用多阶段构建 (Multi-stage build)，集成 Node.js 18 构建前端，C++ 运行后端。
+  - **Makefile**: 新增 `frontend` 构建目标。
+
+### ✅ 验证与性能
+- **性能优化**: 利用 Vite 优化了静态资源加载性能。
+- **功能验证**: 覆盖登录、题目列表、代码提交等核心流程。
+
+### 📊 版本统计
+- **标签状态**: ✅ V1.3.0
+- **核心变更**: Legacy CTemplate replaced with React SPA.
+
+---
+
+*最后更新：2026年3月10日  
+维护者：AI Assistant  
+文档状态：活跃维护*
+

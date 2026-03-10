@@ -68,6 +68,8 @@ export default function ProblemDetail() {
         code,
         language,
         input: '', // Optional input for custom test
+      }, {
+        baseURL: '/' // Override baseURL to access /judge directly (not /api/judge)
       })
       
       const data = response.data

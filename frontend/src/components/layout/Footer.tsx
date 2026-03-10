@@ -6,7 +6,7 @@ export function Footer() {
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
             Built by 冻梨OJ Team. The source code is available on{' '}
             <a
-              href="https://github.com/your-repo"
+              href="https://github.com/2692341798/load-balanced-online-oj"
               target="_blank"
               rel="noreferrer"
               className="font-medium underline underline-offset-4"

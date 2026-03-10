@@ -11,33 +11,18 @@
 - **可访问性**: 确保良好的对比度和可读性
 - **一致性**: 统一的视觉语言和交互模式
 
-## 2. 颜色系统 (Color System)
+## 2. 颜色与样式系统 (Color & Style System)
 
-基于CSS变量的颜色管理系统，便于主题切换和维护。
+本系统采用 **Tailwind CSS** 和 **Shadcn UI** 进行样式管理，不再手动维护 CSS 变量表。
 
-### 2.1 主要颜色
+### 2.1 Tailwind Utility Classes
+- **背景色**: 使用 `bg-background`, `bg-secondary`, `bg-card` 等工具类。
+- **文字色**: 使用 `text-primary`, `text-secondary`, `text-muted-foreground` 等。
+- **边框**: 使用 `border`, `border-input`, `ring-offset-background` 等。
+- **状态色**: 使用 `text-green-500` (success), `text-yellow-500` (warning), `text-destructive` (error)。
 
-| 变量名 | 色值 | 描述 | 使用场景 |
-|--------|------|------|----------|
-| `--bg-color` | `#1a1a1a` | 主背景色 | 页面背景、主要容器 |
-| `--bg-secondary` | `#2d2d2d` | 次级背景 | 次级容器、列表项 |
-| `--text-main` | `#ffffff` | 主要文字 | 标题、重要内容 |
-| `--text-secondary` | `#8c8c8c` | 次要文字 | 描述、辅助信息 |
-| `--accent-color` | `#ffa116` | 强调色 | 品牌色、重要按钮 |
-| `--accent-hover` | `#e69114` | 强调色悬停 | 鼠标悬停状态 |
-| `--nav-bg` | `#282828` | 导航栏背景 | 顶部导航栏 |
-| `--card-bg` | `#282828` | 卡片背景 | 内容卡片、面板 |
-| `--success` | `#2cbb5d` | 成功色 | 成功状态、主要按钮 |
-| `--border-color` | `rgba(255, 255, 255, 0.1)` | 边框色 | 分割线、边框 |
-
-### 2.2 状态颜色
-
-| 状态 | 颜色 | 描述 |
-|------|------|------|
-| 成功 | `#2cbb5d` | 操作成功、通过状态 |
-| 警告 | `#ffa116` | 警告信息、需要注意 |
-| 错误 | `#f44336` | 错误状态、失败信息 |
-| 信息 | `#2196f3` | 一般信息、提示 |
+### 2.2 主题配置
+颜色变量定义在 `globals.css` 中，并通过 `tailwind.config.js` 映射为工具类。修改主题颜色时，请直接调整 CSS 变量定义。
 
 ### 2.3 渐变效果
 
@@ -117,9 +102,16 @@ font-weight: 600;      /* 粗体 */
 
 ## 5. 组件设计 (Components)
 
+本项目优先使用 **Shadcn UI** 组件库 (`components/ui`) 构建界面。
+
+### 5.0 Shadcn 组件 (Shadcn UI)
+- **基础组件**: Button, Input, Card, Dialog, Toast 等均位于 `components/ui` 目录下。
+- **使用方式**: 直接导入使用，如 `import { Button } from "@/components/ui/button"`.
+- **定制化**: 通过修改组件文件或 `globals.css` 进行样式微调。
+
 ### 5.1 导航栏 (Navbar)
 
-> **组件说明**: 导航栏已封装为公共组件 `oj_server/resources/template_html/shared/navbar.html`，在所有页面中通过 CTemplate 的 `{{>navbar}}` 语法引用，确保全站导航一致性。
+> **组件说明**: 导航栏已重构为 React 组件。请使用 `frontend/src/components/Navbar.tsx`（或其他对应组件路径）。旧版 HTML 模板已被移除。
 
 #### 5.1.1 结构规范
 ```html
@@ -853,17 +845,12 @@ font-weight: 600;      /* 粗体 */
 ## 12. 文件组织规范
 
 ### 12.1 CSS文件结构
-```
-oj_server/resources/css/
-├── index.css           # 基础样式和变量
-├── login.css          # 登录页面样式
-├── all_questions.css  # 题目列表样式
-├── one_question.css   # 题目详情样式
-├── training.css       # 题单/训练计划样式
-├── discussion.css     # 讨论区样式
-├── admin.css          # 管理员后台样式
-└── components.css     # 通用组件样式（可选）
-```
+
+CSS 文件不再单独维护在 `oj_server/resources/css/` 目录下。现在由 React/Tailwind 构建流程管理，最终产物输出到 `backend/oj_server/wwwroot/assets/`。
+
+开发时的样式文件位于 `frontend/src/` 目录下，主要包括：
+- `globals.css`: 全局样式和 Tailwind 指令
+- 组件级样式: 直接写在组件内或使用 Tailwind Utility Classes
 
 ### 12.2 命名规范
 - **BEM命名法**: `block__element--modifier`
@@ -1129,6 +1116,6 @@ oj_server/resources/css/
 
 ---
 
-**文档版本**: v1.2.0
-**最后更新时间**: 2026-03-09
+**文档版本**: v1.2.2
+**最后更新时间**: 2026-03-10
 **维护团队**: 在线评测系统开发团队

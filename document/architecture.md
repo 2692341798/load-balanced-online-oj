@@ -17,16 +17,17 @@
 - **后端**: C++11, 多线程, Socket, JSON (jsoncpp)
 - **Web 框架**: httplib.h (轻量级 HTTP 服务器)
 - **数据库**: MySQL 8.0+, Redis (可选缓存)
-- **前端**: HTML/CSS/JS, CTemplate, ACE Editor, EasyMDE, SortableJS
-- **运维**: Docker, Docker Compose, rsync
+- **前端**: React 19, Vite, TypeScript, TailwindCSS, Shadcn UI, Zustand
+- **运维**: Docker, Docker Compose, Multi-stage Build
+
 
 ## 2. 整体架构
 
-系统采用“主服务器 + 编译服务器集群”的分布式架构。
+系统采用“前端 SPA + 后端 API”的分离式架构。前端作为单页应用运行在用户浏览器中，通过 RESTful API 与后端进行交互。
 
 ```mermaid
 graph TD
-    Client[Web浏览器] -->|HTTP| OJ[OJ主服务器:8094]
+    Browser[Web浏览器 (React SPA)] -->|HTTP API| OJ[OJ主服务器:8094]
     OJ -->|Load Balance| CS1[编译服务器1:8081]
     OJ -->|Load Balance| CS2[编译服务器2:8082]
     OJ -->|Load Balance| CS3[编译服务器3:8083]
@@ -36,19 +37,25 @@ graph TD
 
 ## 3. 核心模块设计
 
-### 3.1 OJ 主服务器 (oj_server)
-- **Control**: 核心控制器，处理业务逻辑（认证、题目、评测分发、题单、讨论）。
+### 3.1 前端应用 (frontend)
+- **Framework**: React 19 + Vite + TypeScript。
+- **UI Components**: Shadcn UI + TailwindCSS，提供现代化的深色主题界面。
+- **State Management**: Zustand，管理用户会话、题目列表等全局状态。
+- **Build**: 构建产物 (HTML/JS/CSS) 部署在 `backend/oj_server/wwwroot` 目录，由后端静态文件服务提供。
+
+### 3.2 OJ 主服务器 (backend/oj_server)
+- **Control**: 核心控制器，处理 API 请求（认证、题目、评测分发、题单、讨论）。
 - **Model**: 数据访问层，封装 MySQL 操作。
-- **View**: 视图渲染层，基于 CTemplate 渲染 HTML。
+- **View**: 静态资源服务层，不再负责 HTML 模板渲染，而是返回 JSON 数据或静态文件。
 - **LoadBalance**: 负载均衡器，维护编译服务器在线状态，按最小负载算法分发。
 - **Session**: 内存会话管理，支持 24 小时过期。
 
-### 3.2 编译服务器 (compile_server)
+### 3.3 编译服务器 (backend/compile_server)
 - **Compiler**: 编译器封装（g++, javac）。
 - **Runner**: 运行器，使用 `setrlimit` 进行资源限制（CPU, 内存）。
 - **CompileRun**: 核心流程，处理临时文件生成、编译、多测试用例运行、结果收集。
 
-### 3.3 爬虫模块 (crawler)
+### 3.4 爬虫模块 (backend/crawler)
 - **Contest Crawler**: 定期抓取 Codeforces (API) 和 LeetCode (GraphQL) 数据。
 - **Luogu Crawler**: 抓取洛谷题目详情。
 - **技术**: C++, libcurl, jsoncpp。
@@ -56,13 +63,13 @@ graph TD
 ## 4. 核心流程
 
 ### 4.1 代码提交流程
-1. 用户在前端提交代码和语言选择。
-2. `Control::Judge` 获取题目测试用例 (JSON)。
+1. 用户在 React 前端提交代码和语言选择（调用 `/api/judge`）。
+2. `Control::Judge` 接收请求，获取题目测试用例 (JSON)。
 3. `LoadBalance` 选择最优编译服务器。
 4. 主服务器通过 HTTP 将代码、输入和限制发送至编译服务器。
 5. 编译服务器针对每个测试用例执行编译运行，对比结果。
 6. 返回聚合后的结果 JSON（Accepted, Wrong Answer 等）。
-7. 主服务器记录提交历史并返回前端。
+7. 主服务器记录提交历史并返回 JSON 响应，前端实时更新界面。
 
 ### 4.2 负载均衡算法
 采用“最小负载优先”算法：
@@ -83,6 +90,6 @@ graph TD
 
 ---
 
-**文档版本**: v1.2.0  
-**最后更新时间**: 2026-03-09  
+**文档版本**: v1.2.2
+**最后更新时间**: 2026-03-10
 **维护团队**: 在线评测系统开发团队

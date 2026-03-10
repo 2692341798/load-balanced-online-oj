@@ -189,9 +189,29 @@ bool smartChoice(int* id, Machine** m) {
 }
 ```
 
-### 2.2 前端代码风格
+### 2.2 前端开发标准 (Frontend Development)
 
-#### 2.2.1 HTML规范
+#### 2.2.1 技术栈 (Tech Stack)
+- **核心框架**: React 19
+- **开发语言**: TypeScript
+- **组件模型**: Functional Components (函数式组件)
+- **状态管理**: Zustand
+- **逻辑复用**: Custom Hooks
+
+#### 2.2.2 开发规范
+- **组件开发**: 
+  - 优先使用函数式组件，配合 Hooks 管理状态和副作用。
+  - 组件应保持纯净，副作用逻辑应封装在 `useEffect` 或自定义 Hooks 中。
+- **状态管理**:
+  - 局部状态使用 `useState` 或 `useReducer`。
+  - 全局状态使用 `Zustand`，避免 Props Drilling。
+- **类型系统**:
+  - 严格使用 TypeScript，定义清晰的 Interface 和 Type。
+  - 避免使用 `any`，特殊情况需添加注释说明。
+
+#### 2.2.3 传统前端代码风格 (Legacy)
+
+##### HTML规范
 ```html
 <!-- 使用语义化标签 -->
 <nav class="navbar">
@@ -1064,19 +1084,19 @@ test.describe('用户注册和登录流程', () => {
 #### 8.2.1 提交前自检
 ```bash
 # 代码格式检查
-clang-format -i src/*.cpp src/*.hpp
+clang-format -i backend/**/*.cc backend/**/*.hpp
 
 # 静态分析
-cppcheck --enable=all src/
+cppcheck --enable=all backend/
 
 # 编译警告检查
-g++ -Wall -Wextra -Werror -std=c++11 src/*.cpp
+g++ -Wall -Wextra -Werror -std=c++11 backend/**/*.cc
 
 # 单元测试
 make test
 
 # 代码覆盖率
-gcov src/*.cpp
+gcov backend/**/*.cc
 ```
 
 #### 8.2.2 同行审查
@@ -1211,11 +1231,18 @@ jobs:
     
     - name: Run static analysis
       run: |
-        cppcheck --enable=all --error-exitcode=1 src/
+        cppcheck --enable=all --error-exitcode=1 backend/
     
+    - name: Frontend Lint & Build
+      run: |
+        cd frontend
+        npm ci
+        npm run lint
+        npm run build
+
     - name: Check code format
       run: |
-        find src -name "*.cpp" -o -name "*.hpp" | xargs clang-format -i --dry-run --Werror
+        find backend -name "*.cc" -o -name "*.hpp" | xargs clang-format -i --dry-run --Werror
 ```
 
 #### 10.1.2 质量门禁
@@ -1267,6 +1294,6 @@ git log --pretty=format:"- %s" v2.0.0..v2.1.0 > CHANGELOG.md
 
 ---
 
-**文档版本**: v1.2.0  
-**最后更新时间**: 2026-03-09  
+**文档版本**: v1.2.2
+**最后更新时间**: 2026-03-10
 **维护团队**: 在线评测系统开发团队

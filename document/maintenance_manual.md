@@ -42,8 +42,8 @@
 │   └── Dockerfile.compile   # Compile Server 构建文件
 ├── setup_database.sql       # 数据库初始化脚本
 ├── insert_questions.sql     # 题目数据初始化脚本
-├── oj_server/               # OJ Server 源码及配置
-├── compile_server/          # Compile Server 源码
+├── backend/oj_server/       # OJ Server 源码及配置
+├── backend/compile_server/  # Compile Server 源码
 └── ...
 ```
 
@@ -53,7 +53,7 @@
 
 | 服务名称 | 容器名称 | 端口映射 | 说明 |
 | :--- | :--- | :--- | :--- |
-| **oj_server** | `oj_server` | `8094:8094` | 核心 Web 服务，提供 API 和前端页面 |
+| **oj_server** | `oj_server` | `8094:8094` | 核心 Web 服务，提供 API 和静态前端页面 (React) |
 | **compile_server_1** | `compile_server_1` | `8081:8081` | 判题服务节点 1 |
 | **compile_server_2** | `compile_server_2` | `8082:8082` | 判题服务节点 2 |
 | **db** | `oj_db` | `3306:3306` | MySQL 8.0 数据库 |
@@ -121,6 +121,29 @@ ssh -i /Users/huangqijun/Downloads/Mac.pem root@<Server_IP> "cd oj_project/docke
     - 推送代码到 GitHub: `git push origin main`
     - 查看 Actions 选项卡下的构建日志。
 
+### 3.5 手动源码部署 (Non-Docker)
+
+如果使用 `scripts/deploy_sync.sh` 或其他方式直接在服务器上编译运行（非 Docker 方式），需要注意：
+
+1. **环境要求**:
+   - 服务器除 C++ 编译环境外，必须安装 **Node.js (v18+)** 和 **npm**。
+   
+2. **前端构建步骤**:
+   在执行 C++ 编译 (`make output`) 之前，必须先构建前端资源：
+   ```bash
+   # 在服务器上执行
+   cd ~/load-balanced-online-oj/frontend
+   npm install
+   npm run build
+   
+   # 将构建产物复制到后端资源目录
+   # 注意：oj_server 默认从 ./wwwroot 读取静态文件
+   cp -r dist/* ../backend/oj_server/wwwroot/
+   ```
+
+3. **脚本调整**:
+   如果使用 `deploy_sync.sh`，建议在脚本中添加上述前端构建命令，或者在本地构建好 `dist` 后通过 `rsync` 同步到服务器。
+
 ---
 
 ## 4. 监控告警机制
@@ -155,7 +178,7 @@ docker exec oj_db mysqldump -u root -p<DB_Root_Password> oj > /root/oj_backup_$(
 ```
 
 ### 配置文件备份
-项目核心配置位于 `docker-compose.yml` 和 `oj_server/conf/`，建议通过 Git 进行版本控制，服务器上保留一份最新的 `project_deploy.tar.gz` 即可。
+项目核心配置位于 `docker-compose.yml` 和 `backend/oj_server/conf/`，建议通过 Git 进行版本控制，服务器上保留一份最新的 `project_deploy.tar.gz` 即可。
 
 ### 灾难恢复
 1. **服务崩溃**: 尝试重启服务 `docker compose restart`.
@@ -196,7 +219,14 @@ docker exec oj_db mysqldump -u root -p<DB_Root_Password> oj > /root/oj_backup_$(
 
 | 版本号 | 更新日期 | 修改人 | 修改内容 |
 | :--- | :--- | :--- | :--- |
+| v1.3.0 | 2026-03-10 | AI Assistant | 补充前端构建说明与 Node.js 依赖 |
 | v1.2.0 | 2026-03-09 | AI Assistant | 端口修正 (8088->8094) 与文档全面同步 |
 | v1.1.4 | 2026-03-09 | AI Assistant | 题单批量添加功能支持 |
 | v1.0.3 | 2026-02-09 | AI Assistant | 更新端口至8088，移除Python依赖 |
+
+---
+
+**文档版本**: v1.2.2
+**最后更新时间**: 2026-03-10
+**维护团队**: 在线评测系统开发团队
 

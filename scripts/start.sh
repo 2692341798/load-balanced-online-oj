@@ -44,5 +44,8 @@ if [ ! -d "output/oj_server" ]; then
 fi
 
 cd output/oj_server
-# Run in foreground so we can see output or Ctrl+C to stop (though that won't stop compile servers)
-./oj_server
+# Create uploads directories if they don't exist
+mkdir -p wwwroot/uploads/avatars
+# Run in background with nohup
+nohup ./oj_server > ../logs/oj_server.log 2>&1 &
+echo "OJ Server started (pid $!)"

@@ -36,6 +36,7 @@ MISSING=\"\"
 if [ ! -d /usr/include/jsoncpp ]; then MISSING=\"\$MISSING libjsoncpp-dev\"; fi
 if [ ! -d /usr/include/mysql ]; then MISSING=\"\$MISSING libmysqlclient-dev\"; fi
 if [ ! -d /usr/include/ctemplate ]; then MISSING=\"\$MISSING libctemplate-dev\"; fi
+if ! command -v npm >/dev/null 2>&1; then MISSING=\"\$MISSING nodejs/npm\"; fi
 echo \"\$MISSING\"
 "
 MISSING_DEPS=$(ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "$CHECK_CMD")
@@ -49,6 +50,9 @@ if [ ! -z "$MISSING_DEPS" ]; then
     echo ""
     echo "  sudo apt-get update"
     echo "  sudo apt-get install -y build-essential libjsoncpp-dev libmysqlclient-dev libssl-dev libctemplate-dev"
+    echo "  # For frontend build:"
+    echo "  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -"
+    echo "  sudo apt-get install -y nodejs"
     echo ""
     echo "Server Login Command:"
     echo "  ssh -i $KEY_PATH $USER@$SERVER_IP"
@@ -59,7 +63,8 @@ fi
 # 2. Sync Code
 echo "[2/5] Syncing code..."
 # Ensure remote directory exists and pull latest code
-ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "mkdir -p $REMOTE_DIR && cd $REMOTE_DIR && git pull origin main && make output"
+# Also run frontend build before make output
+ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "mkdir -p $REMOTE_DIR && cd $REMOTE_DIR && git pull origin main && make frontend && make output"
 if [ $? -ne 0 ]; then
     echo "Error: Failed to sync code or build on server."
     exit 1
@@ -86,10 +91,10 @@ rm oj_questions_dump.sql
 
 # 4. Sync Files (questions directory)
 echo "[4/5] Syncing questions directory..."
-if [ -d "oj_server/questions" ]; then
-    rsync -avz -e "ssh -i $KEY_PATH" oj_server/questions/ "$USER@$SERVER_IP:$REMOTE_DIR/oj_server/questions/"
+if [ -d "backend/oj_server/questions" ]; then
+    rsync -avz -e "ssh -i $KEY_PATH" backend/oj_server/questions/ "$USER@$SERVER_IP:$REMOTE_DIR/backend/oj_server/questions/"
 else
-    echo "Warning: Local oj_server/questions directory not found. Skipping file sync."
+    echo "Warning: Local backend/oj_server/questions directory not found. Skipping file sync."
 fi
 
 # 5. Restart Services

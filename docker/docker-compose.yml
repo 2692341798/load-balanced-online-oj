@@ -59,7 +59,7 @@ services:
       - MYSQL_PASSWORD=123456
       - MYSQL_DB=oj
     volumes:
-      - ../oj_server/conf/service_machine_docker.conf:/app/output/oj_server/conf/service_machine.conf
+      - ../backend/oj_server/conf/service_machine_docker.conf:/app/output/oj_server/conf/service_machine.conf
     depends_on:
       db:
         condition: service_healthy
@@ -76,7 +76,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.oj
     container_name: contest_crawler
-    command: ["/app/crawler/contest_crawler"]
+    command: ["/app/output/crawler/contest_crawler"]
     environment:
       - MYSQL_HOST=db
       - MYSQL_PORT=3306

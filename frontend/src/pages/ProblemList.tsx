@@ -107,7 +107,7 @@ export default function ProblemList() {
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-card text-card-foreground shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -131,7 +131,7 @@ export default function ProblemList() {
                   <TableCell>
                     <Link
                       to={`/problem/${problem.number}`}
-                      className="hover:underline hover:text-primary"
+                      className="hover:underline hover:text-primary transition-colors font-medium"
                     >
                       {problem.title}
                     </Link>
@@ -140,10 +140,10 @@ export default function ProblemList() {
                     <Badge
                       variant={
                         problem.star === '简单'
-                          ? 'secondary' // Greenish handled by CSS or custom variant
+                          ? 'secondary'
                           : problem.star === '中等'
-                          ? 'default' // Yellowish
-                          : 'destructive' // Red
+                          ? 'default'
+                          : 'destructive'
                       }
                       className={
                         problem.star === '简单'

@@ -1,333 +1,202 @@
-# 负载均衡式在线评测系统（Load-Balanced Online Judge）
+# 负载均衡式在线评测系统 (Load-Balanced Online Judge)
 
-> 一个基于 C++ 的分布式 Online Judge，支持多编译服务器负载均衡、用户认证和现代化的Web界面。
+> **"不仅仅是评测，更是算法爱好者的全能训练场。"**
+>
+> 一个基于 C++11 和 React 19 构建的高性能分布式 Online Judge 系统。支持多编译服务器负载均衡、实时评测反馈、竞赛数据抓取以及沉浸式的用户体验。
+
+![Project Status](https://img.shields.io/badge/status-active-success.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![C++](https://img.shields.io/badge/backend-C%2B%2B11-00599C.svg)
+![React](https://img.shields.io/badge/frontend-React_19-61DAFB.svg)
 
 ## 🚀 项目概述
 
-这是一个基于C++开发的负载均衡式在线评测系统（Online Judge），专为算法竞赛和编程练习设计。系统采用分布式架构，支持多编译服务器负载均衡，能够高效处理代码编译、运行和评测任务。
+本项目是一个企业级的分布式在线评测系统，旨在解决传统 OJ 系统在高并发场景下的性能瓶颈。通过**负载均衡**策略将评测任务分发至多个编译服务器，实现了高吞吐量的代码评测。
 
-### ✨ 主要功能
-- **在线代码评测**：支持C/C++代码的编译、运行和自动化测试
-- **负载均衡**：多编译服务器分布式处理，提高系统吞吐量
-- **用户认证系统**：完整的用户注册、登录和会话管理
-- **题单系统 (Training Lists)**：支持创建、分享和管理题目集合，提供拖拽排序和难度分级功能
-- **题目管理**：支持算法题目的创建、编辑和分类管理
-- **现代化Web界面**：响应式设计，支持深色主题
-- **实时评测**：快速反馈代码运行结果和测试用例通过情况
-- **错误处理**：完善的异常捕获和用户友好的错误提示
-- **安全加固**：基于Linux Namespace的网络隔离、权限降级(nobody)和严格的资源熔断机制，有效防御Sandbox Escape和DoS攻击
-- **竞赛爬虫 (Contest Crawler)**：基于C++的高性能爬虫，自动获取Codeforces/LeetCode竞赛信息，支持自适应速率限制和MySQL存储
-- **社区讨论 (Community & Discussions)**：支持Markdown帖子、全局评论和行内评论功能
-- **数学公式支持**：集成 MathJax，完美渲染 LaTeX 数学公式
-- **娱乐中心 (Beta)**：集成经典游戏（如超级玛丽重制版），为用户提供放松的休闲角落
-- **用户中心增强**：支持头像上传、个人资料修改（昵称/电话）等个性化设置
+不仅如此，我们还引入了**现代化前端技术栈**，打造了一个响应迅速、视觉优雅的单页应用 (SPA)。从基础的题目练习到专业的竞赛训练，再到休闲的娱乐中心，为用户提供一站式的编程学习体验。
 
-### 🏗️ 架构设计
-- **OJ主服务器（oj_server）**：提供Web接口、题目管理、评测任务调度与结果汇总
-- **编译服务器池（compile_server）**：对提交代码进行编译和运行，主服务器按负载将任务分发到不同实例
-- **数据库（MySQL）**：存储题目、用户、提交记录、竞赛信息等数据
-- **前端界面**：现代化的HTML/CSS/JS界面，支持响应式设计
-- **负载均衡器**：智能选择负载最低的编译服务器处理请求
-- **会话管理**：基于Token的用户认证和会话维护
+## ✨ 核心功能
+
+### 核心评测能力
+- **⚡️ 分布式负载均衡**：通过智能调度算法，将评测任务自动分发至空闲的编译服务器节点，支持水平扩展。
+- **🛡️ 安全沙箱机制**：基于 Linux Namespace 和 cgroups 技术，实现网络隔离、权限降级 (nobody) 和资源熔断，严防恶意代码攻击。
+- **🔄 实时评测反馈**：毫秒级的评测响应，实时推送编译结果与测试用例通过情况。
+
+### 现代化体验
+- **🎨 极简深色 UI**：基于 React 19 + Shadcn UI 打造的现代化深色主题界面，专注于代码阅读体验。
+- **📱 单页应用 (SPA)**：全站无刷新跳转，提供丝滑的操作流畅度。
+- **📝 社区互动**：支持 Markdown 发帖、代码高亮、数学公式 (LaTeX) 渲染及行内评论。
+
+### 特色模块
+- **📋 智能题单 (Training Lists)**：支持拖拽排序的自定义题单系统，轻松规划刷题路线。
+- **🕷️ 竞赛爬虫 (Contest Crawler)**：内置高性能 C++ 爬虫，自动同步 Codeforces 和 LeetCode 的最新赛事信息。
+- **🎮 娱乐中心 (Entertainment)**：刷题累了？内置超级玛丽、推箱子等经典游戏的复刻版，劳逸结合。
+- **👤 个性化中心**：支持头像上传、个人数据统计及详细的提交记录分析。
+
+## 📸 界面预览
+
+| 首页概览 | 题目列表 |
+| :---: | :---: |
+| ![Home](https://via.placeholder.com/400x225?text=Home+Page+Preview) | ![Problem List](https://via.placeholder.com/400x225?text=Problem+List+Preview) |
+| **代码编辑与评测** | **娱乐中心** |
+| ![Editor](https://via.placeholder.com/400x225?text=Code+Editor+Preview) | ![Entertainment](https://via.placeholder.com/400x225?text=Entertainment+Center) |
+
+## 🛠️ 技术架构
+
+系统采用经典的前后端分离架构，后端基于微服务思想设计，前端采用现代 SPA 方案。
 
 ```mermaid
-    graph TD
-    Client[Web浏览器] -->|HTTP| OJ[OJ主服务器:8094]
-    OJ -->|Load Balance| CS1[编译服务器1:8081]
-    OJ -->|Load Balance| CS2[编译服务器2:8082]
-    OJ -->|Load Balance| CS3[编译服务器3:8083]
-    OJ -->|SQL| DB[(MySQL数据库)]
-    Crawler[C++爬虫] -->|SQL| DB
+graph TD
+    Browser[Web浏览器 (React SPA)] -->|HTTP API / JSON| OJ[OJ主服务器 (8094)]
+    
+    subgraph "后端集群"
+        OJ -->|Load Balance| CS1[编译服务器节点1 (8081)]
+        OJ -->|Load Balance| CS2[编译服务器节点2 (8082)]
+        OJ -->|Load Balance| CS3[编译服务器节点3 (8083)]
+    end
+    
+    subgraph "数据存储 & 外部服务"
+        OJ -->|MySQL Protocol| DB[(MySQL 数据库)]
+        Crawler[竞赛爬虫服务] -->|Write| DB
+    end
 ```
 
-### 🛠️ 核心技术栈
-- **后端**：C++11, 多线程编程, Socket网络编程, JSON处理
-- **Web框架**：httplib.h（轻量级C++ HTTP服务器）
-- **数据库**：MySQL 8.0+
-- **模板引擎**：CTemplate
-- **网络库**：libcurl (用于爬虫模块)
-- **编译器**：GCC/G++
-- **构建工具**：GNU Make
-- **操作系统**：Linux/macOS
-- **测试框架**：Playwright（端到端测试）
+### 技术栈详情
 
-## 📚 详细文档
+- **前端**: React 19, TypeScript, Vite, TailwindCSS, Shadcn UI, Zustand, Axios
+- **后端**: C++11, httplib (基于 cpp-httplib), JSONCpp, MySQL Connector
+- **运维**: Docker, Docker Compose, Makefile, Shell Scripts
+- **测试**: Playwright (E2E Testing), Google Test (Unit Testing)
 
-本项目包含完整的技术文档，请参考以下指南：
+## 💻 开发指南 (Development Guide)
 
-| 文档类型 | 文件名称 | 描述 |
-|---------|---------|------|
-| 🏗️ **架构设计** | [架构设计文档](document/architecture.md) | 系统整体架构、核心模块设计与通信机制 |
-| 💾 **数据库** | [数据库设计](document/database.md) | 数据库表结构、索引策略与ER关系 |
-| 🔌 **接口规范** | [API接口文档](document/api_reference.md) | 详细的后端接口定义与调用示例 |
-| 💻 **开发规范** | [开发标准规范](document/development_standards.md) | 代码风格、命名规范与最佳实践 |
-| 🤝 **协作规则** | [项目开发规则](document/rule.md) | 团队协作、安全规范与工作流 |
-| 🎨 **前端指南** | [前端样式指南](document/frontend_style_guide.md) | 视觉设计系统、组件库与CSS变量 |
-| 📝 **变更日志** | [综合开发日志](document/comprehensive_dev_log.md) | 版本迭代记录与技术变更日志 |
+本指南将帮助你快速搭建本地开发环境。
 
-## 📋 环境要求
+### 1. 前端开发 (Frontend)
 
-### 开发环境
-- **操作系统**：Linux (Ubuntu 18.04+) 或 macOS (10.14+)
-- **编译器**：GCC 7.0+ 或 Clang 8.0+
-- **C++标准**：C++11或更高版本
-- **MySQL**：8.0或更高版本
-- **Git**：用于版本控制
+前端项目位于 `frontend/` 目录，支持热重载 (HMR) 开发模式。
 
-### 依赖项
-- **jsoncpp**：JSON解析库
-- **pthread**：POSIX线程库
-- **ctemplate**：HTML模板引擎
-- **mysqlclient**：MySQL客户端库
-- **http_server**：基于 cpp-httplib 的高性能 Web 服务器
-- **libcurl**：高性能网络请求库 (用于C++爬虫)
-
-### 安装依赖（Ubuntu/Debian）
 ```bash
-sudo apt-get update
-sudo apt-get install -y build-essential libjsoncpp-dev libctemplate-dev libmysqlclient-dev mysql-server libssl-dev libcurl4-openssl-dev
-```
+cd frontend
 
-### 安装依赖（macOS）
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+```
+> **提示**: 开发服务器默认开启了代理 (Proxy)，会自动将 `/api`, `/judge` 等请求转发至后端的 `http://localhost:8094`，无需手动配置跨域。
+
+### 2. 后端开发 (Backend)
+
+后端项目位于 `backend/` 目录，建议在 Linux/macOS 环境下开发。
+
 ```bash
-brew install jsoncpp ctemplate mysql openssl curl
+# 编译所有模块并生成发布目录 (推荐)
+make output
+
+# 或者分别编译各个组件 (调试用)
+make -C backend/oj_server
+make -C backend/compile_server
 ```
 
-## 🚀 快速开始
+### 3. 运行与调试
 
-### 1. 克隆项目
+#### 方式 A: 脚本一键启动 (推荐)
 ```bash
-git clone https://github.com/2692341798/load-balanced-online-oj.git
-cd load-balanced-online-oj
+# 启动所有服务 (OJ Server + 3个 Compile Server)
+./scripts/start.sh
+
+# 停止所有服务
+./scripts/stop.sh
 ```
 
-### 2. 数据库设置
+#### 方式 B: 手动独立启动
+适用于需要单独调试某个模块的场景。
+
 ```bash
-# 登录MySQL
-mysql -u root -p
+# 启动编译服务器 (指定端口)
+./backend/compile_server/compile_server 8081
 
-# 执行数据库初始化脚本
-source setup_database.sql
-# 如果需要竞赛数据支持，请确保执行了最新的迁移脚本
+# 启动 OJ 主服务器
+./backend/oj_server/oj_server
 ```
 
-### 3. 配置编译服务器
-编辑 `oj_server/conf/service_machine.conf`，按行写入可用编译服务器地址：
-```
+## ⚙️ 配置文件说明
+
+系统核心配置位于 `backend/oj_server/conf/` 目录下。
+
+### 1. 本地开发配置 (`service_machine.conf`)
+用于本地直接运行 (`./oj_server`) 时加载的编译服务器列表。
+```conf
+# 格式: IP:Port
 127.0.0.1:8081
 127.0.0.1:8082
 127.0.0.1:8083
 ```
-端口与数量可根据实际机器资源调整。
 
-### 4. 编译项目
-```bash
-# 编译所有组件
-make
-
-# 或者分别编译
-make -C compile_server
-make -C oj_server
-make -C crawler
+### 2. Docker 部署配置 (`service_machine_docker.conf`)
+用于 Docker 容器环境。由于容器间通过服务名通信，此处配置的是 Docker Compose 中的服务名称。
+```conf
+# 格式: ServiceName:Port
+compile_server_1:8081
+compile_server_2:8082
 ```
 
-### 5. 启动服务
+## ❓ 常见问题 (Troubleshooting)
 
-#### 方式1：分别启动（推荐开发环境）
-```bash
-# 启动第一个编译服务器（端口8081）
-cd compile_server && ./compile_server 8081
+**Q: 启动时提示端口被占用 (Address already in use)?**
+> A: 请检查是否有旧的进程未关闭。可以使用 `./scripts/stop.sh` 强行停止所有相关进程，或者使用 `lsof -i :8094` 查找并 kill 掉占用端口的进程。
 
-# 启动第二个编译服务器（端口8082）
-cd compile_server && ./compile_server 8082
+**Q: 数据库连接失败?**
+> A: 请确保 MySQL 服务已启动，并且 `backend/oj_server/oj_model.hpp` 中的数据库连接配置（用户名/密码）与你的本地环境一致。默认配置通常为 `root` 用户。
 
-# 启动第三个编译服务器（端口8083）
-cd compile_server && ./compile_server 8083
+**Q: 前端页面显示 "Network Error"?**
+> A: 这通常意味着后端服务未启动。请确保 `oj_server` 正在运行并在监听 8094 端口。
 
-# 启动OJ主服务器（默认端口8094）
-cd oj_server && ./oj_server
-```
-
-#### 方式2：使用输出目录
-```bash
-# 进入输出目录
-cd output
-
-# 启动编译服务器
-./compile_server/compile_server 8081
-./compile_server/compile_server 8082
-
-# 启动OJ服务器
-cd oj_server && ./oj_server
-```
-
-### 6. 爬虫服务 (可选)
-如果需要获取竞赛数据或题目，可以运行爬虫服务（确保使用C++二进制文件）：
-```bash
-# 运行竞赛爬虫 (Codeforces/LeetCode)
-./crawler/contest_crawler
-
-# 运行洛谷题目爬虫 (C++实现)
-./crawler/luogu_crawler
-```
-
-### 7. 访问系统
-- **主页**：http://localhost:8094
-- **题目列表**：http://localhost:8094/all_questions
-- **题目详情**：http://localhost:8094/question/<题号>
-- **登录页面**：http://localhost:8094/login
-- **娱乐中心**：http://localhost:8094/entertainment (或侧边栏入口)
+**Q: 提交代码后一直显示 "Pending"?**
+> A: 请检查 `compile_server` 是否已启动。如果 `oj_server` 无法连接到任何一个编译服务器，任务将会积压。
 
 ## 🏗️ 项目结构
 
-```
-load-balanced-online-oj/
-├── comm/                           # 公共组件
-│   ├── httplib.h                  # HTTP服务器库
-│   ├── log.hpp                    # 日志系统
-│   └── util.hpp                   # 工具函数
-├── compile_server/                # 编译服务器
-│   ├── compile_server.cc         # 主程序
-│   ├── compile_run.hpp           # 编译运行核心
-│   ├── compiler.hpp              # 编译器封装
-│   ├── runner.hpp                # 程序运行器
-│   └── makefile                  # 编译配置
-├── crawler/                       # 竞赛爬虫
-│   ├── contest_crawler.cc        # 竞赛爬虫主程序 (核心)
-│   ├── luogu_crawler.cc          # 洛谷题目爬虫
-│   ├── crawler_common.hpp        # 爬虫公共头文件
-│   └── makefile                  # 编译配置
-├── oj_server/                     # OJ主服务器
-│   ├── oj_server.cc              # 主程序
-│   ├── oj_control.hpp            # 业务逻辑控制
-│   ├── oj_model.hpp              # 数据模型（MySQL版）
-│   ├── oj_view.hpp               # 视图渲染
-│   ├── contest_utils.hpp         # 竞赛工具类
-│   ├── conf/                     # 配置文件
-│   │   └── service_machine.conf  # 编译服务器列表
-│   ├── resources/                # 静态资源与模板
-│   │   ├── css/                  # 样式文件
-│   │   ├── template_html/        # HTML模板
-│   │   │   └── shared/           # 公共组件模板 (如 navbar.html)
-│   │   └── wwwroot/              # 静态资源(JS/Images)
-│   │       └── games/            # 娱乐中心游戏资源
-│   └── makefile                  # 编译配置
-├── document/                      # 项目文档
-│   ├── architecture.md           # 架构设计
-│   ├── database.md               # 数据库设计
-│   └── ...                       # 其他文档
-├── tests/                         # 测试代码
-│   ├── oj_server/                # OJ服务测试
-│   └── crawler/                  # 爬虫测试
-├── docker/                        # Docker部署配置
-│   ├── Dockerfile.oj
-│   ├── Dockerfile.compile
-│   └── docker-compose.yml
-├── scripts/                       # 运维脚本
-│   ├── start.sh                  # 一键启动
-│   ├── stop.sh                   # 一键停止
-│   └── deploy_docker.sh          # Docker部署脚本
-├── sql/                           # 数据库脚本
-│   └── setup_database.sql        # 数据库初始化
-├── data/                          # 数据文件
-│   └── contests.json             # 竞赛数据缓存
-├── makefile                       # 主编译文件
-├── .gitignore                    # Git忽略规则
-├── LICENSE                       # 许可证文件
-└── README.md                     # 项目说明
+```mermaid
+graph TD
+    Root[load-balanced-online-oj/]
+    
+    subgraph "Backend (C++)"
+        Backend[backend/]
+        Backend --> Comm[comm/ <br> 公共工具库]
+        Backend --> CS[compile_server/ <br> 编译判题服务]
+        Backend --> Crawler[crawler/ <br> 竞赛与题目爬虫]
+        Backend --> OJ[oj_server/ <br> OJ 主业务服务]
+        OJ --> Conf[conf/ <br> 配置文件]
+        OJ --> WWW[wwwroot/ <br> 前端静态资源]
+    end
+    
+    subgraph "Frontend (React)"
+        Frontend[frontend/]
+        Frontend --> Src[src/ <br> 源代码]
+        Frontend --> Public[public/ <br> 静态资源]
+        Frontend --> Vite[vite.config.ts]
+    end
+    
+    subgraph "DevOps & Docs"
+        Root --> Docker[docker/ <br> 容器化配置]
+        Root --> Docs[document/ <br> 项目文档]
+        Root --> Scripts[scripts/ <br> 运维脚本]
+        Root --> SQL[sql/ <br> 数据库脚本]
+    end
+
+    Root --> Backend
+    Root --> Frontend
 ```
 
-## 🎮 娱乐中心 (Beta)
+## 📚 详细文档
 
-### 1. 经典游戏复刻
-- **超级玛丽 (Super Mario Remake)**: 基于 Backbone Game Engine 的 HTML5 完美复刻版。
-- **特性**: 
-  - 经典的 1-1 关卡体验
-  - 还原度极高的物理引擎与音效
-  - 适配现代浏览器的响应式显示
-  - 键盘操作支持 (方向键移动/跳跃)
-
-### 2. 访问方式
-- 点击侧边栏 "娱乐中心" 即可进入。
-- 旨在为刷题疲惫的用户提供放松的角落。
-
-## 🕷️ 竞赛爬虫模块详情
-
-本模块负责从竞争性编程平台（目前支持 Codeforces 和 LeetCode）抓取竞赛信息并存储到数据库中。
-
-### ✨ 主要特性
-- **多源支持**：抓取 Codeforces 和 LeetCode 的周赛信息。
-- **Robots.txt 合规**：严格遵守目标站点的 `robots.txt` 规则。
-- **数据持久化**：将竞赛数据存储在 MySQL 中。
-- **C++原生实现**：高性能，无Python依赖。
-
-## 🤝 贡献指南
-
-### 开发流程
-1. **Fork项目**：创建个人分支进行开发
-2. **分支命名规范**：
-   - `feat/`: 新功能 (e.g., `feat/avatar-upload`)
-   - `fix/`: 修复Bug (e.g., `fix/login-error`)
-   - `docs/`: 文档更新
-   - `refactor/`: 代码重构
-3. **提交代码**：
-   - **Commit Message**: `type: description` (e.g., `feat: add avatar upload`)
-4. **创建Pull Request**：描述清楚修改内容和原因
-
-### 代码审查清单 (Code Review Checklist)
-- [ ] **逻辑正确性**：代码逻辑清晰，无明显Bug
-- [ ] **风格规范**：遵循项目代码风格（命名、注释、格式）
-- [ ] **安全性检查**：无SQL注入、XSS等安全隐患，不暴露敏感信息
-- [ ] **测试覆盖**：包含必要的单元测试或功能验证
-
-## 📅 版本历史
-
-- **v1.2.0** (2026-03-09):
-  - 📝 文档全面同步：校对并更新了 API、数据库、架构等所有技术文档，确保与代码完全一致
-  - 🔧 端口修正：明确主服务默认端口为 8094
-  - 🔄 数据库结构更新：补全了所有新功能模块的表结构定义
-- **v1.1.4** (2026-03-09):
-  - ✨ 题单功能增强：支持批量添加题目到训练计划，提升管理效率
-  - 📝 文档更新：完善 API 文档与架构说明
-- **v1.1.3** (2026-03-09):
-  - 💄 UI/UX 改进：首页导航栏重构，统一使用公共组件
-  - 🐛 Bug 修复：修复首页用户状态显示不一致问题
-  - ⚡️ 性能优化：首页移除重定向，提升首屏加载速度
-- **v1.1.2** (2026-03-04):
-  - 🎨 视觉体验升级：优化题单与讨论区卡片样式，提升对比度与层次感
-  - 💄 样式修复：解决讨论区摘要显示问题，统一深色主题设计语言
-- **v1.1.1** (2026-03-04):
-  - 🐛 修复用户头像同步问题：优化多会话状态下的用户信息更新逻辑
-- **v1.1.0** (2026-02-22):
-  - ✨ 新增题单/训练计划模块：支持创建、分享、管理题目集合
-  - 🔄 题单题目拖拽排序功能
-  - 📝 完善数据库与API文档
-- **v1.0.5** (2026-02-16):
-  - 🔧 项目结构优化：整合爬虫模块至 `crawler/` 目录
-- **v1.0.4** (2026-02-15):
-  - ✨ 新增娱乐中心 (Beta)，集成超级玛丽复刻版
-  - 👤 用户中心增强：支持头像上传、个人资料修改
-  - 📄 分页功能优化
-  - 🔧 项目结构重构：分离测试与工具代码
-    - 测试代码迁移至 `tests/`
-    - 爬虫工具迁移至 `tools/crawler/`
-    - 清理构建产物与冗余文件
-- **v1.0.3**:
-  - 🕷️ 引入C++竞赛爬虫 (Codeforces/LeetCode)
-  - 🔧 统一服务端口为 8088
-- **v0.3.7-fun**:
-  - 🎮 娱乐中心初步集成
-
-## 📄 许可证信息
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-## 🙏 致谢
-
-感谢所有为项目做出贡献的开发者和使用者。
+更多技术细节请参阅 `document/` 目录下的文档：
+- [架构设计 (Architecture)](document/architecture.md)
+- [API 接口规范 (API Reference)](document/api_reference.md)
+- [数据库设计 (Database)](document/database.md)
 
 ---
-
-**最后更新时间**: 2026-03-09  
-**文档版本**: v1.2.0  
-**维护团队**: 在线评测系统开发团队
+**Maintained by**: Load-Balanced Online Judge Team
