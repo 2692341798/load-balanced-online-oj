@@ -313,7 +313,7 @@ Content-Type: application/json
 | 参数名 | 类型 | 必需 | 描述 |
 |--------|------|------|------|
 | code | string | 是 | 用户提交的代码 |
-| language | string | 是 | 编程语言 (cpp, java, python) |
+| language | string | 是 | 编程语言 (支持别名: cpp/c++/cc -> C++, java -> Java, python/py -> Python) |
 | input | string | 否 | 自定义输入 (调试用) |
 
 **响应信息**:
