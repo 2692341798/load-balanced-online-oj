@@ -47,17 +47,17 @@
 
 ```mermaid
 graph TD
-    Browser[Web浏览器 (React SPA)] -->|HTTP API / JSON| OJ[OJ主服务器 (8094)]
+    Browser["Web浏览器 (React SPA)"] -->|HTTP API / JSON| OJ["OJ主服务器 (8094)"]
     
     subgraph Backend_Cluster [后端集群]
-        OJ -->|Load Balance| CS1[编译服务器节点1 (8081)]
-        OJ -->|Load Balance| CS2[编译服务器节点2 (8082)]
-        OJ -->|Load Balance| CS3[编译服务器节点3 (8083)]
+        OJ -->|Load Balance| CS1["编译服务器节点1 (8081)"]
+        OJ -->|Load Balance| CS2["编译服务器节点2 (8082)"]
+        OJ -->|Load Balance| CS3["编译服务器节点3 (8083)"]
     end
     
     subgraph Data_Storage [数据存储 & 外部服务]
-        OJ -->|MySQL Protocol| DB[(MySQL 数据库)]
-        Crawler[竞赛爬虫服务] -->|Write| DB
+        OJ -->|MySQL Protocol| DB[("MySQL 数据库")]
+        Crawler["竞赛爬虫服务"] -->|Write| DB
     end
 ```
 
