@@ -2,6 +2,7 @@
 #include <signal.h>
 #include <clocale> // For setlocale
 #include <json/json.h>   // 通过 -I/opt/homebrew/include 已能找到
+#include <sstream>
 
 #include "../comm/httplib.h"
 #include "oj_control.hpp"
@@ -10,6 +11,21 @@ using namespace httplib;
 using namespace ns_control;
 
 static Control *ctrl_ptr = nullptr;
+std::string react_index_html;
+
+void LoadReactIndex() {
+    std::ifstream in("./resources/wwwroot/index.html");
+    if (in.is_open()) {
+        std::stringstream ss;
+        ss << in.rdbuf();
+        react_index_html = ss.str();
+        in.close();
+        LOG(INFO) << "React index.html loaded successfully. Size: " << react_index_html.size();
+    } else {
+        LOG(WARNING) << "Failed to load React index.html from ./resources/wwwroot/index.html";
+        react_index_html = "<h1>Frontend Not Found. Please run build.</h1>";
+    }
+}
 
 // Helper function to disable browser caching for dynamic pages
 void SetNoCache(Response &resp) {
@@ -39,6 +55,9 @@ int main()
               << ", LC_ALL=" << (lc_all ? lc_all : "null") << std::endl;
 
     signal(SIGQUIT, Recovery);
+    
+    // Load React Frontend
+    LoadReactIndex();
 
     //用户请求的服务路由功能
     Server svr;
@@ -47,62 +66,30 @@ int main()
     ctrl_ptr = &ctrl;
 
     // 4. 配置路由
-    // 4.1 首页
-    svr.Get("/", [&ctrl](const Request &req, Response &resp){
+    // 4.1 首页 - Serve React App
+    svr.Get("/", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        std::string html;
-        ctrl.Home(req, &html);
-        resp.set_content(html, "text/html; charset=utf-8");
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
     });
 
-    // 获取所有的题目列表
-    svr.Get("/all_questions", [&ctrl](const Request &req, Response &resp){
+    // 获取所有的题目列表 - Redirect to React /problems or Serve React App
+    svr.Get("/all_questions", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        // 权限检查
-        User user;
-        if (!ctrl.AuthCheck(req, &user)) {
-            resp.set_redirect("/login");
-            return;
-        }
-
-        //返回一张包含有所有题目的html网页
-        std::string html;
-        ctrl.AllQuestions(req, &html);
-        //用户看到的是什么呢？？网页数据 + 拼上了题目相关的数据
-        resp.set_content(html, "text/html; charset=utf-8");
+        // Redirect to new route if desired, or just serve app (React Router handles /problems, not /all_questions unless mapped)
+        // Since React App doesn't have /all_questions route, redirecting is safer.
+        resp.set_redirect("/problems");
     });
 
     // 讨论区页面
-    svr.Get("/discussion", [&ctrl](const Request &req, Response &resp){
+    svr.Get("/discussion", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        // 权限检查
-        User user;
-        if (!ctrl.AuthCheck(req, &user)) {
-            resp.set_redirect("/login");
-            return;
-        }
-        
-        std::string html;
-        ctrl.DiscussionPage(req, &html);
-        resp.set_content(html, "text/html; charset=utf-8");
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
     });
 
     // 竞赛页面
-    svr.Get("/contest", [&ctrl](const Request &req, Response &resp){
+    svr.Get("/contest", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        // 权限检查 (可选，是否需要登录才能看？通常竞赛列表是公开的，但为了保持一致性可以要求登录)
-        // Codeforces allows viewing contests without login.
-        // But my implementation of `Contest` calls `AuthCheck` to get user info for navbar.
-        // It doesn't enforce login.
-        // However, `DiscussionPage` enforced login in the snippet above (lines 51-57).
-        // Let's keep it open but show user info if logged in.
-        // Wait, `DiscussionPage` in `oj_server.cc` (line 54) checks auth and redirects if not logged in.
-        // `Contest` in `oj_control` calls `AuthCheck` but ignores return value (just populates user).
-        // So I can just call `ctrl.Contest`.
-        
-        std::string html;
-        ctrl.Contest(req, &html);
-        resp.set_content(html, "text/html; charset=utf-8");
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
     });
 
     // API Contests
@@ -113,25 +100,14 @@ int main()
     });
 
     // Training List Pages
-    svr.Get("/training", [&ctrl](const Request &req, Response &resp){
+    svr.Get("/training", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        std::string html;
-        if (ctrl.TrainingListPage(req, &html)) {
-            resp.set_content(html, "text/html; charset=utf-8");
-        } else {
-            resp.set_content(html, "text/plain; charset=utf-8"); // Error message
-        }
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
     });
 
-    svr.Get(R"(/training/(\d+))", [&ctrl](const Request &req, Response &resp){
+    svr.Get(R"(/training/(\d+))", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        std::string id = req.matches[1];
-        std::string html;
-        if (ctrl.TrainingDetail(id, req, &html)) {
-            resp.set_content(html, "text/html; charset=utf-8");
-        } else {
-            resp.set_content(html, "text/plain; charset=utf-8"); // Error message
-        }
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
     });
 
     // Training List APIs
@@ -201,19 +177,10 @@ int main()
     // 用户要根据题目编号，获取题目的内容
     // /question/100 -> 正则匹配
     // R"()", 原始字符串raw string,保持字符串内容的原貌，不用做相关的转义
-    svr.Get(R"(/question/(\d+))", [&ctrl](const Request &req, Response &resp){
+    svr.Get(R"(/question/(\d+))", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        // 权限检查
-        User user;
-        if (!ctrl.AuthCheck(req, &user)) {
-            resp.set_redirect("/login");
-            return;
-        }
-
         std::string number = req.matches[1];
-        std::string html;
-        ctrl.Question(number, req, &html);
-        resp.set_content(html, "text/html; charset=utf-8");
+        resp.set_redirect("/problem/" + number);
     });
 
     // API Get Single Question (JSON)
@@ -258,14 +225,9 @@ int main()
     });
 
     // Login Page
-    svr.Get("/login", [&ctrl](const Request &req, Response &resp){
+    svr.Get("/login", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        std::string html;
-        if (ctrl.LoginPage(req, &html)) {
-            resp.set_content(html, "text/html; charset=utf-8");
-        } else {
-            resp.set_content("Login Page Not Found", "text/plain");
-        }
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
     });
 
     // API Login
@@ -346,21 +308,9 @@ int main()
     });
 
     // User Profile Page
-    svr.Get("/profile", [&ctrl](const Request &req, Response &resp){
+    svr.Get("/profile", [](const Request &req, Response &resp){
         SetNoCache(resp);
-        // 权限检查
-        User user;
-        if (!ctrl.AuthCheck(req, &user)) {
-            resp.set_redirect("/login");
-            return;
-        }
-
-        std::string html;
-        if (ctrl.GetProfile(user, &html)) {
-            resp.set_content(html, "text/html; charset=utf-8");
-        } else {
-            resp.set_content("获取个人中心失败", "text/plain; charset=utf-8");
-        }
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
     });
 
     // API User Profile
@@ -451,6 +401,32 @@ int main()
         std::string json_out;
         ctrl.SearchSubmissions(req, &json_out);
         resp.set_content(json_out, "application/json;charset=utf-8");
+    });
+
+    // React SPA Routes
+    svr.Get("/register", [](const Request &req, Response &resp){
+        SetNoCache(resp);
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
+    });
+
+    svr.Get("/problems", [](const Request &req, Response &resp){
+        SetNoCache(resp);
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
+    });
+
+    svr.Get(R"(/problem/(\d+))", [](const Request &req, Response &resp){
+        SetNoCache(resp);
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
+    });
+
+    svr.Get(R"(/discussion/(\d+))", [](const Request &req, Response &resp){
+        SetNoCache(resp);
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
+    });
+
+    svr.Get("/games", [](const Request &req, Response &resp){
+        SetNoCache(resp);
+        resp.set_content(react_index_html, "text/html; charset=utf-8");
     });
 
     // API Add Inline Comment
