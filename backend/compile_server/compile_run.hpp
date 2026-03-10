@@ -64,6 +64,7 @@ namespace ns_compile_and_run
             case -3:
                 // desc = "代码编译的时候发生了错误";
                 FileUtil::ReadFile(PathUtil::CompilerError(file_name), &desc, true);
+                if (desc.empty()) desc = "Compilation failed with no output (Check compiler installation/logs).";
                 break;
             case -4:
                 desc = "测试用例未通过";
@@ -128,6 +129,9 @@ namespace ns_compile_and_run
             int cpu_limit = in_value["cpu_limit"].asInt();
             int mem_limit = in_value["mem_limit"].asInt();
             std::string language = in_value.isMember("language") ? in_value["language"].asString() : "C++";
+            if (language == "cpp" || language == "c++" || language == "cc") language = "C++";
+            else if (language == "java") language = "Java";
+            else if (language == "python" || language == "py") language = "Python";
 
             // 安全检查: 限制资源最大值，防止DoS攻击
             if (cpu_limit <= 0 || cpu_limit > 30) {

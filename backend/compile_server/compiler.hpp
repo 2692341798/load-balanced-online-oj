@@ -52,18 +52,38 @@ namespace ns_compiler
                 //重定向标准错误到_stderr
                 dup2(_stderr, 2);
                 
+                // Debug PATH
+                // const char* path_env = getenv("PATH");
+                // std::cerr << "Current PATH: " << (path_env ? path_env : "null") << std::endl;
+
                 //程序替换，并不影响进程的文件描述符表
                 //子进程: 调用编译器，完成对代码的编译工作
                 if (language == "C++") {
+                    std::string exe_path = PathUtil::Exe(file_name, language);
+                    std::string src_path = PathUtil::Src(file_name, language);
+                    std::cerr << "Compiling C++: g++ -o " << exe_path << " " << src_path << " -D COMPILER_ONLINE -std=c++11" << std::endl;
+                    
                     //g++ -o target src -std=c++11
-                    execlp("g++", "g++", "-o", PathUtil::Exe(file_name, language).c_str(),\
-                    PathUtil::Src(file_name, language).c_str(), "-D", "COMPILER_ONLINE","-std=c++11",  nullptr/*不要忘记*/);
+                    // Use (char*)0 instead of nullptr for C variadic function
+                    execlp("g++", "g++", "-o", exe_path.c_str(), src_path.c_str(), "-D", "COMPILER_ONLINE", "-std=c++11", (char*)0);
                 } else if (language == "Java") {
+                    std::string src_path = PathUtil::Src(file_name, language);
+                    std::cerr << "Compiling Java: javac " << src_path << " -encoding UTF-8" << std::endl;
+                    
                     // javac src
-                    execlp("javac", "javac", PathUtil::Src(file_name, language).c_str(), "-encoding", "UTF-8", nullptr);
+                    execlp("javac", "javac", src_path.c_str(), "-encoding", "UTF-8", (char*)0);
+                } else if (language == "Python") {
+                    std::string src_path = PathUtil::Src(file_name, language);
+                    std::cerr << "Checking Python: python3 -m py_compile " << src_path << std::endl;
+                    
+                    // Python is interpreted, but we can verify syntax with python3 -m py_compile
+                    execlp("python3", "python3", "-m", "py_compile", src_path.c_str(), (char*)0);
+                } else {
+                    std::cerr << "不支持的编程语言: " << language << std::endl;
+                    exit(2);
                 }
-                
-                LOG(ERROR) << "启动编译器失败，可能是参数错误" << "\n";
+
+                std::cerr << "启动编译器失败: " << strerror(errno) << std::endl;
                 exit(2);
             }
             else{
