@@ -208,10 +208,10 @@ graph TD
 
 ## 📚 详细文档
 
-更多技术细节请参阅 `document/` 目录下的文档：
-- [架构设计 (Architecture)](document/architecture.md)
-- [API 接口规范 (API Reference)](document/api_reference.md)
-- [数据库设计 (Database)](document/database.md)
+更多技术细节请参阅 [文档中心 (Documentation Center)](document/README.md)：
+- [架构设计 (Architecture)](document/architecture/overview.md)
+- [API 接口规范 (API Reference)](document/api/reference.md)
+- [数据库设计 (Database)](document/architecture/database.md)
 
 ---
 **Maintained by**: Load-Balanced Online Judge Team
