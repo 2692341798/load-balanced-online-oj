@@ -27,12 +27,12 @@
 
 ```mermaid
 graph TD
-    Browser[Web浏览器 (React SPA)] -->|HTTP API| OJ[OJ主服务器:8094]
-    OJ -->|Load Balance| CS1[编译服务器1:8081]
-    OJ -->|Load Balance| CS2[编译服务器2:8082]
-    OJ -->|Load Balance| CS3[编译服务器3:8083]
-    OJ -->|SQL| DB[(MySQL数据库)]
-    Crawler[C++爬虫] -->|SQL| DB
+    Browser["Web浏览器 (React SPA)"] -->|HTTP API| OJ["OJ主服务器:8094"]
+    OJ -->|Load Balance| CS1["编译服务器1:8081"]
+    OJ -->|Load Balance| CS2["编译服务器2:8082"]
+    OJ -->|Load Balance| CS3["编译服务器3:8083"]
+    OJ -->|SQL| DB[("MySQL数据库")]
+    Crawler["C++爬虫"] -->|SQL| DB
 ```
 
 ## 3. 核心模块设计
@@ -105,5 +105,5 @@ graph TD
 ---
 
 **文档版本**: v1.2.2
-**最后更新时间**: 2026-03-10
+**最后更新时间**: 2026-03-11
 **维护团队**: 在线评测系统开发团队
