@@ -24,9 +24,9 @@
 ### 📖 操作手册 (`manuals/`)
 - [**维护手册**](manuals/maintenance.md): 系统日常维护、故障排查及常见问题解答。
 
-### 📝 日志与报告 (`logs/`, `reports/`)
-- [**开发日志**](logs/dev_log.md): 项目开发过程的详细记录与里程碑。
-- [**Bug 修复记录**](logs/bug_fixes/): 针对特定 Bug 的分析与修复报告。
+### 📝 日志与报告 (`project_logs/`, `reports/`)
+- [**开发日志**](project_logs/dev_log.md): 项目开发过程的详细记录与里程碑。
+- [**Bug 修复记录**](project_logs/bug_fixes/): 针对特定 Bug 的分析与修复报告。
 - [**清理报告**](reports/): 项目维护过程中的文件清理与重构记录。
 
 ## 🤝 如何贡献文档
