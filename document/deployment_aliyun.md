@@ -96,12 +96,14 @@ docker compose ps
 4. **讨论区**: 检查讨论区帖子和图片是否显示。
 
 ### 6. 前端构建说明 (Docker 自动处理)
-
-本项目采用了 **Docker Multi-stage Build** 技术。在 `docker/Dockerfile.oj` 中：
-1. **Stage 1 (frontend-builder)**: 使用 `node:18` 镜像，自动执行 `npm install` 和 `npm run build`，生成前端静态资源。
-2. **Stage 2 (Final)**: 将 Stage 1 生成的 `dist` 目录复制到 `backend/oj_server/wwwroot`。
-
-因此，使用 Docker 部署时，**无需在本地或服务器上手动安装 Node.js 或构建前端**，容器构建过程会自动完成这一切。
+ 
+ 本项目采用了 **Docker Multi-stage Build** 技术。在 `docker/Dockerfile.oj` 中：
+ 1. **Stage 1 (frontend-builder)**: 使用 `node:18` 镜像，自动执行 `npm install` 和 `npm run build`，生成前端静态资源 (`dist`)。
+ 2. **Stage 2 (Final)**: 将 Stage 1 生成的 `dist` 目录复制到 `backend/oj_server/wwwroot`。
+ 
+ 因此，使用 Docker 部署时，**无需在本地或服务器上手动安装 Node.js 或构建前端**，容器构建过程会自动完成这一切。
+ 
+ 如果需要手动修改前端构建参数，请编辑 `frontend/vite.config.ts` 或 `docker/Dockerfile.oj`。
 
 ## 7. 回滚方案
 

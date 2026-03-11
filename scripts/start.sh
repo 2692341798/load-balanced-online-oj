@@ -13,40 +13,13 @@ if [ ! -d "output/compile_server" ]; then
     exit 1
 fi
 
-# Get CPU core count (Linux/macOS compatible)
-if command -v nproc >/dev/null 2>&1; then
-    CPU_CORES=$(nproc)
-elif command -v sysctl >/dev/null 2>&1; then
-    CPU_CORES=$(sysctl -n hw.ncpu)
-else
-    CPU_CORES=1
-fi
-
-# Limit max compile servers to avoid resource exhaustion (e.g. max 8)
-if [ "$CPU_CORES" -gt 8 ]; then
-    CPU_CORES=8
-fi
-
-echo "Detected CPU Cores: $CPU_CORES. Starting $CPU_CORES Compile Servers..."
-
-# Prepare service_machine.conf path
-CONF_FILE="$curr_dir/output/oj_server/conf/service_machine.conf"
-# Ensure conf directory exists (it should be copied by make output, but just in case)
-mkdir -p "$(dirname "$CONF_FILE")"
-# Clear existing config
-> "$CONF_FILE"
-
 cd output/compile_server
-
-START_PORT=8081
-for ((i=0; i<CPU_CORES; i++)); do
-    PORT=$((START_PORT + i))
-    nohup ./compile_server $PORT > compile_${PORT}.log 2>&1 &
-    echo "Compile Server $PORT started (pid $!)"
-    
-    # Add to config file
-    echo "127.0.0.1:$PORT" >> "$CONF_FILE"
-done
+nohup ./compile_server 8081 > compile_8081.log 2>&1 &
+echo "Compile Server 8081 started (pid $!)"
+nohup ./compile_server 8082 > compile_8082.log 2>&1 &
+echo "Compile Server 8082 started (pid $!)"
+nohup ./compile_server 8083 > compile_8083.log 2>&1 &
+echo "Compile Server 8083 started (pid $!)"
 
 cd "$curr_dir"
 

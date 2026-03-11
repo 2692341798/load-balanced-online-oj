@@ -1,0 +1,7 @@
+{
+  "code":"fn main(){}",
+  "input":"",
+  "cpu_limit":1,
+  "mem_limit":10240,
+  "language":"rust"
+}

@@ -1,0 +1,7 @@
+{
+    "code": "#include <iostream>\nint main() { std::cout << \"Hello World\" << std::endl; return 0 ",
+    "input": "",
+    "cpu_limit": 1,
+    "mem_limit": 10240,
+    "language": "C++"
+}

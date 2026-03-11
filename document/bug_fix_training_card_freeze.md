@@ -12,28 +12,33 @@
 5. 浏览器的事件循环被阻塞，导致页面完全卡死。
 
 ## 修复方案
-
-### 1. 资源补充
-- 在 `oj_server/resources/wwwroot/images/` 目录下添加了缺失的 `default_avatar.png` 文件（从现有游戏资源中复制）。
-- 确保构建脚本 (`make output`) 能够正确将该资源复制到发布目录。
-
-### 2. 代码加固（错误边界）
-- 修改前端模板文件中的 `onerror` 处理逻辑，增加了防递归机制：
-  ```html
-  <!-- 修改前 -->
-  <img ... onerror="this.src='/images/default_avatar.png'">
-  
-  <!-- 修改后 -->
-  <img ... onerror="this.onerror=null;this.src='/images/default_avatar.png'">
-  ```
-- 通过 `this.onerror=null`，确保如果备用图片也加载失败，不会再次触发错误处理，从而打破无限循环。
-
-### 3. 受影响文件
-- `oj_server/resources/template_html/training_list.html`
-- `oj_server/resources/template_html/training_detail.html`
-- `oj_server/resources/wwwroot/images/default_avatar.png` (新增)
-
-## 验证结果
-- **资源验证**: 访问 `http://localhost:8088/images/default_avatar.png` 返回 200 OK。
-- **逻辑验证**: 代码审查确认 `onerror` 属性已包含 `this.onerror=null`。
-- **回归测试**: 即使删除了默认头像文件，新的代码逻辑也会阻止浏览器卡死（图片会显示为破碎图标，但页面保持响应）。
+ 
+ ### 1. 资源补充
+ - 在 `oj_server/resources/wwwroot/images/` 目录下添加了缺失的 `default_avatar.png` 文件（从现有游戏资源中复制）。
+ - 确保构建脚本 (`make output`) 能够正确将该资源复制到发布目录。
+ 
+ ### 2. 代码加固（错误边界）
+ - 修改前端模板文件中的 `onerror` 处理逻辑，增加了防递归机制：
+   ```html
+   <!-- 修改前 -->
+   <img ... onerror="this.src='/images/default_avatar.png'">
+   
+   <!-- 修改后 -->
+   <img ... onerror="this.onerror=null;this.src='/images/default_avatar.png'">
+   ```
+ - 通过 `this.onerror=null`，确保如果备用图片也加载失败，不会再次触发错误处理，从而打破无限循环。
+ 
+ ### 3. 架构升级 (React Refactor)
+ - **V2.0 更新**: 随着前端重构为 React SPA，该问题已从根本上解决。
+ - React 组件 (`Avatar`) 提供了更健壮的图片加载失败处理机制 (Fallback)，不再依赖易错的内联 `onerror` 事件。
+ - 新的题单列表页 (`TrainingList.tsx`) 甚至不再默认显示用户头像，彻底规避了此风险。
+ 
+ ### 4. 受影响文件 (Legacy)
+ - `oj_server/resources/template_html/training_list.html`
+ - `oj_server/resources/template_html/training_detail.html`
+ - `oj_server/resources/wwwroot/images/default_avatar.png` (新增)
+ 
+ ## 验证结果
+ - **资源验证**: 访问 `http://localhost:8088/images/default_avatar.png` 返回 200 OK。
+ - **逻辑验证**: 代码审查确认 `onerror` 属性已包含 `this.onerror=null`。
+ - **回归测试**: 即使删除了默认头像文件，新的代码逻辑也会阻止浏览器卡死（图片会显示为破碎图标，但页面保持响应）。

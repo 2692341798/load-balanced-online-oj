@@ -194,22 +194,50 @@ bool smartChoice(int* id, Machine** m) {
 #### 2.2.1 技术栈 (Tech Stack)
 - **核心框架**: React 19
 - **开发语言**: TypeScript
-- **组件模型**: Functional Components (函数式组件)
+- **构建工具**: Vite
+- **样式方案**: TailwindCSS + Shadcn UI
 - **状态管理**: Zustand
-- **逻辑复用**: Custom Hooks
+- **路由管理**: React Router v7
+- **HTTP客户端**: Axios
 
-#### 2.2.2 开发规范
-- **组件开发**: 
-  - 优先使用函数式组件，配合 Hooks 管理状态和副作用。
-  - 组件应保持纯净，副作用逻辑应封装在 `useEffect` 或自定义 Hooks 中。
-- **状态管理**:
-  - 局部状态使用 `useState` 或 `useReducer`。
-  - 全局状态使用 `Zustand`，避免 Props Drilling。
-- **类型系统**:
-  - 严格使用 TypeScript，定义清晰的 Interface 和 Type。
-  - 避免使用 `any`，特殊情况需添加注释说明。
+#### 2.2.2 React 组件开发规范
+- **组件结构**:
+  - 采用函数式组件 (Functional Components)。
+  - 每个组件文件应包含：Imports, Types/Interfaces, Component Definition, Exports。
+  - 组件名使用 PascalCase，如 `ProblemList.tsx`。
+- **Hooks 使用**:
+  - 遵循 Hooks 规则（只在顶层调用）。
+  - 复杂逻辑封装为 Custom Hooks (如 `useAuth`, `useDebounce`)。
+  - `useEffect` 必须正确处理依赖数组，避免无限循环。
+- **Props 与 State**:
+  - 优先使用 Props 传递数据，避免滥用全局 State。
+  - 使用 TypeScript 接口定义 Props 类型。
+  - 局部状态用 `useState`，复杂状态逻辑用 `useReducer` 或 Zustand。
 
-#### 2.2.3 传统前端代码风格 (Legacy)
+#### 2.2.3 代码风格 (TypeScript/React)
+- **命名**:
+  - 变量/函数: camelCase (e.g., `handleSubmit`, `isLoading`)
+  - 组件/接口: PascalCase (e.g., `UserProfile`, `IUser`)
+  - 常量: UPPER_SNAKE_CASE (e.g., `API_BASE_URL`)
+- **文件组织**:
+  - `src/components/ui`: 通用 UI 组件 (Shadcn)
+  - `src/components/layout`: 布局组件
+  - `src/pages`: 页面级组件
+  - `src/hooks`: 自定义 Hooks
+  - `src/lib`: 工具函数与配置
+  - `src/types`: TypeScript 类型定义
+- **注释**:
+  - 组件头部注释说明组件用途。
+  - 复杂逻辑添加行内注释。
+
+#### 2.2.4 样式规范 (TailwindCSS)
+- 优先使用 Utility Classes，避免手写 CSS。
+- 复杂样式组合使用 `cn()` (clsx + tailwind-merge) 工具函数。
+- 遵循移动优先 (Mobile-First) 的响应式设计原则。
+- 颜色使用 CSS 变量 (定义在 `globals.css`) 以支持主题切换。
+
+#### 2.2.5 废弃规范 (Legacy)
+*(以下规范仅适用于旧版 HTML/CSS/JS 模板，新开发请忽略)*
 
 ##### HTML规范
 ```html

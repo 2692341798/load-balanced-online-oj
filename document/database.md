@@ -211,8 +211,16 @@ FLUSH PRIVILEGES;
 - `INDEX idx_question_id (question_id)`
 - `UNIQUE KEY unique_item (training_list_id, question_id)`
 
+## 4. 前端状态管理 (Client-Side State)
+
+本系统前端采用 **Zustand** 进行轻量级状态管理，数据仅存在于内存中，刷新页面后需重新获取。
+
+- **Auth Store**: 存储当前用户信息 (`user`) 和登录状态 (`isAuthenticated`)。
+- **Training Store**: 缓存当前题单详情，减少重复请求。
+- **Persistence**: 无持久化存储 (LocalStorage/IndexedDB)，完全依赖后端 Session Cookie 维持会话。
+
 ---
 
-**文档版本**: v1.2.0  
-**最后更新时间**: 2026-03-09  
+**文档版本**: v1.3.0  
+**最后更新时间**: 2026-03-11  
 **维护团队**: 在线评测系统开发团队

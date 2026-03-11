@@ -122,48 +122,53 @@ ssh -i /Users/huangqijun/Downloads/Mac.pem root@<Server_IP> "cd oj_project/docke
     - 查看 Actions 选项卡下的构建日志。
 
 ### 3.5 手动源码部署 (Non-Docker)
-
-如果使用 `scripts/deploy_sync.sh` 或其他方式直接在服务器上编译运行（非 Docker 方式），需要注意：
-
-1. **环境要求**:
-   - 服务器除 C++ 编译环境外，必须安装 **Node.js (v18+)** 和 **npm**。
-   
-2. **前端构建步骤**:
-   在执行 C++ 编译 (`make output`) 之前，必须先构建前端资源：
+ 
+ 如果使用 `scripts/deploy_sync.sh` 或其他方式直接在服务器上编译运行（非 Docker 方式），需要注意：
+ 
+ 1. **环境要求**:
+    - 服务器除 C++ 编译环境外，必须安装 **Node.js (v18+)** 和 **npm**。
+    
+ 2. **前端构建步骤**:
+    在执行 C++ 编译 (`make output`) 之前，必须先构建前端资源：
+    ```bash
+    # 在服务器上执行
+    cd ~/load-balanced-online-oj/frontend
+    npm install
+    npm run build
+    
+    # 将构建产物复制到后端资源目录
+    # 注意：oj_server 默认从 ./wwwroot 读取静态文件
+    # 确保 output 目录结构正确
+    mkdir -p ../backend/oj_server/wwwroot
+    cp -r dist/* ../backend/oj_server/wwwroot/
+    ```
+ 
+ 3. **脚本调整**:
+    如果使用 `deploy_sync.sh`，建议在脚本中添加上述前端构建命令，或者在本地构建好 `dist` 后通过 `rsync` 同步到服务器。
+ 
+ ---
+ 
+ ## 4. 监控告警机制
+ 
+ ### 系统资源监控
+ - **CPU/内存**: 使用 `htop` 或 `docker stats` 查看容器资源占用。
    ```bash
-   # 在服务器上执行
-   cd ~/load-balanced-online-oj/frontend
-   npm install
-   npm run build
-   
-   # 将构建产物复制到后端资源目录
-   # 注意：oj_server 默认从 ./wwwroot 读取静态文件
-   cp -r dist/* ../backend/oj_server/wwwroot/
+   docker stats
    ```
-
-3. **脚本调整**:
-   如果使用 `deploy_sync.sh`，建议在脚本中添加上述前端构建命令，或者在本地构建好 `dist` 后通过 `rsync` 同步到服务器。
-
----
-
-## 4. 监控告警机制
-
-### 系统资源监控
-- **CPU/内存**: 使用 `htop` 或 `docker stats` 查看容器资源占用。
-  ```bash
-  docker stats
-  ```
-- **磁盘空间**:
-  ```bash
-  df -h
-  ```
-
-### 应用服务监控
-- **日志监控**:
-  - OJ Server: `docker compose logs -f oj_server`
-  - Database: `docker compose logs -f db`
-- **可用性检查**:
-  - 定期访问 `http://<Server_IP>:8094/all_questions` 确认页面加载正常。
+ - **磁盘空间**:
+   ```bash
+   df -h
+   ```
+ 
+ ### 应用服务监控
+ - **后端日志**:
+   - OJ Server: `docker compose logs -f oj_server`
+   - Database: `docker compose logs -f db`
+ - **前端监控**:
+   - 由于前端是 SPA，运行在用户浏览器中，服务器端主要监控 Nginx/OJ Server 的 Access Log 状态码。
+   - 用户端报错可在浏览器控制台 (Console) 查看，或检查 Network 请求是否返回 401/500。
+ - **可用性检查**:
+   - 定期访问 `http://<Server_IP>:8094/all_questions` 确认页面加载正常。
 
 ---
 

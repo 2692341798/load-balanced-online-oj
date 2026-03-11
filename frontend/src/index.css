@@ -67,3 +67,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Override typography styles for better code block rendering */
+  .prose pre {
+    @apply bg-muted/50 p-4 rounded-lg overflow-x-auto my-4 border border-border !important;
+  }
+  
+  .prose pre code {
+    @apply bg-transparent p-0 text-sm font-mono text-foreground !important;
+  }
+
+  /* Ensure inline code also looks good */
+  .prose :not(pre) > code {
+    @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground font-medium;
+  }
+  
+  /* Remove default backticks from inline code in typography plugin */
+  .prose :not(pre) > code::before {
+    content: none !important;
+  }
+  .prose :not(pre) > code::after {
+    content: none !important;
+  }
+}

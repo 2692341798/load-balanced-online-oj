@@ -38,10 +38,24 @@ graph TD
 ## 3. 核心模块设计
 
 ### 3.1 前端应用 (frontend)
-- **Framework**: React 19 + Vite + TypeScript。
-- **UI Components**: Shadcn UI + TailwindCSS，提供现代化的深色主题界面。
-- **State Management**: Zustand，管理用户会话、题目列表等全局状态。
+- **Framework**: React 19 + Vite + TypeScript，采用 SPA (单页应用) 架构。
+- **UI Components**: 
+    - **Shadcn UI**: 基于 Radix UI 的无头组件库，提供高质量的交互体验。
+    - **TailwindCSS**: 原子化 CSS 框架，实现快速响应式布局。
+    - **Lucide React**: 统一的图标库。
+- **State Management**: **Zustand**，管理用户会话 (`auth.ts`)、题目列表等全局状态，相比 Redux 更轻量高效。
+- **Routing**: **React Router v7**，管理页面路由与权限控制 (`ProtectedRoute`)。
+- **Network**: **Axios** 封装 (`src/lib/axios.ts`)，统一处理请求拦截、响应错误 (401/500) 和超时。
+- **Editor**: **Monaco Editor** (`@monaco-editor/react`)，提供类 VS Code 的代码编辑体验。
 - **Build**: 构建产物 (HTML/JS/CSS) 部署在 `backend/oj_server/wwwroot` 目录，由后端静态文件服务提供。
+
+**组件交互流程**:
+1. **View (Page/Component)**: 用户触发操作 (如点击登录)。
+2. **Store (Zustand)**: 调用 Action (如 `login`)。
+3. **Service (API Layer)**: `authService` 调用 `axios` 发送 HTTP 请求。
+4. **Backend**: 处理请求并返回 JSON。
+5. **Store**: 更新状态 (`user`, `isAuthenticated`)。
+6. **View**: 自动重新渲染 UI。
 
 ### 3.2 OJ 主服务器 (backend/oj_server)
 - **Control**: 核心控制器，处理 API 请求（认证、题目、评测分发、题单、讨论）。

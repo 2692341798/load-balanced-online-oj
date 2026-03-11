@@ -20,15 +20,14 @@ services:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       timeout: 20s
       retries: 10
+    restart: always
 
   compile_server_1:
     build:
       context: ..
       dockerfile: docker/Dockerfile.compile
     container_name: compile_server_1
-    command: ["./compile_server", "8081"]
-    ports:
-      - "8081:8081"
+    command: ["./compile_server", "8080"]
     networks:
       - oj_network
     restart: always
@@ -38,9 +37,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.compile
     container_name: compile_server_2
-    command: ["./compile_server", "8082"]
-    ports:
-      - "8082:8082"
+    command: ["./compile_server", "8080"]
     networks:
       - oj_network
     restart: always

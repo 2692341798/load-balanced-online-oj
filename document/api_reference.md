@@ -14,8 +14,13 @@
 - **基础URL**: `http://localhost:8094`
 - **API版本**: v1
 - **状态码**: 遵循HTTP标准状态码
-
-## 2. 认证接口
+ 
+ ### 1.3 前端调用约定
+ - **BaseURL**: 前端通过 `/api` 代理请求，无需硬编码完整 URL。
+ - **Auth**: 浏览器自动携带 Cookie，前端无需手动处理 Session ID。
+ - **Error Handling**: 全局拦截器 (`src/lib/axios.ts`) 统一处理 401 未登录跳转。
+ 
+ ## 2. 认证接口
 
 ### 2.1 用户注册
 

@@ -74,16 +74,31 @@ graph TD
 
 ### 1. 前端开发 (Frontend)
 
-前端项目位于 `frontend/` 目录，支持热重载 (HMR) 开发模式。
+前端项目位于 `frontend/` 目录，采用 React 19 + Vite + TypeScript 技术栈。
+
+**环境要求**:
+- Node.js: v18.0.0+
+- 包管理器: npm (推荐 v9+)
 
 ```bash
 cd frontend
 
-# 安装依赖
+# 1. 安装依赖
 npm install
 
-# 启动开发服务器
+# 2. 启动开发服务器 (热重载)
 npm run dev
+# 访问: http://localhost:5173
+
+# 3. 构建生产环境代码
+npm run build
+# 产物目录: frontend/dist
+
+# 4. 本地预览构建产物
+npm run preview
+
+# 5. 代码风格检查
+npm run lint
 ```
 > **提示**: 开发服务器默认开启了代理 (Proxy)，会自动将 `/api`, `/judge` 等请求转发至后端的 `http://localhost:8094`，无需手动配置跨域。
 

@@ -29,16 +29,6 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom', 'zustand', 'axios'],
-          'ui': ['@radix-ui/react-avatar', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-label', '@radix-ui/react-scroll-area', '@radix-ui/react-select', '@radix-ui/react-separator', '@radix-ui/react-slot', '@radix-ui/react-tabs', '@radix-ui/react-toast', 'lucide-react', 'class-variance-authority', 'clsx', 'tailwind-merge'],
-          'markdown': ['react-markdown', 'rehype-highlight', 'remark-gfm', 'highlight.js'],
-          'monaco': ['@monaco-editor/react'],
-        }
-      }
-    },
     chunkSizeWarningLimit: 1000,
   }
 })

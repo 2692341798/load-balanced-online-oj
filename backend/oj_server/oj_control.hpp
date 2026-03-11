@@ -700,6 +700,8 @@ namespace ns_control
                 data["star"] = q.star;
                 data["cpu_limit"] = q.cpu_limit;
                 data["mem_limit"] = q.mem_limit;
+                data["desc"] = q.desc;
+                data["header"] = q.header;
                 // Don't return full description/tail/header to save bandwidth if only needed for metadata
                 root["data"] = data;
                 
@@ -727,6 +729,7 @@ namespace ns_control
             if (req.has_param("page")) page = std::stoi(req.get_param_value("page"));
             if (req.has_param("size")) page_size = std::stoi(req.get_param_value("size"));
             std::string status = req.get_param_value("status");
+            if (status == "all") status = "";
 
 #ifdef ENABLE_REDIS
             // Redis Cache

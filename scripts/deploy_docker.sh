@@ -35,18 +35,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 2.5. Detect Remote CPU Cores and Generate Config
-echo "[2.5/6] Detecting remote CPU cores and generating config..."
-REMOTE_CORES=$(ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "nproc")
-if [ -z "$REMOTE_CORES" ]; then
-    echo "Warning: Failed to detect remote CPU cores. Defaulting to 1."
-    REMOTE_CORES=1
-fi
-echo "Detected $REMOTE_CORES cores on remote server."
-
-# Generate Config locally
-./scripts/generate_docker_compose.sh "$REMOTE_CORES"
-
 # 3. Prepare Local Data
 echo "[3/6] Preparing local data..."
 # 3.1 Dump Database
