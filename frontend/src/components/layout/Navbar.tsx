@@ -34,14 +34,14 @@ export function Navbar() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 text-base backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto flex h-14 w-full max-w-[1200px] items-center px-4">
         <div className="mr-4 hidden md:flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
             <Code2 className="h-6 w-6" />
             <span className="hidden font-bold sm:inline-block">冻梨OJ</span>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
+          <nav className="flex items-center space-x-6 font-medium">
             {navLinks.map((link) => (
               <Link
                 key={link.href}

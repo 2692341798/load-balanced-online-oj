@@ -35,7 +35,7 @@ export default function Home() {
     <div className="flex flex-col gap-10 pb-10">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-background py-20 md:py-32">
-        <div className="container relative z-10 flex flex-col items-center gap-8 text-center md:flex-row md:text-left lg:gap-16">
+        <div className="mx-auto w-full max-w-[1200px] px-4 relative z-10 flex flex-col items-center gap-8 text-center md:flex-row md:text-left lg:gap-16">
           <div className="flex-1 space-y-6">
             <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
               探索代码的 <br className="hidden md:block" />
@@ -93,7 +93,7 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
-      <section className="container grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <section className="mx-auto w-full max-w-[1200px] px-4 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

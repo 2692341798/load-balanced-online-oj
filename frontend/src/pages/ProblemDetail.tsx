@@ -4,6 +4,8 @@ import { useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -283,8 +285,8 @@ export default function ProblemDetail() {
 
                     <div className="prose prose-slate max-w-none overflow-x-auto break-words dark:prose-invert prose-headings:font-bold prose-headings:tracking-tight prose-h1:mt-8 prose-h1:mb-4 prose-h1:border-b prose-h1:pb-2 prose-h1:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:border-l-4 prose-h2:border-primary/70 prose-h2:pl-4 prose-h2:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-lg prose-p:mb-4 prose-p:leading-7 prose-pre:border-none prose-pre:bg-transparent prose-pre:p-0 prose-pre:shadow-none prose-code:font-mono prose-code:text-sm">
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        rehypePlugins={[rehypeHighlight]}
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeHighlight, rehypeKatex]}
                         components={{
                           code: CodeBlock
                         }}

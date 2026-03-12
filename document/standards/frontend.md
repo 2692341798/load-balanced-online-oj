@@ -50,10 +50,18 @@
 - `2xl`: 1536px
 
 ### 4.2 容器 (Container)
-使用 Shadcn 的 Layout 组件或 Tailwind `container` 类：
+使用 Shadcn 的 Layout 组件或 Tailwind `container` 类。
+**全局布局**通常使用以下模式确保内容在大屏上居中且不过宽：
 ```tsx
-<div className="container mx-auto py-10">
-  {/* Content */}
+<div className="flex min-h-screen flex-col">
+  <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="container flex h-14 items-center">
+      {/* Navbar Content */}
+    </div>
+  </header>
+  <main className="flex-1 container max-w-7xl mx-auto py-6">
+    {/* Page Content */}
+  </main>
 </div>
 ```
 
@@ -145,12 +153,23 @@ import { Button } from "@/components/ui/button"
 
 ### 7.2 Markdown 渲染
 使用 `react-markdown` 配合 `typography` 插件 (`prose` 类名) 进行排版。
+对于数学公式，使用 `remark-math` 和 `rehype-katex` 插件。
 ```tsx
+import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css' // 引入样式
+
 <article className="prose dark:prose-invert max-w-none">
-  <ReactMarkdown>{content}</ReactMarkdown>
+  <ReactMarkdown
+    remarkPlugins={[remarkMath]}
+    rehypePlugins={[rehypeKatex]}
+  >
+    {content}
+  </ReactMarkdown>
 </article>
 ```
 
 ---
-**文档版本**: v2.0.0 (React Refactor)
-**最后更新**: 2026-03-11
+**文档版本**: v2.0.1 (Layout & Math Fixes)
+**最后更新**: 2026-03-12
