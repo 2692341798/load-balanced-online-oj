@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/useTranslation';
 import { AlertTriangle } from 'lucide-react';
 
@@ -28,12 +28,9 @@ interface ResultPanelProps {
   status: number; // 0: success, others: error
   error?: string; // Reason or stderr
   data?: ResultData; // Parsed stdout
-  onResubmit: () => void;
-  onBack: () => void;
-  isSubmitting: boolean;
 }
 
-export default function ResultPanel({ status, error, data, onResubmit, onBack, isSubmitting }: ResultPanelProps) {
+export default function ResultPanel({ status, error, data }: ResultPanelProps) {
   const { t } = useTranslation();
   const [selectedCaseIndex, setSelectedCaseIndex] = useState(0);
 
@@ -55,12 +52,6 @@ export default function ResultPanel({ status, error, data, onResubmit, onBack, i
                isAllPassed ? t('status.accepted') : t('status.wrong_answer')}
             </span>
           </div>
-          <div className="flex gap-2">
-             <Button variant="outline" size="sm" onClick={onBack}>{t('action.back_to_problem')}</Button>
-             <Button size="sm" onClick={onResubmit} disabled={isSubmitting}>
-               {isSubmitting ? t('action.submitting') : t('action.resubmit')}
-             </Button>
-          </div>
        </div>
 
        {/* Content */}
@@ -79,20 +70,33 @@ export default function ResultPanel({ status, error, data, onResubmit, onBack, i
             </ScrollArea>
          ) : (
             <>
-              {/* Test Case Tabs */}
-              <div className="flex gap-2 p-2 border-b overflow-x-auto bg-muted/10">
-                 {data?.cases?.map((testCase, index) => (
-                    <Button
-                      key={index}
-                      variant={selectedCaseIndex === index ? "secondary" : "ghost"}
-                      size="sm"
-                      onClick={() => setSelectedCaseIndex(index)}
-                      className={`h-8 gap-2 ${selectedCaseIndex === index ? 'bg-background shadow-sm' : ''}`}
-                    >
-                      <div className={`w-2 h-2 rounded-full ${testCase.pass ? 'bg-green-500' : 'bg-red-500'}`} />
-                      {t('case')} {index + 1}
-                    </Button>
-                 ))}
+              {/* Test Case Selection Grid */}
+              <div className="p-4 border-b bg-muted/5">
+                 <div className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">{t('result.test_cases')}</div>
+                 <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 gap-2">
+                    {data?.cases?.map((testCase, index) => (
+                       <button
+                         key={index}
+                         onClick={() => setSelectedCaseIndex(index)}
+                         className={`
+                           relative group flex h-8 w-full items-center justify-center rounded-md border transition-all duration-200
+                           ${testCase.pass 
+                             ? 'bg-green-500/10 border-green-500/20 text-green-600 hover:bg-green-500/20 hover:border-green-500/30' 
+                             : 'bg-red-500/10 border-red-500/20 text-red-600 hover:bg-red-500/20 hover:border-red-500/30'
+                           }
+                           ${selectedCaseIndex === index ? 'ring-2 ring-offset-2 ring-primary scale-105 shadow-sm' : ''}
+                         `}
+                         title={`Case ${index + 1}: ${testCase.pass ? 'Passed' : 'Failed'}`}
+                       >
+                         <span className="text-xs font-bold font-mono">{index + 1}</span>
+                         {/* Status Indicator Dot */}
+                         <span className={`absolute -top-1 -right-1 flex h-2.5 w-2.5 items-center justify-center`}>
+                           <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${testCase.pass ? 'bg-green-400' : 'bg-red-400'} ${selectedCaseIndex === index ? 'block' : 'hidden'}`}></span>
+                           <span className={`relative inline-flex rounded-full h-2 w-2 ${testCase.pass ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                         </span>
+                       </button>
+                    ))}
+                 </div>
               </div>
 
               {/* Detail View */}

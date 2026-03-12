@@ -8,6 +8,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![C++](https://img.shields.io/badge/backend-C%2B%2B11-00599C.svg)
 ![React](https://img.shields.io/badge/frontend-React_19-61DAFB.svg)
+![Redis](https://img.shields.io/badge/cache-Redis-DC382D.svg)
 
 ## 🚀 项目概述
 
@@ -30,7 +31,7 @@
 ### 特色模块
 - **📋 智能题单 (Training Lists)**：支持拖拽排序的自定义题单系统，轻松规划刷题路线。
 - **🕷️ 竞赛爬虫 (Contest Crawler)**：内置高性能 C++ 爬虫，自动同步 Codeforces 和 LeetCode 的最新赛事信息。
-- **🎮 娱乐中心 (Entertainment)**：刷题累了？内置超级玛丽、推箱子等经典游戏的复刻版，劳逸结合。
+- **🎮 娱乐中心 (Entertainment)**：刷题累了？内置超级玛丽、推箱子、Chrome Dino 等经典游戏的复刻版，劳逸结合。
 - **👤 个性化中心**：支持头像上传、个人数据统计及详细的提交记录分析。
 
 ## 📸 界面预览
@@ -57,14 +58,17 @@ graph TD
     
     subgraph Data_Storage [数据存储 & 外部服务]
         OJ -->|MySQL Protocol| DB[("MySQL 数据库")]
+        OJ -->|Redis Protocol| Cache[("Redis 缓存/队列")]
         Crawler["竞赛爬虫服务"] -->|Write| DB
+        Crawler -->|Push| Cache
     end
 ```
 
 ### 技术栈详情
 
-- **前端**: React 19, TypeScript, Vite, TailwindCSS, Shadcn UI, Zustand, Axios
+- **前端**: React 19, TypeScript, Vite, TailwindCSS, Shadcn UI, Zustand, Axios, KaTeX
 - **后端**: C++11, httplib (基于 cpp-httplib), JSONCpp, MySQL Connector
+- **中间件**: Redis (缓存与消息队列), hiredis (C++ Redis Client)
 - **运维**: Docker, Docker Compose, Makefile, Shell Scripts
 - **测试**: Playwright (E2E Testing), Google Test (Unit Testing)
 
@@ -106,6 +110,25 @@ npm run lint
 
 后端项目位于 `backend/` 目录，建议在 Linux/macOS 环境下开发。
 
+**环境要求**:
+- G++ (支持 C++11)
+- MySQL Server
+- Redis Server
+- hiredis (Redis C++ Client)
+- jsoncpp, mysql-connector-c++
+
+**依赖安装 (Ubuntu/Debian)**:
+```bash
+sudo apt-get update
+sudo apt-get install g++ make libmysqlclient-dev libjsoncpp-dev libhiredis-dev redis-server
+```
+
+**依赖安装 (macOS)**:
+```bash
+brew install mysql redis hiredis jsoncpp
+```
+
+**编译与运行**:
 ```bash
 # 编译所有模块并生成发布目录 (推荐)
 make output
@@ -166,6 +189,9 @@ compile_server_2:8082
 **Q: 数据库连接失败?**
 > A: 请确保 MySQL 服务已启动，并且 `backend/oj_server/oj_model.hpp` 中的数据库连接配置（用户名/密码）与你的本地环境一致。默认配置通常为 `root` 用户。
 
+**Q: 爬虫无法启动或 Redis 连接失败?**
+> A: 请确保 Redis 服务已启动并在默认端口 (6379) 监听。
+
 **Q: 前端页面显示 "Network Error"?**
 > A: 这通常意味着后端服务未启动。请确保 `oj_server` 正在运行并在监听 8094 端口。
 
@@ -185,7 +211,6 @@ graph TD
         Backend --> Crawler[crawler/ <br> 竞赛与题目爬虫]
         Backend --> OJ[oj_server/ <br> OJ 主业务服务]
         OJ --> Conf[conf/ <br> 配置文件]
-        OJ --> WWW[wwwroot/ <br> 前端静态资源]
     end
     
     subgraph "Frontend (React)"
@@ -217,6 +242,10 @@ graph TD
 - [部署指南 (Deployment)](document/deployment/docker_deployment.md)
 
 ## 📝 更新日志 (Changelog)
+
+### v2.0.1 (2026-03-12)
+- **Markdown 公式支持**: 引入 KaTeX 支持 LaTeX 数学公式渲染。
+- **布局修复**: 修复 React 重构后的导航栏抖动和容器宽度问题。
 
 ### v2.0.0 (2026-03-11) - React 重构版
 - **前端重构**: 全面迁移至 React 19 + Vite + TypeScript 技术栈。

@@ -59,6 +59,7 @@ export default function EditorResultWorkspace({
   onLanguageChange,
   onCodeChange,
   onSubmit,
+  // @ts-ignore
   onClearResult,
 }: EditorResultWorkspaceProps) {
   const [viewportWidth, setViewportWidth] = useState(() =>
@@ -127,9 +128,6 @@ export default function EditorResultWorkspace({
                   status={result.status}
                   error={result.error}
                   data={result.data}
-                  onResubmit={onSubmit}
-                  onBack={onClearResult}
-                  isSubmitting={isSubmitting}
                 />
               </ResizablePanel>
             </>

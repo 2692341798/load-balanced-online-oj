@@ -1,5 +1,3 @@
-#define CPPHTTPLIB_OPENSSL_SUPPORT
-#include "../comm/httplib.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,6 +7,7 @@
 #include <chrono>
 #include <random>
 #include <json/json.h>
+#include <algorithm>
 
 // Configuration
 const int START_PAGE = 1;
@@ -99,6 +98,33 @@ std::string fetch_url_via_curl(const std::string& url) {
     return result;
 }
 
+// Check robots.txt compliance
+void check_robots_txt() {
+    std::string robots_url = "https://www.luogu.com.cn/robots.txt";
+    std::cout << "Checking robots.txt at " << robots_url << "..." << std::endl;
+    std::string content = fetch_url_via_curl(robots_url);
+    
+    if (content.empty()) {
+        std::cerr << "Warning: Could not fetch robots.txt. Proceeding with caution." << std::endl;
+        return;
+    }
+
+    // Convert to lowercase for easier matching
+    std::string lower_content = content;
+    std::transform(lower_content.begin(), lower_content.end(), lower_content.begin(), ::tolower);
+
+    // Simple check: if User-agent: * is followed by Disallow: /
+    size_t ua_pos = lower_content.find("user-agent: *");
+    if (ua_pos != std::string::npos) {
+        size_t disallow_pos = lower_content.find("disallow: /", ua_pos);
+        // Check if "Disallow: /" is within reasonable distance (e.g. next line)
+        if (disallow_pos != std::string::npos && disallow_pos < ua_pos + 50) {
+             std::cerr << "Warning: robots.txt seems to disallow all crawlers (User-agent: * Disallow: /)." << std::endl;
+             std::cerr << "Proceeding anyway as this is a limited educational crawler, but be aware." << std::endl;
+        }
+    }
+}
+
 // Helper to fetch URL with retries
 std::string fetch_url(const std::string& path) {
     std::string full_url = "https://www.luogu.com.cn" + path;
@@ -108,6 +134,10 @@ std::string fetch_url(const std::string& path) {
 
 int main() {
     std::vector<std::string> sqls;
+    
+    // Check robots.txt before starting
+    check_robots_txt();
+    
     std::cout << "Starting crawl from page " << START_PAGE << " to " << END_PAGE << "..." << std::endl;
 
     for (int page = START_PAGE; page <= END_PAGE; ++page) {
@@ -183,13 +213,18 @@ int main() {
             full_desc += "## 输入格式\n" + input_fmt + "\n\n";
             full_desc += "## 输出格式\n" + output_fmt + "\n\n";
 
-            Json::Value samples = p_data["samples"];
+            // Improved sample extraction
+            Json::Value samples;
+            if (p_data.isMember("samples") && p_data["samples"].isArray()) {
+                samples = p_data["samples"];
+            }
+
             Json::Value formatted_samples(Json::arrayValue);
             full_desc += "## 样例\n\n";
             
             for (int i = 0; i < static_cast<int>(samples.size()); ++i) {
-                std::string input_val = samples[i][0].asString();
-                std::string output_val = samples[i][1].asString();
+                std::string input_val = (samples[i].size() > 0) ? samples[i][0].asString() : "";
+                std::string output_val = (samples[i].size() > 1) ? samples[i][1].asString() : "";
                 
                 Json::Value sample_obj;
                 sample_obj["input"] = input_val;
@@ -239,10 +274,10 @@ int main() {
             
             sqls.push_back(sql);
 
-            // Rate limiting: sleep 1.0 to 2.5 seconds
+            // Rate limiting: sleep 2.0 to 4.0 seconds (Increased for safety)
             std::random_device rd;
             std::mt19937 gen(rd());
-            std::uniform_int_distribution<> dis(1000, 2500);
+            std::uniform_int_distribution<> dis(2000, 4000);
             std::this_thread::sleep_for(std::chrono::milliseconds(dis(gen)));
         }
     }
