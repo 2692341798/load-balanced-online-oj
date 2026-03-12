@@ -21,12 +21,13 @@ import { Badge } from '@/components/ui/badge'
 import { Loading } from '@/components/ui/loading'
 import api from '@/lib/axios'
 import { type Problem, type ProblemListResponse } from '@/types/problem'
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react'
 
 export default function ProblemList() {
   const [problems, setProblems] = useState<Problem[]>([])
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [jumpPage, setJumpPage] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = parseInt(searchParams.get('page') || '1')
@@ -57,6 +58,8 @@ export default function ProblemList() {
     fetchProblems()
   }, [page, search, difficulty])
 
+  const totalPages = Math.ceil(total / pageSize)
+
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
@@ -70,9 +73,17 @@ export default function ProblemList() {
 
   const handlePageChange = (newPage: number) => {
     setSearchParams({ page: newPage.toString(), search, difficulty })
+    setJumpPage('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const totalPages = Math.ceil(total / pageSize)
+  const handleJump = () => {
+     const p = parseInt(jumpPage, 10)
+     if (!isNaN(p) && p >= 1 && p <= totalPages) {
+       handlePageChange(p)
+     }
+   }
+
 
   return (
     <div className="container py-10">
@@ -175,29 +186,76 @@ export default function ProblemList() {
       </div>
 
       {/* Pagination */}
-      <div className="mt-4 flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(page - 1)}
-          disabled={page <= 1 || isLoading}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          上一页
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          第 {page} 页 / 共 {Math.max(1, totalPages)} 页
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(page + 1)}
-          disabled={page >= totalPages || isLoading}
-        >
-          下一页
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      {totalPages > 1 && (
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handlePageChange(1)}
+              disabled={page <= 1 || isLoading}
+              title="首页"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page <= 1 || isLoading}
+              className="gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              上一页
+            </Button>
+            <span className="text-sm text-muted-foreground min-w-[100px] text-center">
+              第 {page} 页 / 共 {Math.max(1, totalPages)} 页
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page >= totalPages || isLoading}
+              className="gap-1"
+            >
+              下一页
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handlePageChange(totalPages)}
+              disabled={page >= totalPages || isLoading}
+              title="尾页"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">前往</span>
+            <Input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={jumpPage}
+              onChange={(e) => setJumpPage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleJump()}
+              className="w-16 h-8 text-center"
+              placeholder={String(page)}
+            />
+            <span className="text-sm text-muted-foreground whitespace-nowrap">页</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleJump}
+              disabled={!jumpPage || parseInt(jumpPage) < 1 || parseInt(jumpPage) > totalPages}
+            >
+              跳转
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

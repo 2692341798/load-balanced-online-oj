@@ -243,6 +243,9 @@ graph TD
 
 ## 📝 更新日志 (Changelog)
 
+### v2.0.2 (2026-03-12)
+- **Problem List Pagination**: Enhanced pagination with "First Page" and "Last Page" buttons, and a direct page jump input. The pagination controls are now centered.
+
 ### v2.0.1 (2026-03-12)
 - **Markdown 公式支持**: 引入 KaTeX 支持 LaTeX 数学公式渲染。
 - **布局修复**: 修复 React 重构后的导航栏抖动和容器宽度问题。
