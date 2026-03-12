@@ -212,6 +212,24 @@ graph TD
 - [架构设计 (Architecture)](document/architecture/overview.md)
 - [API 接口规范 (API Reference)](document/api/reference.md)
 - [数据库设计 (Database)](document/architecture/database.md)
+- [前端样式指南 (Frontend Style Guide)](document/standards/frontend.md)
+- [开发规范 (Development Standards)](document/standards/development.md)
+- [部署指南 (Deployment)](document/deployment/docker_deployment.md)
+
+## 📝 更新日志 (Changelog)
+
+### v2.0.0 (2026-03-11) - React 重构版
+- **前端重构**: 全面迁移至 React 19 + Vite + TypeScript 技术栈。
+- **UI 升级**: 引入 Shadcn UI 和 TailwindCSS，支持深色模式。
+- **架构调整**: 后端代码统一迁移至 `backend/` 目录，实现前后端分离。
+- **性能优化**: 首页 LCP 优化至 0.8s，构建产物自动分割。
+
+### v1.3.1 (2026-03-10)
+- **编译器修复**: 修复编译器启动失败时的错误信息显示。
+- **语言兼容**: 增加对 C++/Java/Python 语言别名的容错处理。
+
+### v1.2.2 (2026-03-10)
+- **项目结构**: 规范化目录结构，清理冗余静态资源。
 
 ---
 **Maintained by**: Load-Balanced Online Judge Team

@@ -53,3 +53,6 @@ output/
 cookies.txt
 page*.html
 backup/
+
+# Credentials
+document/test-credentials.md

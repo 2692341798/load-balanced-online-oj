@@ -19,9 +19,15 @@
 #include <mysql/mysql.h>
 #include "crawler_common.hpp"
 
-// Redis Config (Global or Static for now, could be in Config)
-const std::string REDIS_HOST = "127.0.0.1";
-const int REDIS_PORT = 6379;
+// Redis Config
+std::string GetRedisHost() {
+    const char* val = std::getenv("REDIS_HOST");
+    return val ? val : "127.0.0.1";
+}
+int GetRedisPort() {
+    const char* val = std::getenv("REDIS_PORT");
+    return val ? std::stoi(val) : 6379;
+}
 const int REDIS_TTL = 86400; // 24 hours
 const std::string LOG_FILE = "../logs/crawler.log";
 const std::string DATA_FILE = "../data/contests.json";
@@ -129,7 +135,7 @@ private:
 
     void WriteToRedis(const std::string& json_data) {
 #ifdef ENABLE_REDIS
-        redisContext *c = redisConnect(REDIS_HOST.c_str(), REDIS_PORT);
+        redisContext *c = redisConnect(GetRedisHost().c_str(), GetRedisPort());
         if (c == NULL || c->err) {
             if (c) {
                 Log("Redis Connection Error: " + std::string(c->errstr));
@@ -357,7 +363,7 @@ private:
 
     void InvalidateRedisCache() {
 #ifdef ENABLE_REDIS
-        redisContext *c = redisConnect(REDIS_HOST.c_str(), REDIS_PORT);
+        redisContext *c = redisConnect(GetRedisHost().c_str(), GetRedisPort());
         if (c == NULL || c->err) {
             if (c) redisFree(c);
             return;

@@ -734,7 +734,9 @@ namespace ns_control
 #ifdef ENABLE_REDIS
             // Redis Cache
             std::string cache_key = "contest:page:" + std::to_string(page) + ":size:" + std::to_string(page_size) + ":status:" + status;
-            redisContext *c = redisConnect("127.0.0.1", 6379);
+            std::string redis_host = ns_model::GetEnv("REDIS_HOST", "127.0.0.1");
+            int redis_port = std::stoi(ns_model::GetEnv("REDIS_PORT", "6379"));
+            redisContext *c = redisConnect(redis_host.c_str(), redis_port);
             if (c != NULL && c->err == 0) {
                  redisReply *reply = (redisReply*)redisCommand(c, "GET %s", cache_key.c_str());
                  if (reply != NULL && reply->type == REDIS_REPLY_STRING) {

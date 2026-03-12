@@ -1,33 +1,70 @@
 version: '3.8'
 
 services:
-  db:
-    image: mysql:8.0
-    container_name: oj_db
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    environment:
-      MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_DATABASE: oj
-      MYSQL_USER: oj_client
-      MYSQL_PASSWORD: 123456
-    volumes:
-      - db_data:/var/lib/mysql
-      - ../sql/setup_database.sql:/docker-entrypoint-initdb.d/01_setup.sql
-      - ../sql/insert_questions.sql:/docker-entrypoint-initdb.d/02_insert.sql
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: oj_frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - oj_server
     networks:
       - oj_network
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  oj_server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.oj
+    container_name: oj_server
+    expose:
+      - "8094"
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST:-db}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER:-oj_client}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-123456}
+      - MYSQL_DB=${MYSQL_DB:-oj}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+    volumes:
+      - ../backend/oj_server/conf/service_machine_docker.conf:/app/output/oj_server/conf/service_machine.conf
+      - oj_data:/app/output/oj_server/data
+      - oj_questions:/app/output/oj_server/questions
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      compile_server_1:
+        condition: service_started
+      compile_server_2:
+        condition: service_started
+    networks:
+      - oj_network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8094/api/user || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   compile_server_1:
     build:
       context: ..
       dockerfile: docker/Dockerfile.compile
     container_name: compile_server_1
-    command: ["./compile_server", "8080"]
+    expose:
+      - "8080"
     networks:
       - oj_network
     restart: always
@@ -37,33 +74,8 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.compile
     container_name: compile_server_2
-    command: ["./compile_server", "8080"]
-    networks:
-      - oj_network
-    restart: always
-
-  oj_server:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.oj
-    container_name: oj_server
-    ports:
-      - "8094:8094"
-    environment:
-      - MYSQL_HOST=db
-      - MYSQL_PORT=3306
-      - MYSQL_USER=oj_client
-      - MYSQL_PASSWORD=123456
-      - MYSQL_DB=oj
-    volumes:
-      - ../backend/oj_server/conf/service_machine_docker.conf:/app/output/oj_server/conf/service_machine.conf
-    depends_on:
-      db:
-        condition: service_healthy
-      compile_server_1:
-        condition: service_started
-      compile_server_2:
-        condition: service_started
+    expose:
+      - "8080"
     networks:
       - oj_network
     restart: always
@@ -75,14 +87,47 @@ services:
     container_name: contest_crawler
     command: ["/app/output/crawler/contest_crawler"]
     environment:
-      - MYSQL_HOST=db
-      - MYSQL_PORT=3306
-      - MYSQL_USER=oj_client
-      - MYSQL_PASSWORD=123456
-      - MYSQL_DB=oj
+      - MYSQL_HOST=${MYSQL_HOST:-db}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER:-oj_client}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-123456}
+      - MYSQL_DB=${MYSQL_DB:-oj}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - oj_network
+    restart: always
+
+  db:
+    image: mysql:8.0
+    container_name: oj_db
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DB:-oj}
+      MYSQL_USER: ${MYSQL_USER:-oj_client}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-123456}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ../sql/setup_database.sql:/docker-entrypoint-initdb.d/01_setup.sql
+      - ../sql/insert_questions.sql:/docker-entrypoint-initdb.d/02_insert.sql
+    networks:
+      - oj_network
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u${MYSQL_USER:-oj_client}", "-p${MYSQL_PASSWORD:-123456}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:alpine
+    container_name: oj_redis
     networks:
       - oj_network
     restart: always
@@ -93,3 +138,5 @@ networks:
 
 volumes:
   db_data:
+  oj_data:
+  oj_questions:

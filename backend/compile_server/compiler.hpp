@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <cstring>   // For std::strerror
+#include <cerrno>    // For errno
 
 #include "../comm/util.hpp"
 #include "../comm/log.hpp"
@@ -83,7 +85,7 @@ namespace ns_compiler
                     exit(2);
                 }
 
-                std::cerr << "启动编译器失败: " << strerror(errno) << std::endl;
+                std::cerr << "启动编译器失败: " << std::strerror(errno) << std::endl;
                 exit(2);
             }
             else{

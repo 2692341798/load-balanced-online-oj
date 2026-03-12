@@ -14,8 +14,9 @@
 - [**API 参考手册**](api/reference.md): 后端 RESTful API 的详细说明、请求参数与响应格式。
 
 ### 🚀 部署与运维 (`deployment/`)
-- [**阿里云 Docker 部署**](deployment/aliyun.md): 基于 Docker 的全栈部署指南。
-- [**竞赛模块部署**](deployment/contest_module.md): 竞赛爬虫及相关模块的特定部署说明。
+- [**Docker 通用部署**](deployment/docker_deployment.md): 基于 Docker Compose 的本地与服务器部署指南。
+- [**阿里云部署指南**](deployment/aliyun.md): 针对阿里云环境的特定部署说明。
+- [**竞赛模块部署**](deployment/contest_module.md): 竞赛爬虫及相关模块的配置与维护。
 
 ### 📏 开发规范 (`standards/`)
 - [**后端开发规范**](standards/development.md): C++ 代码风格、提交规范及最佳实践。
@@ -37,5 +38,5 @@
 4.  提交 Pull Request。
 
 ---
-**最后更新**: 2026-03-11
+**最后更新**: 2026-03-12
 **维护团队**: 在线评测系统开发团队

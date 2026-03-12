@@ -4,10 +4,51 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Backend Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libjsoncpp-dev libmysqlclient-dev libssl-dev libhiredis-dev
+
+      - name: Build Backend
+        run: |
+          make backend/compile_server
+          make backend/oj_server
+          make backend/crawler
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+  deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,7 +64,7 @@ jobs:
           # Don't delete existing files on server to preserve logs/db backups if any
           rm: false 
           # Exclude files that are not needed for deployment or are generated artifacts
-          exclude: ".git,.github,.vscode,.trae,output,build,**/*.o,**/*.d,**/__pycache__,**/.DS_Store"
+          exclude: ".git,.github,.vscode,.trae,output,build,**/*.o,**/*.d,**/__pycache__,**/.DS_Store,node_modules"
 
       - name: Remote SSH Commands
         uses: appleboy/ssh-action@v1.0.3
@@ -33,30 +74,51 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 30m
           script: |
+            set -e
             echo "Starting remote deployment..."
             
-            # 1. Navigate to docker directory
-            # Path matches scripts/deploy_docker.sh: ~/load-balanced-online-oj
+            # Navigate to project root
             TARGET_DIR=~/load-balanced-online-oj
-            cd $TARGET_DIR/docker
+            cd $TARGET_DIR
             
-            # 2. Restart services
+            # Ensure scripts are executable
+            chmod +x scripts/*.sh
+            
+            # Navigate to docker directory
+            cd docker
+            
+            # Restart services
             echo "Rebuilding and restarting Docker containers..."
-            docker compose down
-            docker compose up -d --build
+            # Use docker compose (v2) if available, else docker-compose (v1)
+            if docker compose version &> /dev/null; then
+                COMPOSE_CMD="docker compose"
+            else
+                COMPOSE_CMD="docker-compose"
+            fi
             
-            # 3. Cleanup
+            $COMPOSE_CMD down --remove-orphans
+            $COMPOSE_CMD up -d --build
+            
+            # Cleanup
             echo "Cleaning up unused images..."
             docker image prune -f
             
-            # 4. Verify deployment
+            # Verify deployment
             echo "Verifying service status on port 8094..."
-            sleep 10
-            if curl -s --head --request GET http://localhost:8094 | grep "200 OK" > /dev/null; then 
+            sleep 15
+            if curl -s --head --request GET http://localhost:8094/api/user | grep "200 OK" > /dev/null; then 
                echo "Service is up and running on port 8094!"
             else
                echo "Warning: Service check returned non-200 status or failed. Please check logs."
-               # Don't fail the build yet as startup might take longer, just warn
+               # We don't exit 1 here to avoid failing the pipeline if it's just a slow startup
             fi
             
             echo "Deployment finished successfully!"
+
+      - name: Notify Success
+        if: success()
+        run: echo "::notice::Deployment to server completed successfully!"
+
+      - name: Notify Failure
+        if: failure()
+        run: echo "::error::Deployment failed! Please check the logs."
