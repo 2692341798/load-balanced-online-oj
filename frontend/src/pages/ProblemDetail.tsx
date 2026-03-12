@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import api from '@/lib/axios'
 import { type ProblemDetail, type ProblemDetailResponse } from '@/types/problem'
 import { useToast } from '@/hooks/use-toast'
-import { Copy, Check, Terminal, Clock, Cpu, Award } from 'lucide-react'
+import { Copy, Check, Clock, Cpu, Award } from 'lucide-react'
 import EditorResultWorkspace, {
   type WorkspaceResult,
 } from '@/components/EditorResultWorkspace'
@@ -79,21 +79,15 @@ const CodeBlock = ({ className, children, ...props }: CodeBlockProps) => {
   }
 
   return (
-    <div className="relative group my-4 rounded-lg overflow-hidden border bg-muted/50">
-      <div className="flex items-center justify-between px-4 py-2 bg-muted/80 border-b">
-        <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">Code / Sample</span>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground"
-          onClick={onCopy}
-        >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        </Button>
-      </div>
+    <div className="relative group my-4 rounded-md border bg-muted/50">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={onCopy}
+      >
+        {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      </Button>
       <div className="p-4 overflow-x-auto">
         <code className={className} {...props}>
           {children}
