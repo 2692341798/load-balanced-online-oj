@@ -243,7 +243,7 @@ graph TD
 
 ## 📝 更新日志 (Changelog)
 
-### v2.0.2 (2026-03-12)
+### v2.0.3 (2026-03-12)
 - **Problem List Pagination**: Enhanced pagination with "First Page" and "Last Page" buttons, and a direct page jump input. The pagination controls are now centered.
 
 ### v2.0.1 (2026-03-12)
