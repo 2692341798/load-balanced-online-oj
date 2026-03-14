@@ -41,7 +41,7 @@ namespace ns_log
         message += "]";
 
         // cout 本质 内部是包含缓冲区的
-        std::cout << message; //不要endl进行刷新
+        std::cout << message << std::endl; //不要endl进行刷新
 
         return std::cout;
     }

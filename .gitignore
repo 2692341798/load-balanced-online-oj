@@ -29,16 +29,19 @@
 
 # Logs
 logs/
+*.log
 
 # Executables
-backend/oj_server/oj_server
-backend/oj_server/wwwroot/
-backend/compile_server/compile_server
-backend/crawler/contest_crawler
-backend/crawler/test_crawler
-backend/crawler/luogu_crawler
-backend/crawler/init_db
-backend/crawler/crawler_state.json
+*.exe
+*.out
+*.app
+oj_server/oj_server
+compile_server/compile_server
+crawler/contest_crawler
+crawler/test_crawler
+crawler/luogu_crawler
+crawler/init_db
+crawler/crawler_state.json
 
 # System files
 .DS_Store
@@ -54,5 +57,5 @@ cookies.txt
 page*.html
 backup/
 
-# Credentials
-document/test-credentials.md
+# Test reports
+test_report.md

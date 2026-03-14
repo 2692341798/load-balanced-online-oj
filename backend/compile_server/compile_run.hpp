@@ -162,6 +162,7 @@ namespace ns_compile_and_run
             if (mkdir(dir.c_str(), 0755) != 0) {
                 LOG(ERROR) << "创建临时目录失败: " << dir << " errno: " << errno << "\n";
                 status_code = -2;
+                out_value["error_detail"] = "创建临时目录失败: " + dir + " errno: " + std::to_string(errno);
                 goto END;
             }
             
@@ -170,6 +171,7 @@ namespace ns_compile_and_run
             {
                 LOG(ERROR) << "写入源文件失败: " << PathUtil::Src(file_name, language) << "\n";
                 status_code = -2; //未知错误
+                out_value["error_detail"] = "写入源文件失败: " + PathUtil::Src(file_name, language);
                 goto END;
             }
 
@@ -178,6 +180,7 @@ namespace ns_compile_and_run
             if (!FileUtil::WriteFile(PathUtil::Stdin(file_name), input)) {
                 LOG(ERROR) << "写入Stdin文件失败: " << PathUtil::Stdin(file_name) << "\n";
                 status_code = -2;
+                out_value["error_detail"] = "写入Stdin文件失败: " + PathUtil::Stdin(file_name);
                 goto END;
             }
             chmod(PathUtil::Stdin(file_name).c_str(), 0644); // Ensure permissions
@@ -223,9 +226,11 @@ namespace ns_compile_and_run
             out_value["category"] = CodeToCategory(status_code);
             if (status_code == -2)
             {
-                if (run_result == -1) out_value["error_detail"] = "运行时打开标准文件失败";
-                else if (run_result == -2) out_value["error_detail"] = "运行时创建子进程失败";
-                else out_value["error_detail"] = "未知系统错误";
+                if (!out_value.isMember("error_detail")) {
+                    if (run_result == -1) out_value["error_detail"] = "运行时打开标准文件失败";
+                    else if (run_result == -2) out_value["error_detail"] = "运行时创建子进程失败";
+                    else out_value["error_detail"] = "未知系统错误";
+                }
             }
             if (status_code > 0)
             {
