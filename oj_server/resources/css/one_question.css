@@ -253,18 +253,102 @@
     position: relative; /* For absolute positioning of tooltip */
 }
 
-.result-area {
+/* Result Tabs and Content */
+.result-area-container {
     flex: 1;
-    width: 100%;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-bottom: 10px;
     background-color: #252526;
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 4px;
-    padding: 20px;
-    margin-bottom: 10px;
-    color: var(--text-main);
+}
+
+.result-tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: #2d2d2d;
+}
+
+.result-tab-item {
+    padding: 8px 16px;
+    cursor: pointer;
     font-size: 0.9rem;
+    color: var(--text-secondary);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s;
+}
+
+.result-tab-item:hover {
+    color: var(--text-main);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.result-tab-item.active {
+    color: var(--text-main);
+    background-color: #252526;
+    font-weight: 600;
+    border-top: 2px solid var(--accent-color);
+}
+
+.result-content-wrapper {
+    flex: 1;
+    overflow-y: auto;
     position: relative;
+}
+
+.result-content {
+    display: none;
+    height: 100%;
+}
+
+.result-content.active {
+    display: block;
+}
+
+/* Adjust original result-area style since it is now nested */
+.result-area {
+    border: none;
+    background: transparent;
+    margin-bottom: 0;
+    padding: 15px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+#ai-hint-container {
+    padding: 15px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* AI Hint Button */
+.btn-ai-hint {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s;
+}
+
+.btn-ai-hint:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px -1px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.1);
+}
+
+.btn-ai-hint:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* Result Header */

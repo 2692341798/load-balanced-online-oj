@@ -654,6 +654,13 @@ int main()
         resp.set_content(json, "application/json;charset=utf-8");
     });
 
+    // API Generate AI Hint
+    svr.Post("/api/generate_hint", [&ctrl](const Request &req, Response &resp){
+        std::string json;
+        ctrl.GenerateAiHint(req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
     svr.set_base_dir("./resources/wwwroot");
     svr.set_mount_point("/css", "./resources/css");
     std::cout << "[INFO] Server binding to 0.0.0.0:8094..." << std::endl;

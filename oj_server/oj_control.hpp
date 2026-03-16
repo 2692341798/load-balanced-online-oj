@@ -17,6 +17,7 @@
 #include "../comm/httplib.h"
 #include "oj_model.hpp"
 #include "oj_view.hpp"
+#include "deepseek_api.hpp"
 #ifdef ENABLE_REDIS
 #include <hiredis/hiredis.h>
 #endif
@@ -246,6 +247,7 @@ namespace ns_control
         Model model_; //提供后台数据
         View view_;   //提供html渲染功能
         LoadBlance load_blance_; //核心负载均衡器
+        ns_deepseek::DeepSeekApi deepseek_api_;
         
         std::unordered_map<std::string, Session> sessions_;
         std::mutex session_mtx_;
@@ -1058,6 +1060,61 @@ namespace ns_control
                  sub.content = code;
                  sub.language = language;
                  model_.AddSubmission(sub);
+            }
+        }
+
+        void GenerateAiHint(const Request &req, std::string *json_out)
+        {
+            // 1. Auth Check
+            User user;
+            if (!AuthCheck(req, &user)) {
+                 Json::Value res;
+                 res["status"] = 401;
+                 res["reason"] = "Unauthorized";
+                 *json_out = SerializeJson(res);
+                 return;
+            }
+
+            // 2. Parse Body
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            
+            std::string question_id = root.get("question_id", "").asString();
+            std::string code = root.get("code", "").asString();
+            std::string error_msg = root.get("error_msg", "").asString();
+            std::string test_cases = root.get("test_cases", "").asString();
+
+            if (question_id.empty() || code.empty() || error_msg.empty()) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Missing required fields";
+                *json_out = SerializeJson(res);
+                return;
+            }
+
+            // 3. Get Question Details
+            struct Question q;
+            if (!model_.GetOneQuestion(question_id, &q)) {
+                 Json::Value res;
+                 res["status"] = 1;
+                 res["reason"] = "Question Not Found";
+                 *json_out = SerializeJson(res);
+                 return;
+            }
+
+            // 4. Call DeepSeek
+            std::string hint;
+            if (deepseek_api_.GenerateHint(q.desc, code, error_msg, test_cases, &hint)) {
+                 Json::Value res;
+                 res["status"] = 0;
+                 res["hint"] = hint;
+                 *json_out = SerializeJson(res);
+            } else {
+                 Json::Value res;
+                 res["status"] = 1;
+                 res["reason"] = "AI Service Unavailable";
+                 *json_out = SerializeJson(res);
             }
         }
 
