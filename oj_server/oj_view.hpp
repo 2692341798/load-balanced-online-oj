@@ -169,6 +169,18 @@ namespace ns_view
             SetupTemplate(root, &u); // Profile page doesn't highlight any main nav link usually, or highlight none
 
             root.SetValue("user_id", u.id);
+            root.SetValue("username", u.username);
+            root.SetValue("nickname", u.nickname);
+            root.SetValue("email", u.email);
+            root.SetValue("phone", u.phone);
+            root.SetValue("created_at", u.created_at);
+            
+            if (!u.avatar.empty()) {
+                root.ShowSection("has_avatar");
+                root.SetValue("avatar_url", u.avatar);
+            } else {
+                root.ShowSection("no_avatar");
+            }
             
             // Stats
             int total_solved = 0;
