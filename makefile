@@ -15,6 +15,7 @@ output: all
 	@mkdir -p output/crawler
 	@cp -rf compile_server/compile_server output/compile_server/
 	@if [ -d compile_server/temp ]; then cp -rf compile_server/temp output/compile_server/; fi
+	@if [ -d compile_server/include ]; then cp -rf compile_server/include output/compile_server/; fi
 	@cp -rf oj_server/conf output/oj_server/
 	@cp -rf oj_server/resources output/oj_server/
 	@cp -rf oj_server/questions output/oj_server/

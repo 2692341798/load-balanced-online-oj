@@ -23,7 +23,8 @@ RUN make clean && make
 WORKDIR /app
 RUN mkdir -p output/compile_server && \
     cp -rf compile_server/compile_server output/compile_server/ && \
-    if [ -d compile_server/temp ]; then cp -rf compile_server/temp output/compile_server/; fi
+    if [ -d compile_server/temp ]; then cp -rf compile_server/temp output/compile_server/; fi && \
+    if [ -d compile_server/include ]; then cp -rf compile_server/include output/compile_server/; fi
 
 WORKDIR /app/output/compile_server
 # Port will be passed as argument, but CMD needs a default.

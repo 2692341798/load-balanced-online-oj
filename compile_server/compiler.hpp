@@ -55,9 +55,15 @@ namespace ns_compiler
                 //程序替换，并不影响进程的文件描述符表
                 //子进程: 调用编译器，完成对代码的编译工作
                 if (language == "C++") {
+#ifdef __APPLE__
+                    // macOS 下 Apple Clang 默认没有 <bits/stdc++.h>，因此添加 -I ./include 参数
+                    execlp("g++", "g++", "-o", PathUtil::Exe(file_name, language).c_str(),\
+                    PathUtil::Src(file_name, language).c_str(), "-I", "./include", "-D", "COMPILER_ONLINE","-std=c++11",  nullptr/*不要忘记*/);
+#else
                     //g++ -o target src -std=c++11
                     execlp("g++", "g++", "-o", PathUtil::Exe(file_name, language).c_str(),\
                     PathUtil::Src(file_name, language).c_str(), "-D", "COMPILER_ONLINE","-std=c++11",  nullptr/*不要忘记*/);
+#endif
                 } else if (language == "Java") {
                     // javac src
                     execlp("javac", "javac", PathUtil::Src(file_name, language).c_str(), "-encoding", "UTF-8", nullptr);
