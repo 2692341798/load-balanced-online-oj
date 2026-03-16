@@ -275,8 +275,8 @@ graph LR
     root --> rm[README.md<br/>项目说明]
     
     %% Style
-    classDef folder fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef file fill:#fff,stroke:#333,stroke-width:1px;
+    classDef folder fill:#1a1a1a,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef file fill:#333,stroke:#fff,stroke-width:1px,color:#fff;
     class root,comm,cs,cr,oj,conf,res,doc,tests,docker,scripts,sql,data folder;
     class c1,c2,c3,cs1,cs2,cs3,cs4,cs5,cr1,cr2,cr3,cr4,oj1,oj2,oj3,oj4,oj5,conf1,res1,res2,res3,oj6,doc1,doc2,t1,t2,d1,d2,d3,s1,s2,s3,sql1,da1,m,gi,li,rm file;
 ```
