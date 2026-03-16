@@ -183,7 +183,6 @@ cd oj_server && ./oj_server
 
 ## 🏗️ 项目结构
 
-```
 ```mermaid
 graph LR
     root[load-balanced-online-oj/]
@@ -280,7 +279,6 @@ graph LR
     classDef file fill:#fff,stroke:#333,stroke-width:1px;
     class root,comm,cs,cr,oj,conf,res,doc,tests,docker,scripts,sql,data folder;
     class c1,c2,c3,cs1,cs2,cs3,cs4,cs5,cr1,cr2,cr3,cr4,oj1,oj2,oj3,oj4,oj5,conf1,res1,res2,res3,oj6,doc1,doc2,t1,t2,d1,d2,d3,s1,s2,s3,sql1,da1,m,gi,li,rm file;
-```
 ```
 
 ## 🎮 娱乐中心 (Beta)
