@@ -10,6 +10,8 @@
 - **在线代码评测**：支持C/C++代码的编译、运行和自动化测试
 - **负载均衡**：多编译服务器分布式处理，提高系统吞吐量
 - **用户认证系统**：完整的用户注册、登录和会话管理
+- **管理员后台 (Admin Panel)**：可视化的仪表盘，支持用户管理（封禁/重置密码）、题目管理（CRUD/分页）、系统日志审计和邀请码注册机制
+- **数据可视化**：管理员仪表盘提供用户增长、提交统计等关键指标的图表展示
 - **题单系统 (Training Lists)**：支持创建、分享和管理题目集合，提供拖拽排序和难度分级功能
 - **题目管理**：支持算法题目的创建、编辑和分类管理
 - **现代化Web界面**：响应式设计，支持深色主题
@@ -176,65 +178,109 @@ cd oj_server && ./oj_server
 - **题目列表**：http://localhost:8094/all_questions
 - **题目详情**：http://localhost:8094/question/<题号>
 - **登录页面**：http://localhost:8094/login
+- **管理员后台**：http://localhost:8094/admin (默认邀请码需管理员生成，初始账号需手动配置)
 - **娱乐中心**：http://localhost:8094/entertainment (或侧边栏入口)
 
 ## 🏗️ 项目结构
 
 ```
-load-balanced-online-oj/
-├── comm/                           # 公共组件
-│   ├── httplib.h                  # HTTP服务器库
-│   ├── log.hpp                    # 日志系统
-│   └── util.hpp                   # 工具函数
-├── compile_server/                # 编译服务器
-│   ├── compile_server.cc         # 主程序
-│   ├── compile_run.hpp           # 编译运行核心
-│   ├── compiler.hpp              # 编译器封装
-│   ├── runner.hpp                # 程序运行器
-│   └── makefile                  # 编译配置
-├── crawler/                       # 竞赛爬虫
-│   ├── contest_crawler.cc        # 竞赛爬虫主程序 (核心)
-│   ├── luogu_crawler.cc          # 洛谷题目爬虫
-│   ├── crawler_common.hpp        # 爬虫公共头文件
-│   └── makefile                  # 编译配置
-├── oj_server/                     # OJ主服务器
-│   ├── oj_server.cc              # 主程序
-│   ├── oj_control.hpp            # 业务逻辑控制
-│   ├── oj_model.hpp              # 数据模型（MySQL版）
-│   ├── oj_view.hpp               # 视图渲染
-│   ├── contest_utils.hpp         # 竞赛工具类
-│   ├── conf/                     # 配置文件
-│   │   └── service_machine.conf  # 编译服务器列表
-│   ├── resources/                # 静态资源与模板
-│   │   ├── css/                  # 样式文件
-│   │   ├── template_html/        # HTML模板
-│   │   │   └── shared/           # 公共组件模板 (如 navbar.html)
-│   │   └── wwwroot/              # 静态资源(JS/Images)
-│   │       └── games/            # 娱乐中心游戏资源
-│   └── makefile                  # 编译配置
-├── document/                      # 项目文档
-│   ├── architecture.md           # 架构设计
-│   ├── database.md               # 数据库设计
-│   └── ...                       # 其他文档
-├── tests/                         # 测试代码
-│   ├── oj_server/                # OJ服务测试
-│   └── crawler/                  # 爬虫测试
-├── docker/                        # Docker部署配置
-│   ├── Dockerfile.oj
-│   ├── Dockerfile.compile
-│   └── docker-compose.yml
-├── scripts/                       # 运维脚本
-│   ├── start.sh                  # 一键启动
-│   ├── stop.sh                   # 一键停止
-│   └── deploy_docker.sh          # Docker部署脚本
-├── sql/                           # 数据库脚本
-│   └── setup_database.sql        # 数据库初始化
-├── data/                          # 数据文件
-│   └── contests.json             # 竞赛数据缓存
-├── makefile                       # 主编译文件
-├── .gitignore                    # Git忽略规则
-├── LICENSE                       # 许可证文件
-└── README.md                     # 项目说明
+```mermaid
+graph LR
+    root[load-balanced-online-oj/]
+    
+    %% comm module
+    comm[comm/]
+    root --> comm
+    comm --> c1[httplib.h<br/>HTTP服务器库]
+    comm --> c2[log.hpp<br/>日志系统]
+    comm --> c3[util.hpp<br/>工具函数]
+    
+    %% compile_server module
+    cs[compile_server/]
+    root --> cs
+    cs --> cs1[compile_server.cc<br/>主程序]
+    cs --> cs2[compile_run.hpp<br/>编译运行核心]
+    cs --> cs3[compiler.hpp<br/>编译器封装]
+    cs --> cs4[runner.hpp<br/>程序运行器]
+    cs --> cs5[makefile<br/>编译配置]
+    
+    %% crawler module
+    cr[crawler/]
+    root --> cr
+    cr --> cr1[contest_crawler.cc<br/>竞赛爬虫主程序]
+    cr --> cr2[luogu_crawler.cc<br/>洛谷题目爬虫]
+    cr --> cr3[crawler_common.hpp<br/>爬虫公共头文件]
+    cr --> cr4[makefile<br/>编译配置]
+    
+    %% oj_server module
+    oj[oj_server/]
+    root --> oj
+    oj --> oj1[oj_server.cc<br/>主程序]
+    oj --> oj2[oj_control.hpp<br/>业务逻辑控制]
+    oj --> oj3[oj_model.hpp<br/>数据模型]
+    oj --> oj4[oj_view.hpp<br/>视图渲染]
+    oj --> oj5[contest_utils.hpp<br/>竞赛工具类]
+    
+    conf[conf/]
+    oj --> conf
+    conf --> conf1[service_machine.conf<br/>编译服务器列表]
+    
+    res[resources/]
+    oj --> res
+    res --> res1[css/<br/>样式文件]
+    res --> res2[template_html/<br/>HTML模板]
+    res --> res3[wwwroot/<br/>静态资源]
+    
+    oj --> oj6[makefile<br/>编译配置]
+    
+    %% document module
+    doc[document/]
+    root --> doc
+    doc --> doc1[architecture.md<br/>架构设计]
+    doc --> doc2[database.md<br/>数据库设计]
+    
+    %% tests module
+    tests[tests/]
+    root --> tests
+    tests --> t1[oj_server/<br/>OJ服务测试]
+    tests --> t2[crawler/<br/>爬虫测试]
+    
+    %% docker module
+    docker[docker/]
+    root --> docker
+    docker --> d1[Dockerfile.oj]
+    docker --> d2[Dockerfile.compile]
+    docker --> d3[docker-compose.yml]
+    
+    %% scripts module
+    scripts[scripts/]
+    root --> scripts
+    scripts --> s1[start.sh<br/>一键启动]
+    scripts --> s2[stop.sh<br/>一键停止]
+    scripts --> s3[deploy_docker.sh<br/>Docker部署脚本]
+    
+    %% sql module
+    sql[sql/]
+    root --> sql
+    sql --> sql1[setup_database.sql<br/>数据库初始化]
+    
+    %% data module
+    data[data/]
+    root --> data
+    data --> da1[contests.json<br/>竞赛数据缓存]
+    
+    %% root files
+    root --> m[makefile<br/>主编译文件]
+    root --> gi[.gitignore]
+    root --> li[LICENSE]
+    root --> rm[README.md<br/>项目说明]
+    
+    %% Style
+    classDef folder fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef file fill:#fff,stroke:#333,stroke-width:1px;
+    class root,comm,cs,cr,oj,conf,res,doc,tests,docker,scripts,sql,data folder;
+    class c1,c2,c3,cs1,cs2,cs3,cs4,cs5,cr1,cr2,cr3,cr4,oj1,oj2,oj3,oj4,oj5,conf1,res1,res2,res3,oj6,doc1,doc2,t1,t2,d1,d2,d3,s1,s2,s3,sql1,da1,m,gi,li,rm file;
+```
 ```
 
 ## 🎮 娱乐中心 (Beta)
@@ -282,41 +328,37 @@ load-balanced-online-oj/
 
 ## 📅 版本历史
 
+- **v1.2.8** (2026-03-16):
+  - ✨ 管理员后台扩展：新增用户管理（封禁/重置密码）、邀请码注册、系统日志审计功能
+  - 📊 数据可视化：新增管理员仪表盘，集成 Chart.js 展示用户增长与提交统计
+  - 🌏 中文本地化：管理后台全界面汉化
+  - 📝 文档更新：同步所有技术文档至最新状态
 - **v1.2.0** (2026-03-09):
   - 📝 文档全面同步：校对并更新了 API、数据库、架构等所有技术文档，确保与代码完全一致
   - 🔧 端口修正：明确主服务默认端口为 8094
   - 🔄 数据库结构更新：补全了所有新功能模块的表结构定义
 - **v1.1.4** (2026-03-09):
   - ✨ 题单功能增强：支持批量添加题目到训练计划，提升管理效率
-  - 📝 文档更新：完善 API 文档与架构说明
 - **v1.1.3** (2026-03-09):
   - 💄 UI/UX 改进：首页导航栏重构，统一使用公共组件
   - 🐛 Bug 修复：修复首页用户状态显示不一致问题
   - ⚡️ 性能优化：首页移除重定向，提升首屏加载速度
 - **v1.1.2** (2026-03-04):
   - 🎨 视觉体验升级：优化题单与讨论区卡片样式，提升对比度与层次感
-  - 💄 样式修复：解决讨论区摘要显示问题，统一深色主题设计语言
 - **v1.1.1** (2026-03-04):
   - 🐛 修复用户头像同步问题：优化多会话状态下的用户信息更新逻辑
 - **v1.1.0** (2026-02-22):
   - ✨ 新增题单/训练计划模块：支持创建、分享、管理题目集合
   - 🔄 题单题目拖拽排序功能
-  - 📝 完善数据库与API文档
 - **v1.0.5** (2026-02-16):
   - 🔧 项目结构优化：整合爬虫模块至 `crawler/` 目录
 - **v1.0.4** (2026-02-15):
   - ✨ 新增娱乐中心 (Beta)，集成超级玛丽复刻版
   - 👤 用户中心增强：支持头像上传、个人资料修改
   - 📄 分页功能优化
-  - 🔧 项目结构重构：分离测试与工具代码
-    - 测试代码迁移至 `tests/`
-    - 爬虫工具迁移至 `tools/crawler/`
-    - 清理构建产物与冗余文件
 - **v1.0.3**:
   - 🕷️ 引入C++竞赛爬虫 (Codeforces/LeetCode)
   - 🔧 统一服务端口为 8088
-- **v0.3.7-fun**:
-  - 🎮 娱乐中心初步集成
 
 ## 📄 许可证信息
 
@@ -328,6 +370,6 @@ load-balanced-online-oj/
 
 ---
 
-**最后更新时间**: 2026-03-09  
-**文档版本**: v1.2.0  
+**最后更新时间**: 2026-03-16  
+**文档版本**: v1.2.8  
 **维护团队**: 在线评测系统开发团队

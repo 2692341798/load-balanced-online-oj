@@ -64,6 +64,7 @@ FLUSH PRIVILEGES;
 | phone | VARCHAR(20) | DEFAULT NULL | - | 手机号 |
 | avatar | VARCHAR(255) | DEFAULT NULL | - | 头像URL |
 | role | INT | DEFAULT 0 | 0 | 角色 (0:User, 1:Admin) |
+| status | INT | DEFAULT 0 | 0 | 状态 (0:Normal, 1:Banned) |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | - | 创建时间 |
 | updated_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | - | 更新时间 |
 
@@ -211,8 +212,41 @@ FLUSH PRIVILEGES;
 - `INDEX idx_question_id (question_id)`
 - `UNIQUE KEY unique_item (training_list_id, question_id)`
 
+### 3.10 邀请码表 (invitation_codes)
+
+**表描述**: 存储管理员注册邀请码。
+
+**表结构**:
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | - | ID |
+| code | VARCHAR(50) | NOT NULL, UNIQUE | - | 邀请码 |
+| is_used | TINYINT(1) | DEFAULT 0 | 0 | 是否已使用 |
+| used_by | INT | DEFAULT 0 | 0 | 使用者ID |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | - | 创建时间 |
+
+### 3.11 操作日志表 (operation_logs)
+
+**表描述**: 存储管理员的关键操作日志。
+
+**表结构**:
+
+| 字段名 | 数据类型 | 约束 | 默认值 | 描述 |
+|--------|----------|------|--------|------|
+| id | INT | PRIMARY KEY, AUTO_INCREMENT | - | ID |
+| user_id | INT | NOT NULL | - | 操作者ID |
+| action | VARCHAR(50) | NOT NULL | - | 动作类型 |
+| target | VARCHAR(100) | - | - | 操作对象 |
+| details | TEXT | - | - | 详细信息 |
+| ip | VARCHAR(50) | - | - | 操作IP |
+| created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | - | 创建时间 |
+
+**索引**:
+- `INDEX idx_user_id (user_id)`
+
 ---
 
-**文档版本**: v1.2.0  
-**最后更新时间**: 2026-03-09  
+**文档版本**: v1.2.8  
+**最后更新时间**: 2026-03-16  
 **维护团队**: 在线评测系统开发团队

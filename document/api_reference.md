@@ -529,11 +529,38 @@ Content-Type: multipart/form-data
 **接口描述**: 管理员专用的题目管理接口
 
 **API列表**:
-- `GET /api/admin/questions`: 获取所有题目列表（含隐藏）
+- `GET /api/admin/questions?page=1&page_size=20`: 获取所有题目列表（含隐藏，支持分页）
 - `POST /api/admin/question`: 创建题目
   - 参数: title, star, description, tail (JSON用例), cpu_limit, mem_limit, status
 - `POST /api/admin/question/update/{id}`: 更新题目
 - `POST /api/admin/question/delete/{id}`: 删除题目
+
+### 7.2 用户管理
+
+**接口描述**: 管理员专用的用户管理接口
+
+**API列表**:
+- `GET /api/admin/users?page=1&page_size=20&keyword=`: 获取用户列表（支持分页和关键词搜索）
+- `POST /api/admin/user/status`: 修改用户状态
+  - 参数: `id` (用户ID), `status` (0:正常, 1:封禁)
+- `POST /api/admin/user/role`: 修改用户角色
+  - 参数: `id` (用户ID), `role` (0:普通用户, 1:管理员)
+- `POST /api/admin/user/reset_password`: 重置用户密码
+  - 参数: `id` (用户ID)
+  - 响应: 返回新生成的随机密码
+
+### 7.3 系统管理
+
+**接口描述**: 管理员注册、日志与统计接口
+
+**API列表**:
+- `POST /api/admin/register`: 管理员注册（需邀请码）
+  - 参数: `username`, `password`, `email`, `invitation_code`
+- `POST /api/admin/invitation_code/generate`: 生成邀请码（需管理员权限）
+  - 响应: 返回生成的邀请码
+- `GET /api/admin/logs?page=1&page_size=20&keyword=`: 获取操作日志
+- `GET /api/admin/stats`: 获取仪表盘统计数据
+  - 响应: `total_users`, `total_problems`, `total_submissions`, `user_growth`, `submission_stats`, `daily_activity`
 
 ## 8. 竞赛接口
 
@@ -571,6 +598,6 @@ GET /api/contests?page=1&size=5&status=upcoming
 
 ---
 
-**文档版本**: v1.2.0  
-**最后更新时间**: 2026-03-09  
+**文档版本**: v1.2.8  
+**最后更新时间**: 2026-03-16  
 **维护团队**: 在线评测系统开发团队
