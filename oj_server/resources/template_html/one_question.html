@@ -21,6 +21,7 @@
     <!-- Highlight.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
     
     <!-- MathJax -->
     <script>
@@ -51,6 +52,17 @@
                         const mathBlocks = [];
                         const placeholderPrefix = "MATH_BLOCK_PLACEHOLDER_";
                         
+                        // 1.5 Pre-process \bm before Math protection
+                        // This allows \bm to be rendered by our custom span even if inside math blocks (if we want that)
+                        // But wait, if inside $$, we might want MathJax to handle it OR we want to override it.
+                        // The user request implies they want the "Gold" style.
+                        // So we process it here.
+                        
+                        // Rule 1: \bm{content} -> <span class="bm-symbol">content</span>
+                        rawDesc = rawDesc.replace(/\\bm\{([^}]+)\}/g, '<span class="bm-symbol">$1</span>');
+                        // Rule 2: \bm char -> <span class="bm-symbol">char</span> (allow optional space, support \bma)
+                        rawDesc = rawDesc.replace(/\\bm\s*([a-zA-Z0-9])/g, '<span class="bm-symbol">$1</span>');
+
                         // 1. Protect Display Math $$...$$
                         let protectedDesc = rawDesc.replace(/\$\$([\s\S]*?)\$\$/g, function(match) {
                             const id = mathBlocks.length;
@@ -66,19 +78,91 @@
                             return placeholderPrefix + id;
                         });
 
+                        // 2.5. Support \bm format (Custom Bold Math/Style)
+                        // Removed here as it is now processed before protection
+
+
                         // 3. Parse Markdown
+                        marked.setOptions({
+                            breaks: true,
+                            gfm: true
+                        });
                         let html = marked.parse(protectedDesc);
 
                         // 4. Restore Math blocks
                         html = html.replace(new RegExp(placeholderPrefix + "(\\d+)", "g"), function(match, id) {
                             return mathBlocks[parseInt(id)];
                         });
+                        
+                        // 5. Sanitize
+                        if (typeof DOMPurify !== 'undefined') {
+                            html = DOMPurify.sanitize(html, {ADD_TAGS: ["span"], ADD_ATTR: ["class"]});
+                        }
 
-                        document.getElementById('problem-desc-render').innerHTML = html;
+                        var renderEl = document.getElementById('problem-desc-render');
+                        renderEl.innerHTML = html;
+                        
+                        // 6. Highlight Code Blocks & Add Line Numbers
+                        renderEl.querySelectorAll('pre code').forEach((block) => {
+                            // Check for duplicated label text and remove it
+                            var className = block.className || '';
+                            var match = className.match(/language-(\w+)/);
+                            if (match) {
+                                var lang = match[1].toLowerCase();
+                                var text = block.textContent;
+                                
+                                // 1. Remove duplicated language label (e.g. "Java import...")
+                                var regex = new RegExp("^" + lang + "\\s+", "i");
+                                if (regex.test(text)) {
+                                    text = text.replace(regex, "");
+                                    block.textContent = text;
+                                }
+
+                                // 2. Auto-format compressed code (single line) for Java/C++
+                                // Heuristic: Long text, few newlines, contains syntax chars
+                                if ((lang === 'java' || lang === 'cpp' || lang === 'c') && 
+                                    text.length > 50 && 
+                                    (text.match(/\n/g) || []).length < 2) {
+                                    
+                                    try {
+                                        // Basic formatting
+                                        var formatted = text
+                                            .replace(/([;{}])\s*/g, '$1\n') // Break after ; { }
+                                            .replace(/\s*({)\s*/g, ' $1\n') // Ensure space before {
+                                            .replace(/\s*(})\s*/g, '\n$1\n'); // Ensure break around }
+                                        
+                                        // Re-indent
+                                        var lines = formatted.split('\n');
+                                        var indent = 0;
+                                        var res = [];
+                                        lines.forEach(function(line) {
+                                            line = line.trim();
+                                            if (!line) return;
+                                            
+                                            if (line.startsWith('}')) indent = Math.max(0, indent - 1);
+                                            
+                                            res.push('    '.repeat(indent) + line);
+                                            
+                                            if (line.endsWith('{')) indent++;
+                                        });
+                                        
+                                        block.textContent = res.join('\n');
+                                    } catch(e) {
+                                        console.error("Auto-format failed", e);
+                                    }
+                                }
+                            }
+                            
+                            // Highlight first
+                            hljs.highlightElement(block);
+                            
+                            // Add Line Numbers
+                            hljs.lineNumbersBlock(block);
+                        });
 
                         // Trigger MathJax
                         if (typeof MathJax !== 'undefined') {
-                             MathJax.typesetPromise([document.getElementById('problem-desc-render')]).catch(function (err) {
+                             MathJax.typesetPromise([renderEl]).catch(function (err) {
                                 console.log('MathJax error:', err);
                             });
                         }

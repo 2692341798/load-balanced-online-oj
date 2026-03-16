@@ -721,3 +721,60 @@
 .btn-solution.secondary:hover {
     background-color: #555;
 }
+
+/* BM Symbol Styles */
+.bm-symbol {
+    font-weight: bold;
+    font-style: italic;
+    font-family: 'Times New Roman', serif;
+    color: #e5c07b;
+    padding: 0 1px;
+    cursor: help;
+    transition: all 0.2s;
+}
+
+.bm-symbol:hover {
+    color: #ffd700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+/* Highlight.js Line Numbers */
+.hljs-ln-numbers {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    text-align: center;
+    color: #5c6370;
+    border-right: 1px solid #4b5263;
+    vertical-align: top;
+    padding-right: 10px !important;
+    min-width: 30px;
+}
+
+.hljs-ln-code {
+    padding-left: 15px !important;
+}
+
+/* Fix duplicated label issue */
+.markdown-body pre code::before,
+.markdown-body pre code::after,
+.hljs::before, 
+.hljs::after { 
+    content: none !important; 
+}
+code[class*="language-"]::before { content: none !important; }
+
+/* Table styles for line numbers */
+table.hljs-ln {
+    border-collapse: collapse;
+    border: none;
+    width: 100%;
+}
+table.hljs-ln td {
+    border: none;
+    padding: 0;
+}

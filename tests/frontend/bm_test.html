@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>BM Format & Code Block Test</title>
+    <!-- Dependencies from one_question.html -->
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Add highlightjs-line-numbers.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+    
+    <style>
+        body { background-color: #1e1e1e; color: #eff1f6; font-family: sans-serif; padding: 20px; }
+        .test-case { margin-bottom: 30px; border: 1px solid #444; padding: 15px; border-radius: 8px; }
+        .test-title { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; color: #2cbb5d; }
+        .markdown-body { font-size: 16px; line-height: 1.6; }
+        
+        /* BM Symbol Styles */
+        .bm-symbol {
+            font-weight: bold;
+            font-style: italic;
+            font-family: 'Times New Roman', serif;
+            color: #d19a66; /* Light orange/gold for visibility */
+            padding: 0 2px;
+            transition: all 0.2s ease;
+            cursor: help;
+            border-bottom: 1px dashed rgba(209, 154, 102, 0.5);
+        }
+        
+        .bm-symbol:hover {
+            color: #e5c07b;
+            text-shadow: 0 0 5px rgba(229, 192, 123, 0.5);
+            transform: scale(1.1);
+            display: inline-block;
+        }
+
+        /* Code Block Styles from one_question.css (Simplified) */
+        .markdown-body pre {
+            padding: 16px;
+            background-color: rgba(255, 255, 255, 0.07);
+            border-radius: 8px;
+            overflow: auto;
+        }
+        .markdown-body code {
+            font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+        }
+        
+        /* Highlight.js Line Numbers CSS */
+        .hljs-ln-numbers {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+
+            text-align: center;
+            color: #636d83;
+            border-right: 1px solid #636d83;
+            vertical-align: top;
+            padding-right: 10px !important;
+            min-width: 30px;
+        }
+
+        .hljs-ln-code {
+            padding-left: 15px !important;
+        }
+        
+        /* Fix duplicated label issue - ensure no pseudo elements adding content */
+        .hljs::before, .hljs::after { content: none !important; }
+        code[class*="language-"]::before { content: none !important; }
+        
+        /* Table styles for line numbers */
+        table.hljs-ln {
+            border-collapse: collapse;
+            border: none;
+            width: 100%;
+        }
+        table.hljs-ln td {
+            border: none;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>BM Format & Code Block Test</h1>
+
+    <div class="test-case">
+        <div class="test-title">Test 1: BM Format Parsing</div>
+        <div id="render-1" class="markdown-body"></div>
+        <textarea id="raw-1" style="display:none;">
+This is a test of **bold** text.
+This is a test of \bm{vector} format.
+This is a test of \bm a single char format.
+This is a test of \bm{multiple words} format.
+        </textarea>
+    </div>
+
+    <div class="test-case">
+        <div class="test-title">Test 2: Code Block with Line Numbers</div>
+        <div id="render-2" class="markdown-body"></div>
+        <textarea id="raw-2" style="display:none;">
+```cpp
+#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello World" << endl;
+    return 0;
+}
+```
+        </textarea>
+    </div>
+
+    <div class="test-case">
+        <div class="test-title">Test 3: Java Code Block (Check for Duplication)</div>
+        <div id="render-3" class="markdown-body"></div>
+        <textarea id="raw-3" style="display:none;">
+```java
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner cin = new Scanner(System.in);
+        int a = cin.nextInt();
+        int b = cin.nextInt();
+        System.out.println(a + b);
+    }
+}
+```
+        </textarea>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            function render(rawId, renderId) {
+                var rawDesc = document.getElementById(rawId).value;
+                
+                // --- Logic copied from planned one_question.html update ---
+                
+                // 1. BM Parsing Rules
+                // Rule 1: \bm{content} -> <span class="bm-symbol">content</span>
+                let protectedDesc = rawDesc.replace(/\\bm\{([^}]+)\}/g, '<span class="bm-symbol">$1</span>');
+                
+                // Rule 2: \bm char -> <span class="bm-symbol">char</span> (handle space)
+                protectedDesc = protectedDesc.replace(/\\bm\s+([a-zA-Z0-9])/g, '<span class="bm-symbol">$1</span>');
+                
+                // 2. Parse Markdown
+                let html = marked.parse(protectedDesc);
+                
+                // 3. Render
+                var el = document.getElementById(renderId);
+                el.innerHTML = DOMPurify.sanitize(html);
+                
+                // 4. Highlight & Line Numbers
+                el.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                    hljs.lineNumbersBlock(block);
+                });
+            }
+
+            render('raw-1', 'render-1');
+            render('raw-2', 'render-2');
+            render('raw-3', 'render-3');
+        });
+    </script>
+</body>
+</html>
