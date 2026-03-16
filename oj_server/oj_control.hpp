@@ -281,11 +281,11 @@ namespace ns_control
             std::string new_filename = std::to_string(time(nullptr)) + "_" + std::to_string(rand()) + ext;
             
             // Save path
-            std::string path = "./resources/wwwroot/uploads/" + new_filename;
+            std::string path = "./uploads/" + new_filename;
             
             // Create uploads directory if not exists
             // Assuming wwwroot exists, mkdir uploads
-            system("mkdir -p ./resources/wwwroot/uploads");
+            system("mkdir -p ./uploads");
             
             std::ofstream out(path, std::ios::binary);
             if (!out.is_open()) {
@@ -348,10 +348,10 @@ namespace ns_control
 
             // Generate unique filename: avatar_<user_id>_<timestamp><ext>
             std::string new_filename = "avatar_" + user_id + "_" + std::to_string(time(nullptr)) + ext;
-            std::string path = "./resources/wwwroot/uploads/avatars/" + new_filename;
+            std::string path = "./uploads/avatars/" + new_filename;
             
             // Create directory
-            system("mkdir -p ./resources/wwwroot/uploads/avatars");
+            system("mkdir -p ./uploads/avatars");
             
             // Save file
             std::ofstream out(path, std::ios::binary);
@@ -380,7 +380,7 @@ namespace ns_control
                         // Delete old avatar file if exists and not default
                         // Only delete once to avoid redundant filesystem calls
                         if (!old_avatar_deleted && !kv.second.user.avatar.empty()) {
-                            std::string old_path = "./resources/wwwroot" + kv.second.user.avatar;
+                            std::string old_path = "." + kv.second.user.avatar;
                             // Basic check to ensure we don't delete something outside uploads/avatars
                             if (old_path.find("/uploads/avatars/") != std::string::npos) {
                                 remove(old_path.c_str());

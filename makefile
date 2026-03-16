@@ -20,6 +20,7 @@ output: all
 	@cp -rf oj_server/resources output/oj_server/
 	@cp -rf oj_server/questions output/oj_server/
 	@cp -rf oj_server/oj_server output/oj_server/
+	@mkdir -p output/oj_server/uploads/avatars
 	@cp -rf crawler/contest_crawler output/crawler/
 	@mkdir -p output/logs
 	@mkdir -p output/data
