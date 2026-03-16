@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统日志 - 管理后台</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">系统日志</h1>
+            <div class="header-actions">
+                <button onclick="loadLogs()" class="btn btn-secondary btn-sm">刷新</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <table id="logs-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>管理员</th>
+                        <th>操作</th>
+                        <th>对象</th>
+                        <th>IP地址</th>
+                        <th>时间</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body">
+                    <!-- Rows injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/sidebar.js"></script>
+    <script>
+        renderSidebar('logs');
+
+        async function loadLogs() {
+            try {
+                const res = await fetch('/api/admin/logs');
+                const result = await res.json();
+                
+                if (result.status === 0) {
+                    const tbody = document.getElementById('logs-body');
+                    tbody.innerHTML = '';
+                    result.data.forEach(log => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${log.id}</td>
+                            <td>${log.admin_name}</td>
+                            <td>${log.action}</td>
+                            <td>${log.target_id || '-'}</td>
+                            <td>${log.ip}</td>
+                            <td>${log.time}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    console.error('Failed to load logs:', result.reason);
+                }
+            } catch (e) {
+                console.error('Error loading logs', e);
+            }
+        }
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/profile');
+                const data = await res.json();
+                if (data.status !== 0 || data.role !== 1) {
+                    window.location.href = '/admin/login.html';
+                } else {
+                    loadLogs();
+                }
+            } catch (e) {
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>

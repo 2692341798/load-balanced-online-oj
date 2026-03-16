@@ -45,6 +45,16 @@ namespace ns_control
         User user;
         time_t expire_time;
     };
+    /*
+    struct Session_Old {
+        User user;
+        time_t expire_time;
+
+
+
+
+    };
+    */
 
     // 提供服务的主机
     class Machine
@@ -507,11 +517,31 @@ namespace ns_control
                 return false;
             }
 
+            int page = 1;
+            int page_size = 20;
+            if (req.has_param("page")) {
+                try {
+                    page = std::stoi(req.get_param_value("page"));
+                } catch (...) { page = 1; }
+            }
+            if (req.has_param("page_size")) {
+                try {
+                    page_size = std::stoi(req.get_param_value("page_size"));
+                } catch (...) { page_size = 20; }
+            }
+            if (page < 1) page = 1;
+            if (page_size < 1) page_size = 20;
+
             vector<struct Question> all;
-            if (model_.GetAllQuestionsAdmin(&all))
+            int total = 0;
+            if (model_.GetAllQuestionsAdmin(page, page_size, &all, &total))
             {
                 Json::Value root;
                 root["status"] = 0;
+                root["total"] = total;
+                root["page"] = page;
+                root["page_size"] = page_size;
+
                 Json::Value list;
                 for (const auto &q : all) {
                     Json::Value item;
@@ -567,6 +597,7 @@ namespace ns_control
             q.status = root.get("status", 1).asInt();
 
             if (model_.AddQuestion(q)) {
+                 LogAdminOp(user.id, "Add Question", "Question " + q.title, "Added new question", req);
                  Json::Value res;
                  res["status"] = 0;
                  res["reason"] = "Success";
@@ -610,6 +641,7 @@ namespace ns_control
             q.status = root.get("status", 1).asInt();
 
             if (model_.UpdateQuestion(q)) {
+                 LogAdminOp(user.id, "Update Question", "Question " + number, "Updated question " + number, req);
                  Json::Value res;
                  res["status"] = 0;
                  res["reason"] = "Success";
@@ -639,6 +671,7 @@ namespace ns_control
             }
 
             if (model_.DeleteQuestion(number)) {
+                 LogAdminOp(user.id, "Delete Question", "Question " + number, "Deleted question " + number, req);
                  Json::Value res;
                  res["status"] = 0;
                  res["reason"] = "Success";
@@ -653,6 +686,306 @@ namespace ns_control
             
             *json = SerializeJson(res);
             return false;
+        }
+
+        // Helper for Logging
+        void LogAdminOp(const std::string &user_id, const std::string &action, const std::string &target, const std::string &details, const Request &req) {
+             OperationLog log;
+             log.user_id = user_id;
+             log.action = action;
+             log.target = target;
+             log.details = details;
+             
+             if (req.has_header("X-Real-IP")) {
+                 log.ip = req.get_header_value("X-Real-IP");
+             } else if (req.has_header("X-Forwarded-For")) {
+                 log.ip = req.get_header_value("X-Forwarded-For");
+             } else {
+                 log.ip = req.remote_addr;
+             }
+             model_.LogOperation(log);
+        }
+
+        /* Removed GetUsers from Session */
+
+        bool UpdateUserStatus(const Request &req, std::string *json_out) {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string id = root["id"].asString();
+            int status = root["status"].asInt();
+
+            if (model_.UpdateUserStatus(id, status)) {
+                LogAdminOp(user.id, "Update User Status", "User " + id, "Changed status to " + std::to_string(status), req);
+                Json::Value res;
+                res["status"] = 0;
+                res["reason"] = "Success";
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool UpdateUserRole(const Request &req, std::string *json_out) {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string id = root["id"].asString();
+            int role = root["role"].asInt();
+
+            if (model_.UpdateUserRole(id, role)) {
+                LogAdminOp(user.id, "Update User Role", "User " + id, "Changed role to " + std::to_string(role), req);
+                Json::Value res;
+                res["status"] = 0;
+                res["reason"] = "Success";
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        std::string GenerateRandomPassword(int length) {
+            const std::string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            std::string pwd;
+            for (int i = 0; i < length; ++i) {
+                pwd += chars[rand() % chars.length()];
+            }
+            return pwd;
+        }
+
+        bool ResetUserPassword(const Request &req, std::string *json_out) {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string id = root["id"].asString();
+
+            std::string new_pwd = GenerateRandomPassword(8);
+            std::string new_hash = model_.SHA256Hash(new_pwd);
+
+            if (model_.ResetUserPassword(id, new_hash)) {
+                LogAdminOp(user.id, "Reset Password", "User " + id, "Reset password", req);
+                Json::Value res;
+                res["status"] = 0;
+                res["new_password"] = new_pwd;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        // Admin Registration with Invitation Code
+        bool AdminRegister(const Request &req, std::string *json_out) {
+            Json::Reader reader;
+            Json::Value root;
+            reader.parse(req.body, root);
+            std::string username = root["username"].asString();
+            std::string password = root["password"].asString();
+            std::string email = root["email"].asString();
+            std::string invitation_code = root["invitation_code"].asString();
+
+            if (username.empty() || password.empty() || email.empty() || invitation_code.empty()) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "All fields including invitation code are required";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            // Check user existence first
+            if (CheckUserExists(username)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Username already exists";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            // Register user first (status 0, role 1)
+            // But wait, VerifyAndUseInvitationCode needs user_id.
+            // So we register user first? If code is invalid, we should not register user or rollback.
+            // Better: Verify code exists and unused first (without marking used), then register, then mark used.
+            // However, race condition?
+            // `VerifyAndUseInvitationCode` does check and update atomically (if possible) or sequentially.
+            // Let's change `VerifyAndUseInvitationCode`? No, it's already implemented to check and use.
+            
+            // Revised flow:
+            // 1. Register User (Role 1).
+            // 2. Get User ID.
+            // 3. VerifyAndUseInvitationCode(code, user_id).
+            // 4. If code fails, DELETE user and return error.
+            
+            if (!model_.RegisterUser(username, password, email)) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error during Registration";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            // Get the user just created
+            std::string sql = "SELECT id, username, password, email, nickname, phone, created_at, role, avatar, status FROM " + oj_users + " WHERE username='" + username + "'";
+            std::vector<User> users;
+            model_.QueryUserMySql(sql, &users);
+            if (users.empty()) {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Failed to retrieve created user";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+            User new_user = users[0];
+
+            // Verify Code
+            if (!model_.VerifyAndUseInvitationCode(invitation_code, new_user.id)) {
+                // Failed: Code invalid or used. Delete user.
+                std::string del_sql = "DELETE FROM " + oj_users + " WHERE id=" + new_user.id;
+                model_.ExecuteSql(del_sql);
+                
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Invalid or Used Invitation Code";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            // Update Role to Admin (1)
+            model_.UpdateUserRole(new_user.id, 1);
+            
+            // Log Self
+            LogAdminOp(new_user.id, "Admin Register", "Self", "Registered as Admin with code " + invitation_code, req);
+
+            Json::Value res;
+            res["status"] = 0;
+            res["reason"] = "Success";
+            *json_out = SerializeJson(res);
+            return true;
+        }
+
+        bool GenerateInvitationCode(const Request &req, std::string *json_out) {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            // Generate Random Code
+            std::string code = GenerateToken().substr(0, 16); // Reusing GenerateToken or make new one
+            // Simple random string
+            const std::string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            code = "";
+            for (int i = 0; i < 16; ++i) {
+                code += chars[rand() % chars.length()];
+            }
+
+            if (model_.GenerateInvitationCode(code)) {
+                LogAdminOp(user.id, "Generate Invitation Code", code, "Generated new invitation code", req);
+                Json::Value res;
+                res["status"] = 0;
+                res["code"] = code;
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool GetLogs(const Request &req, std::string *json_out) {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            int page = 1;
+            int page_size = 20;
+            if (req.has_param("page")) page = std::stoi(req.get_param_value("page"));
+            if (req.has_param("page_size")) page_size = std::stoi(req.get_param_value("page_size"));
+            std::string keyword = req.get_param_value("keyword");
+
+            std::vector<OperationLog> logs;
+            int total = 0;
+            if (model_.GetLogs(page, page_size, keyword, &logs, &total)) {
+                Json::Value root;
+                root["status"] = 0;
+                root["total"] = total;
+                root["page"] = page;
+                root["page_size"] = page_size;
+                
+                Json::Value list;
+                for (const auto &l : logs) {
+                    Json::Value item;
+                    item["id"] = l.id;
+                    item["user_id"] = l.user_id;
+                    item["username"] = l.username;
+                    item["action"] = l.action;
+                    item["target"] = l.target;
+                    item["details"] = l.details;
+                    item["ip"] = l.ip;
+                    item["created_at"] = l.created_at;
+                    list.append(item);
+                }
+                root["data"] = list;
+                *json_out = SerializeJson(root);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
         }
 
         bool Logout(const Request &req) {
@@ -2094,6 +2427,116 @@ namespace ns_control
                 problems.append(p);
             }
             data["problems"] = problems;
+            root["data"] = data;
+
+            *json_out = SerializeJson(root);
+            return true;
+        }
+
+        bool GetUsers(const Request &req, std::string *json_out) {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            int page = 1;
+            int page_size = 20;
+            if (req.has_param("page")) page = std::stoi(req.get_param_value("page"));
+            if (req.has_param("page_size")) page_size = std::stoi(req.get_param_value("page_size"));
+            std::string keyword = req.get_param_value("keyword");
+
+            std::vector<User> users;
+            int total = 0;
+            if (model_.GetUsers(page, page_size, keyword, &users, &total)) {
+                Json::Value root;
+                root["status"] = 0;
+                root["total"] = total;
+                root["page"] = page;
+                root["page_size"] = page_size;
+                
+                Json::Value list;
+                for (const auto &u : users) {
+                    Json::Value item;
+                    item["id"] = u.id;
+                    item["username"] = u.username;
+                    item["email"] = u.email;
+                    item["nickname"] = u.nickname;
+                    item["phone"] = u.phone;
+                    item["role"] = u.role;
+                    item["status"] = u.status;
+                    item["created_at"] = u.created_at;
+                    list.append(item);
+                }
+                root["data"] = list;
+                *json_out = SerializeJson(root);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Database Error";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
+        bool GetDashboardStats(const Request &req, std::string *json_out) {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value res;
+                res["status"] = 403;
+                res["reason"] = "Permission Denied";
+                *json_out = SerializeJson(res);
+                return false;
+            }
+
+            std::map<std::string, int> user_growth;
+            std::map<std::string, int> submission_stats;
+            std::map<std::string, int> daily_activity;
+            int total_users = 0;
+            int total_problems = 0;
+            int total_submissions = 0;
+
+            // Get stats
+            model_.GetUserGrowthStats(30, &user_growth);
+            model_.GetSubmissionStats(&submission_stats);
+            model_.GetDailyActivityStats(30, &daily_activity);
+            model_.GetTotalUserCount(&total_users);
+            model_.GetTotalProblemCount(&total_problems);
+            model_.GetTotalSubmissionCount(&total_submissions);
+
+            Json::Value root;
+            root["status"] = 0;
+            
+            Json::Value data;
+
+            Json::Value ug_json;
+            for(auto const& kv : user_growth) {
+                ug_json[kv.first] = kv.second;
+            }
+            data["user_growth"] = ug_json;
+
+            Json::Value ss_json;
+            for(auto const& kv : submission_stats) {
+                if (kv.first == "0") ss_json["通过(AC)"] = kv.second;
+                else if (kv.first == "-1") ss_json["未通过(WA)"] = kv.second;
+                else ss_json["未知"] = ss_json.get("未知", 0).asInt() + kv.second;
+            }
+            data["submission_stats"] = ss_json;
+
+            Json::Value da_json;
+            for(auto const& kv : daily_activity) {
+                da_json[kv.first] = kv.second;
+            }
+            data["daily_activity"] = da_json;
+            
+            data["total_users"] = total_users;
+            data["total_problems"] = total_problems;
+            data["total_submissions"] = total_submissions;
+
             root["data"] = data;
 
             *json_out = SerializeJson(root);

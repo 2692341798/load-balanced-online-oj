@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目管理 - 管理后台</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="main-content">
+        <div class="header">
+            <h1>题目管理</h1>
+            <div class="header-actions">
+                <a href="/admin/question.html" class="btn btn-primary">添加题目</a>
+            </div>
+        </div>
+
+        <div class="container" style="padding-top: 20px;">
+            <div id="loading" style="text-align: center; color: var(--text-secondary);">加载中...</div>
+            
+            <table id="questions-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>标题</th>
+                        <th>难度</th>
+                        <th>状态</th>
+                        <th>时间限制</th>
+                        <th>空间限制</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="questions-body"></tbody>
+            </table>
+            <div id="pagination" class="pagination-container"></div>
+        </div>
+    </div>
+
+    <script src="js/sidebar.js"></script>
+    <script>
+        renderSidebar('problems');
+
+        let currentPage = 1;
+        const pageSize = 20;
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/profile');
+                const data = await res.json();
+                if (data.status !== 0 || data.role !== 1) {
+                    window.location.href = '/admin/login.html';
+                } else {
+                    loadQuestions(currentPage);
+                }
+            } catch (e) {
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        async function loadQuestions(page) {
+            try {
+                currentPage = page;
+                const res = await fetch(`/api/admin/questions?page=${page}&page_size=${pageSize}`);
+                const data = await res.json();
+                if (data.status === 0) {
+                    const tbody = document.getElementById('questions-body');
+                    tbody.innerHTML = '';
+                    data.data.forEach(q => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${q.number}</td>
+                            <td>${q.title}</td>
+                            <td>${q.star}</td>
+                            <td><span class="status-badge ${q.status == 1 ? 'status-visible' : 'status-hidden'}">${q.status == 1 ? '公开' : '隐藏'}</span></td>
+                            <td>${q.cpu_limit}s</td>
+                            <td>${q.mem_limit}KB</td>
+                            <td>
+                                <a href="/admin/question.html?id=${q.number}" class="btn btn-primary btn-sm">编辑</a>
+                                <button onclick="deleteQuestion(${q.number})" class="btn btn-danger btn-sm">删除</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('questions-table').style.display = 'table';
+                    
+                    renderPagination(data.total, data.page, data.page_size);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('加载题目失败');
+            }
+        }
+
+        function renderPagination(total, page, pageSize) {
+            const totalPages = Math.ceil(total / pageSize);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            // Previous Button
+            const prevBtn = document.createElement('button');
+            prevBtn.innerText = '上一页';
+            prevBtn.className = `btn btn-secondary btn-sm ${page === 1 ? 'disabled' : ''}`;
+            prevBtn.disabled = page === 1;
+            prevBtn.onclick = () => loadQuestions(page - 1);
+            pagination.appendChild(prevBtn);
+
+            // Page Numbers
+            const maxVisibleButtons = 5;
+            let startPage = Math.max(1, page - Math.floor(maxVisibleButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1);
+
+            if (endPage - startPage + 1 < maxVisibleButtons) {
+                startPage = Math.max(1, endPage - maxVisibleButtons + 1);
+            }
+
+            if (startPage > 1) {
+                 const firstPageBtn = document.createElement('button');
+                firstPageBtn.innerText = '1';
+                firstPageBtn.className = 'btn btn-secondary btn-sm';
+                firstPageBtn.onclick = () => loadQuestions(1);
+                pagination.appendChild(firstPageBtn);
+
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.innerText = '...';
+                    ellipsis.className = 'pagination-ellipsis';
+                    pagination.appendChild(ellipsis);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.innerText = i;
+                pageBtn.className = `btn btn-sm ${i === page ? 'btn-primary' : 'btn-secondary'}`;
+                pageBtn.onclick = () => loadQuestions(i);
+                pagination.appendChild(pageBtn);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.innerText = '...';
+                    ellipsis.className = 'pagination-ellipsis';
+                    pagination.appendChild(ellipsis);
+                }
+
+                const lastPageBtn = document.createElement('button');
+                lastPageBtn.innerText = totalPages;
+                lastPageBtn.className = 'btn btn-secondary btn-sm';
+                lastPageBtn.onclick = () => loadQuestions(totalPages);
+                pagination.appendChild(lastPageBtn);
+            }
+
+            // Next Button
+            const nextBtn = document.createElement('button');
+            nextBtn.innerText = '下一页';
+            nextBtn.className = `btn btn-secondary btn-sm ${page === totalPages ? 'disabled' : ''}`;
+            nextBtn.disabled = page === totalPages;
+            nextBtn.onclick = () => loadQuestions(page + 1);
+            pagination.appendChild(nextBtn);
+        }
+
+        async function deleteQuestion(id) {
+            if (!confirm('确定要删除该题目吗？')) return;
+            try {
+                const res = await fetch(`/api/admin/question/delete/${id}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 0) {
+                    loadQuestions(currentPage);
+                } else {
+                    alert('删除失败: ' + data.reason);
+                }
+            } catch (e) {
+                alert('删除题目出错');
+            }
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>

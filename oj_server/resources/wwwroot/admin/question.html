@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Question - Admin</title>
-    <link rel="stylesheet" href="../css/admin.css">
+    <title>添加/编辑题目 - 管理后台</title>
+    <link rel="stylesheet" href="css/admin.css">
     <style>
         .diff-easy { color: #28a745; font-weight: bold; }
         .diff-medium { color: #ffc107; font-weight: bold; }
@@ -16,69 +16,74 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1 id="page-title">Add Question</h1>
-        <div class="header-actions">
-            <button onclick="window.history.back()" class="btn btn-secondary">Back</button>
+    <div class="main-content">
+        <div class="header">
+            <h1 id="page-title">添加题目</h1>
+            <div class="header-actions">
+                <button onclick="window.history.back()" class="btn btn-secondary">返回</button>
+            </div>
+        </div>
+
+        <div class="container" style="padding-top: 20px;">
+            <div class="card">
+                <form id="question-form" onsubmit="saveQuestion(event)">
+                    <div class="form-group">
+                        <label>标题</label>
+                        <input type="text" id="title" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col form-group">
+                            <label>难度</label>
+                            <select id="star">
+                                <option value="简单">简单</option>
+                                <option value="中等">中等</option>
+                                <option value="困难">困难</option>
+                            </select>
+                        </div>
+                        <div class="col form-group">
+                            <label>状态</label>
+                            <select id="status">
+                                <option value="1">公开</option>
+                                <option value="0">隐藏</option>
+                            </select>
+                        </div>
+                    </div>
+        
+                    <div class="row">
+                        <div class="col form-group">
+                            <label>时间限制 (s)</label>
+                            <input type="number" id="cpu_limit" value="1" required>
+                        </div>
+                        <div class="col form-group">
+                            <label>空间限制 (KB)</label>
+                            <input type="number" id="mem_limit" value="30000" required>
+                        </div>
+                    </div>
+        
+                    <div class="form-group">
+                        <label>描述 (支持Markdown)</label>
+                        <textarea id="description" required></textarea>
+                    </div>
+        
+                    <div class="form-group">
+                        <label>测试用例 (JSON格式: [{"input":"...", "expect":"..."}, ...])</label>
+                        <textarea id="tail" required></textarea>
+                    </div>
+        
+                    <div class="form-group" style="margin-bottom: 0; text-align: right;">
+                        <button type="button" class="btn btn-secondary" onclick="window.history.back()" style="margin-right: 10px;">取消</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <div class="container" style="padding-top: 20px;">
-        <div class="card">
-            <form id="question-form" onsubmit="saveQuestion(event)">
-                <div class="form-group">
-                    <label>Title</label>
-                    <input type="text" id="title" required>
-                </div>
-                
-                <div class="row">
-                    <div class="col form-group">
-                        <label>Difficulty</label>
-                        <select id="star">
-                            <option value="简单">Easy</option>
-                            <option value="中等">Medium</option>
-                            <option value="困难">Hard</option>
-                        </select>
-                    </div>
-                    <div class="col form-group">
-                        <label>Status</label>
-                        <select id="status">
-                            <option value="1">Visible</option>
-                            <option value="0">Hidden</option>
-                        </select>
-                    </div>
-                </div>
-    
-                <div class="row">
-                    <div class="col form-group">
-                        <label>CPU Limit (s)</label>
-                        <input type="number" id="cpu_limit" value="1" required>
-                    </div>
-                    <div class="col form-group">
-                        <label>Memory Limit (KB)</label>
-                        <input type="number" id="mem_limit" value="30000" required>
-                    </div>
-                </div>
-    
-                <div class="form-group">
-                    <label>Description (Markdown supported)</label>
-                    <textarea id="description" required></textarea>
-                </div>
-    
-                <div class="form-group">
-                    <label>Test Cases (JSON Format: [{"input":"...", "expect":"..."}, ...])</label>
-                    <textarea id="tail" required></textarea>
-                </div>
-    
-                <div class="form-group" style="margin-bottom: 0; text-align: right;">
-                    <button type="button" class="btn btn-secondary" onclick="window.history.back()" style="margin-right: 10px;">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
+    <script src="js/sidebar.js"></script>
     <script>
+        renderSidebar('problems');
+        
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
 
@@ -108,7 +113,7 @@
             }
 
             if (id) {
-                document.getElementById('page-title').textContent = 'Edit Question';
+                document.getElementById('page-title').textContent = '编辑题目';
                 loadQuestion(id);
             } else {
                 // Default test case template
@@ -162,7 +167,7 @@
             try {
                 JSON.parse(data.tail);
             } catch (e) {
-                alert('Invalid JSON in Test Cases');
+                alert('测试用例JSON格式错误');
                 return;
             }
 
@@ -179,13 +184,13 @@
                 });
                 const result = await res.json();
                 if (result.status === 0) {
-                    alert('Saved successfully');
-                    window.location.href = '/admin/index.html';
+                    alert('保存成功');
+                    window.location.href = '/admin/problems.html';
                 } else {
-                    alert('Error: ' + result.reason);
+                    alert('错误: ' + result.reason);
                 }
             } catch (e) {
-                alert('Request failed');
+                alert('请求失败');
             }
         }
 

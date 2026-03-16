@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 管理后台</title>
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <script src="js/sidebar.js"></script>
+    <script>renderSidebar('users');</script>
+
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">用户管理</h1>
+            <div class="header-actions">
+                <!-- Search bar could go here -->
+            </div>
+        </div>
+
+        <div class="card">
+            <table id="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>邮箱</th>
+                        <th>角色</th>
+                        <th>状态</th>
+                        <th>注册时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="users-body">
+                    <!-- Rows injected here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/admin/users');
+                const result = await res.json();
+                
+                if (result.status === 0) {
+                    const tbody = document.getElementById('users-body');
+                    tbody.innerHTML = '';
+                    result.data.forEach(user => {
+                        const tr = document.createElement('tr');
+                        const statusClass = user.status === 0 ? 'status-active' : 'status-banned';
+                        const statusText = user.status === 0 ? '正常' : '封禁';
+                        const roleText = user.role === 1 ? '管理员' : '普通用户';
+
+                        tr.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>${user.email}</td>
+                            <td>${roleText}</td>
+                            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            <td>${user.created_at || '-'}</td>
+                            <td>
+                                <button onclick="toggleStatus(${user.id}, ${user.status})" class="btn btn-sm ${user.status === 0 ? 'btn-danger' : 'btn-success'}">
+                                    ${user.status === 0 ? '封禁' : '解封'}
+                                </button>
+                                <button onclick="resetPassword(${user.id})" class="btn btn-sm btn-secondary">重置密码</button>
+                                <button onclick="toggleRole(${user.id}, ${user.role})" class="btn btn-sm btn-primary">
+                                    ${user.role === 0 ? '设为管理员' : '撤销管理员'}
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    alert('加载用户失败: ' + result.reason);
+                }
+            } catch (e) {
+                console.error('Error loading users', e);
+            }
+        }
+
+        async function toggleStatus(id, currentStatus) {
+            const newStatus = currentStatus === 0 ? 1 : 0;
+            if(!confirm(`确定要${newStatus === 1 ? '封禁' : '解封'}该用户吗？`)) return;
+
+            try {
+                const res = await fetch('/api/admin/user/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, status: newStatus })
+                });
+                const result = await res.json();
+                if(result.status === 0) loadUsers();
+                else alert('错误: ' + result.reason);
+            } catch(e) { alert('请求失败'); }
+        }
+
+        async function resetPassword(id) {
+            if(!confirm('确定重置该用户的密码吗？')) return;
+            try {
+                const res = await fetch('/api/admin/user/reset_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const result = await res.json();
+                if(result.status === 0) alert('密码重置成功');
+                else alert('错误: ' + result.reason);
+            } catch(e) { alert('请求失败'); }
+        }
+
+        async function toggleRole(id, currentRole) {
+            const newRole = currentRole === 0 ? 1 : 0;
+            if(!confirm(`确定将角色修改为${newRole === 1 ? '管理员' : '普通用户'}吗？`)) return;
+            try {
+                const res = await fetch('/api/admin/user/role', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, role: newRole })
+                });
+                const result = await res.json();
+                if(result.status === 0) loadUsers();
+                else alert('错误: ' + result.reason);
+            } catch(e) { alert('请求失败'); }
+        }
+
+        // Auth check
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/profile');
+                const data = await res.json();
+                if (data.status !== 0 || data.role !== 1) {
+                    window.location.href = '/admin/login.html';
+                } else {
+                    loadUsers();
+                }
+            } catch (e) {
+                window.location.href = '/admin/login.html';
+            }
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>

@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <map>
 #include <fstream>
 #include <cstdlib>
 #include <cassert>
@@ -50,6 +51,28 @@ namespace ns_model
         std::string avatar;   // Avatar URL
         std::string created_at;
         int role;             // 0: User, 1: Admin
+        int status;           // 0: Normal, 1: Banned
+    };
+
+    struct InvitationCode
+    {
+        std::string id;
+        std::string code;
+        bool is_used;
+        std::string used_by; // user_id
+        std::string created_at;
+    };
+
+    struct OperationLog
+    {
+        std::string id;
+        std::string user_id;
+        std::string username; // join
+        std::string action;
+        std::string target;
+        std::string details;
+        std::string ip;
+        std::string created_at;
     };
 
     struct Submission
@@ -161,6 +184,8 @@ namespace ns_model
     const std::string oj_contests = "contests";
     const std::string oj_training_lists = "training_lists";
     const std::string oj_training_list_items = "training_list_items";
+    const std::string oj_invitation_codes = "invitation_codes";
+    const std::string oj_operation_logs = "operation_logs";
 
     inline std::string GetEnv(const std::string& key, const std::string& default_value) {
         const char* val = std::getenv(key.c_str());
@@ -178,6 +203,7 @@ namespace ns_model
     public:
         Model()
         {
+            LOG(INFO) << "Connecting to Database: " << host << ":" << port << " user=" << user << " db=" << db << "\n";
             // Try to create users table if not exists
             InitUserTable();
             InitSubmissionTable();
@@ -187,7 +213,38 @@ namespace ns_model
             InitContestTable();
             InitTrainingListTable();
             InitTrainingListItemTable();
+            InitInvitationCodeTable();
+            InitOperationLogTable();
             CheckAndUpgradeTable();
+            
+            int total_users = 0;
+            GetTotalUserCount(&total_users);
+            LOG(INFO) << "Current Total Users: " << total_users << "\n";
+        }
+
+        void InitInvitationCodeTable() {
+            std::string sql = "CREATE TABLE IF NOT EXISTS `invitation_codes` ("
+                              "`id` INT PRIMARY KEY AUTO_INCREMENT,"
+                              "`code` VARCHAR(50) NOT NULL UNIQUE,"
+                              "`is_used` TINYINT(1) DEFAULT 0,"
+                              "`used_by` INT DEFAULT 0,"
+                              "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                              ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+            ExecuteSql(sql);
+        }
+
+        void InitOperationLogTable() {
+            std::string sql = "CREATE TABLE IF NOT EXISTS `operation_logs` ("
+                              "`id` INT PRIMARY KEY AUTO_INCREMENT,"
+                              "`user_id` INT NOT NULL,"
+                              "`action` VARCHAR(50) NOT NULL,"
+                              "`target` VARCHAR(100),"
+                              "`details` TEXT,"
+                              "`ip` VARCHAR(50),"
+                              "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+                              "INDEX `idx_user_id` (`user_id`)"
+                              ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+            ExecuteSql(sql);
         }
 
         void InitTrainingListTable() {
@@ -660,6 +717,21 @@ namespace ns_model
                 }
             }
 
+            // Check status column in users
+            std::string check_user_status = "SELECT count(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + db + "' AND TABLE_NAME = '" + oj_users + "' AND COLUMN_NAME = 'status'";
+            if(0 == mysql_query(my, check_user_status.c_str())) {
+                MYSQL_RES *res = mysql_store_result(my);
+                MYSQL_ROW row = mysql_fetch_row(res);
+                int count = row ? atoi(row[0]) : 0;
+                mysql_free_result(res);
+                
+                if (count == 0) {
+                    std::string alter_sql = "ALTER TABLE " + oj_users + " ADD COLUMN status INT DEFAULT 0 COMMENT '0:Normal, 1:Banned'";
+                    LOG(INFO) << "Upgrading users table: adding status column" << "\n";
+                    mysql_query(my, alter_sql.c_str());
+                }
+            }
+
             mysql_close(my);
         }
 
@@ -780,6 +852,8 @@ namespace ns_model
                 if(fields > 7) u.role = row[7] ? atoi(row[7]) : 0;
                 else u.role = 0;
                 if(fields > 8) u.avatar = row[8] ? row[8] : "";
+                if(fields > 9) u.status = row[9] ? atoi(row[9]) : 0;
+                else u.status = 0;
                 
                 out->push_back(u);
             }
@@ -1145,12 +1219,65 @@ namespace ns_model
             return true;
         }
 
-        bool GetAllQuestionsAdmin(vector<Question> *out)
+        bool GetAllQuestionsAdmin(int page, int page_size, vector<Question> *out, int *total)
         {
+            int offset = (page - 1) * page_size;
+            if (offset < 0) offset = 0;
+
+            // 1. Get total count
+            std::string count_sql = "select count(*) from " + oj_questions;
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, count_sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *total = atoi(row[0]);
+                mysql_free_result(res);
+            }
+
+            // 2. Get paginated data
             // Show all questions for admin
-            std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from ";
-            sql += oj_questions;
-            return QueryMySql(sql, out);
+            std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from " + oj_questions + " ORDER BY CAST(number AS UNSIGNED) ASC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
+            
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            int fields = mysql_num_fields(res);
+            
+            for(int i = 0; i < rows; i++)
+            {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                
+                Question q;
+                q.number = row[0] ? row[0] : "";
+                q.title = row[1] ? row[1] : "";
+                q.star = row[2] ? row[2] : "";
+                q.cpu_limit = row[3] ? atoi(row[3]) : 0;
+                q.mem_limit = row[4] ? atoi(row[4]) : 0;
+                q.desc = row[5] ? row[5] : "";
+                q.tail = row[6] ? row[6] : "";
+                if(fields > 7) q.status = row[7] ? atoi(row[7]) : 1;
+                else q.status = 1;
+
+                out->push_back(q);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
         }
 
         bool GetOneQuestion(const std::string &number, Question *q)
@@ -1266,7 +1393,7 @@ namespace ns_model
 
         bool RegisterUser(const std::string &username, const std::string &password, const std::string &email, const std::string &nickname = "", const std::string &phone = "") {
             // Check if exists
-            std::string sql_check = "select id, username, password, email, nickname, phone, created_at, role, avatar from " + oj_users + " where username='" + username + "'";
+            std::string sql_check = "select id, username, password, email, nickname, phone, created_at, role, avatar, status from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
             if (!QueryUserMySql(sql_check, &users)) {
                 LOG(ERROR) << "查询用户失败，数据库错误: " << username << "\n";
@@ -1292,7 +1419,7 @@ namespace ns_model
         }
 
         bool LoginUser(const std::string &username, const std::string &password, User *user) {
-            std::string sql = "select id, username, password, email, nickname, phone, created_at, role, avatar from " + oj_users + " where username='" + username + "'";
+            std::string sql = "select id, username, password, email, nickname, phone, created_at, role, avatar, status from " + oj_users + " where username='" + username + "'";
             std::vector<User> users;
             if (QueryUserMySql(sql, &users) && users.size() == 1) {
                 std::string pwd_hash = SHA256Hash(password);
@@ -1894,6 +2021,423 @@ namespace ns_model
                 item.user_status = (solved > 0) ? "Solved" : "Unsolved";
                 
                 out->push_back(item);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        bool GetUsers(int page, int page_size, const std::string &keyword, std::vector<User> *out, int *total) {
+            int offset = (page - 1) * page_size;
+            if (offset < 0) offset = 0;
+
+            std::string where = " WHERE 1=1 ";
+            if (!keyword.empty()) {
+                where += " AND (username LIKE '%" + keyword + "%' OR nickname LIKE '%" + keyword + "%' OR email LIKE '%" + keyword + "%') ";
+            }
+
+            // Count
+            std::string count_sql = "SELECT COUNT(*) FROM " + oj_users + where;
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, count_sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *total = atoi(row[0]);
+                mysql_free_result(res);
+            }
+
+            // Fetch
+            std::string sql = "SELECT id, username, password, email, nickname, phone, created_at, role, avatar, status FROM " 
+                              + oj_users + where + " ORDER BY created_at DESC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            
+            for(int i = 0; i < rows; i++) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                User u;
+                u.id = row[0] ? row[0] : "";
+                u.username = row[1] ? row[1] : "";
+                u.password = row[2] ? row[2] : "";
+                u.email = row[3] ? row[3] : "";
+                u.nickname = row[4] ? row[4] : "";
+                u.phone = row[5] ? row[5] : "";
+                u.created_at = row[6] ? row[6] : "";
+                u.role = row[7] ? atoi(row[7]) : 0;
+                u.avatar = row[8] ? row[8] : "";
+                u.status = row[9] ? atoi(row[9]) : 0;
+                out->push_back(u);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        bool UpdateUserStatus(const std::string &id, int status) {
+            std::string sql = "UPDATE " + oj_users + " SET status=" + std::to_string(status) + " WHERE id=" + id;
+            return ExecuteSql(sql);
+        }
+
+        bool UpdateUserRole(const std::string &id, int role) {
+            std::string sql = "UPDATE " + oj_users + " SET role=" + std::to_string(role) + " WHERE id=" + id;
+            return ExecuteSql(sql);
+        }
+
+        bool ResetUserPassword(const std::string &id, const std::string &new_password_hash) {
+            std::string sql = "UPDATE " + oj_users + " SET password='" + new_password_hash + "' WHERE id=" + id;
+            return ExecuteSql(sql);
+        }
+
+        bool GetUserById(const std::string &id, User *user) {
+            std::string sql = "SELECT id, username, password, email, nickname, phone, created_at, role, avatar, status FROM " + oj_users + " WHERE id=" + id;
+            std::vector<User> users;
+            if (QueryUserMySql(sql, &users) && !users.empty()) {
+                *user = users[0];
+                return true;
+            }
+            return false;
+        }
+
+        // Invitation Code Methods
+        bool VerifyAndUseInvitationCode(const std::string &code, const std::string &user_id) {
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            auto escape = [&](const std::string &s) -> std::string {
+                char *buf = new char[s.length() * 2 + 1];
+                mysql_real_escape_string(my, buf, s.c_str(), s.length());
+                std::string res(buf);
+                delete[] buf;
+                return res;
+            };
+
+            std::string safe_code = escape(code);
+            std::string sql_check = "SELECT id, is_used FROM " + oj_invitation_codes + " WHERE code='" + safe_code + "'";
+            
+            if(0 != mysql_query(my, sql_check.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+
+            MYSQL_RES *res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            if (rows == 0) {
+                mysql_free_result(res);
+                mysql_close(my);
+                return false; // Code not found
+            }
+
+            MYSQL_ROW row = mysql_fetch_row(res);
+            int is_used = row[1] ? atoi(row[1]) : 1;
+            std::string id = row[0] ? row[0] : "0";
+            mysql_free_result(res);
+
+            if (is_used) {
+                mysql_close(my);
+                return false; // Code already used
+            }
+
+            // Mark as used
+            std::string sql_update = "UPDATE " + oj_invitation_codes + " SET is_used=1, used_by=" + user_id + " WHERE id=" + id;
+            if(0 != mysql_query(my, sql_update.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+
+            mysql_close(my);
+            return true;
+        }
+
+        bool GenerateInvitationCode(const std::string &code) {
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            auto escape = [&](const std::string &s) -> std::string {
+                char *buf = new char[s.length() * 2 + 1];
+                mysql_real_escape_string(my, buf, s.c_str(), s.length());
+                std::string res(buf);
+                delete[] buf;
+                return res;
+            };
+
+            std::string sql = "INSERT INTO " + oj_invitation_codes + " (code) VALUES ('" + escape(code) + "')";
+            
+            bool ret = true;
+            if(0 != mysql_query(my, sql.c_str())) {
+                ret = false;
+            }
+            mysql_close(my);
+            return ret;
+        }
+
+        // Operation Log Methods
+        bool LogOperation(const OperationLog &log) {
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            auto escape = [&](const std::string &s) -> std::string {
+                char *buf = new char[s.length() * 2 + 1];
+                mysql_real_escape_string(my, buf, s.c_str(), s.length());
+                std::string res(buf);
+                delete[] buf;
+                return res;
+            };
+
+            std::string sql = "INSERT INTO " + oj_operation_logs + " (user_id, action, target, details, ip) VALUES ('"
+                              + log.user_id + "', '"
+                              + escape(log.action) + "', '"
+                              + escape(log.target) + "', '"
+                              + escape(log.details) + "', '"
+                              + escape(log.ip) + "')";
+
+            bool ret = true;
+            if(0 != mysql_query(my, sql.c_str())) {
+                LOG(WARNING) << "LogOperation failed: " << mysql_error(my) << "\n";
+                ret = false;
+            }
+            mysql_close(my);
+            return ret;
+        }
+
+        bool GetLogs(int page, int page_size, const std::string &keyword, std::vector<OperationLog> *out, int *total) {
+            int offset = (page - 1) * page_size;
+            if (offset < 0) offset = 0;
+
+            std::string where = " WHERE 1=1 ";
+            if (!keyword.empty()) {
+                where += " AND (action LIKE '%" + keyword + "%' OR target LIKE '%" + keyword + "%' OR details LIKE '%" + keyword + "%') ";
+            }
+
+            // Count
+            std::string count_sql = "SELECT COUNT(*) FROM " + oj_operation_logs + where;
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, count_sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *total = atoi(row[0]);
+                mysql_free_result(res);
+            }
+
+            // Fetch with user join
+            std::string sql = "SELECT l.id, l.user_id, u.username, l.action, l.target, l.details, l.ip, l.created_at FROM " 
+                              + oj_operation_logs + " l LEFT JOIN " + oj_users + " u ON l.user_id = u.id "
+                              + where + " ORDER BY l.created_at DESC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            
+            for(int i = 0; i < rows; i++) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                OperationLog l;
+                l.id = row[0] ? row[0] : "";
+                l.user_id = row[1] ? row[1] : "";
+                l.username = row[2] ? row[2] : "Unknown";
+                l.action = row[3] ? row[3] : "";
+                l.target = row[4] ? row[4] : "";
+                l.details = row[5] ? row[5] : "";
+                l.ip = row[6] ? row[6] : "";
+                l.created_at = row[7] ? row[7] : "";
+                out->push_back(l);
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        // Statistics Methods
+        bool GetTotalUserCount(int *count) {
+            std::string sql = "SELECT COUNT(*) FROM " + oj_users;
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *count = atoi(row[0]);
+                mysql_free_result(res);
+            }
+            mysql_close(my);
+            return true;
+        }
+
+        bool GetTotalProblemCount(int *count) {
+            std::string sql = "SELECT COUNT(*) FROM " + oj_questions;
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *count = atoi(row[0]);
+                mysql_free_result(res);
+            }
+            mysql_close(my);
+            return true;
+        }
+
+        bool GetTotalSubmissionCount(int *count) {
+            std::string sql = "SELECT COUNT(*) FROM " + oj_submissions;
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            MYSQL_RES *res = mysql_store_result(my);
+            if (res) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if (row) *count = atoi(row[0]);
+                mysql_free_result(res);
+            }
+            mysql_close(my);
+            return true;
+        }
+
+        bool GetUserGrowthStats(int days, std::map<std::string, int>* stats) {
+            std::string sql = "SELECT DATE(created_at) as date, COUNT(*) FROM " + oj_users + 
+                              " WHERE created_at >= DATE_SUB(NOW(), INTERVAL " + std::to_string(days) + " DAY) GROUP BY date";
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            MYSQL_RES *res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            
+            for(int i = 0; i < rows; i++) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                std::string date = row[0] ? row[0] : "";
+                int count = row[1] ? atoi(row[1]) : 0;
+                (*stats)[date] = count;
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        bool GetSubmissionStats(std::map<std::string, int>* stats) {
+            std::string sql = "SELECT result, COUNT(*) FROM " + oj_submissions + " GROUP BY result";
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            MYSQL_RES *res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            
+            for(int i = 0; i < rows; i++) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                std::string result = row[0] ? row[0] : "";
+                int count = row[1] ? atoi(row[1]) : 0;
+                (*stats)[result] = count;
+            }
+            mysql_free_result(res);
+            mysql_close(my);
+            return true;
+        }
+
+        bool GetDailyActivityStats(int days, std::map<std::string, int>* stats) {
+            std::string sql = "SELECT DATE(created_at) as date, COUNT(DISTINCT user_id) FROM " + oj_submissions + 
+                              " WHERE created_at >= DATE_SUB(NOW(), INTERVAL " + std::to_string(days) + " DAY) GROUP BY date";
+            
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            MYSQL_RES *res = mysql_store_result(my);
+            int rows = mysql_num_rows(res);
+            
+            for(int i = 0; i < rows; i++) {
+                MYSQL_ROW row = mysql_fetch_row(res);
+                if(row == nullptr) continue;
+                std::string date = row[0] ? row[0] : "";
+                int count = row[1] ? atoi(row[1]) : 0;
+                (*stats)[date] = count;
             }
             mysql_free_result(res);
             mysql_close(my);
