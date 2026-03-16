@@ -1,0 +1,315 @@
+/* Contest List Styles */
+
+/* Layout */
+.contest-container {
+    padding: 80px 20px 40px; /* Top padding for fixed navbar */
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: calc(100vh - 60px); /* Push footer to bottom */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.contest-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.contest-header h1 {
+    color: var(--text-main);
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.contest-controls {
+    display: flex;
+    align-items: center;
+}
+
+.contest-controls label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-main);
+    user-select: none;
+    font-size: 0.95rem;
+}
+
+.contest-controls input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+}
+
+.contest-name-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.contest-logo {
+    height: 24px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* Table Wrapper */
+.contest-table-wrapper {
+    overflow-x: auto;
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border: 1px solid var(--border-color);
+}
+
+.contest-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+.contest-table th,
+.contest-table td {
+    padding: 16px 24px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
+}
+
+.contest-table th {
+    background-color: rgba(255,255,255,0.05);
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    font-size: 0.95rem;
+}
+
+.contest-table tr:last-child td {
+    border-bottom: none;
+}
+
+.contest-table tr:hover {
+    background-color: rgba(255,255,255,0.02);
+}
+
+/* Columns */
+.col-name {
+    width: 35%;
+    font-weight: 500;
+    font-size: 1.05rem;
+}
+
+.col-time {
+    width: 20%;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    font-family: 'Consolas', monospace;
+}
+
+.col-status {
+    width: 15%;
+}
+
+.col-action {
+    width: 10%;
+    text-align: right;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.4;
+    min-width: 80px;
+}
+
+.status-upcoming {
+    background: rgba(33, 150, 243, 0.2);
+    color: #2196f3;
+}
+
+.status-running {
+    background: rgba(44, 187, 93, 0.2);
+    color: #2cbb5d;
+}
+
+.status-ended {
+    background: rgba(140, 140, 140, 0.2);
+    color: #8c8c8c;
+}
+
+/* Pagination */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    gap: 20px;
+}
+
+.pagination-container button {
+    padding: 8px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.pagination-container button:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+.pagination-container button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-container span {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Last Updated */
+.last-updated {
+    margin-top: 20px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+/* Footer */
+.footer {
+    margin-top: auto;
+    padding: 40px 0 0;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Table Button Override */
+.contest-table .btn-primary, .contest-table .btn-secondary {
+    padding: 6px 16px;
+    font-size: 0.9rem;
+    box-shadow: none;
+    text-decoration: none;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.contest-table .btn-primary {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+.contest-table .btn-secondary {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+}
+
+.contest-table .btn-primary:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(44, 187, 93, 0.2);
+}
+
+.contest-table .btn-secondary:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+    .contest-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .contest-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .contest-table, 
+    .contest-table thead, 
+    .contest-table tbody, 
+    .contest-table th, 
+    .contest-table td, 
+    .contest-table tr { 
+        display: block; 
+    }
+    
+    .contest-table thead tr { 
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    
+    .contest-table tr { 
+        border: 1px solid var(--border-color);
+        margin-bottom: 16px;
+        border-radius: 8px;
+        padding: 16px;
+        background: var(--card-bg);
+    }
+    
+    .contest-table td { 
+        border: none;
+        padding: 8px 0;
+        position: relative;
+        padding-left: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .contest-table td.col-name {
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .contest-table td.col-time::before,
+    .contest-table td.col-status::before {
+        content: attr(data-label);
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+    
+    .contest-table td.col-action {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color);
+        justify-content: flex-end;
+    }
+    
+    .btn-primary, .btn-secondary {
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+}

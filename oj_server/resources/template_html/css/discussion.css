@@ -1,0 +1,471 @@
+/* Discussion Cards (Moved from all_questions.css) */
+.discussion-card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+}
+
+.discussion-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    border-color: var(--accent-color);
+    background: var(--bg-secondary);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+
+.user-info .username {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.user-info .date {
+    color: #666;
+}
+
+.tag-official {
+    background: linear-gradient(90deg, #8e44ad, #9b59b6);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+.card-title {
+    color: var(--text-main);
+    font-size: 1.1rem;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.card-summary {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.stats span {
+    color: var(--text-secondary);
+    margin-right: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tags {
+    display: flex;
+    gap: 8px;
+}
+
+.tag {
+    background: rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+/* Post Detail Meta */
+.post-meta {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+/* Inline Comment Tooltip Arrow */
+.inline-comment-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+.inline-comment-target {
+    border-bottom: 1px dashed #999;
+    cursor: pointer;
+    position: relative;
+}
+.inline-comment-target:hover {
+    border-bottom-color: #2cbb5d;
+    background-color: rgba(44, 187, 93, 0.1);
+}
+
+/* Side Drawer */
+.comment-drawer {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100%;
+    background: var(--card-bg);
+    box-shadow: -2px 0 10px rgba(0,0,0,0.5);
+    z-index: 1500;
+    transition: right 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid rgba(255,255,255,0.1);
+}
+.comment-drawer.visible {
+    right: 0;
+}
+.comment-drawer-header {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.comment-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+.comment-drawer-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.3);
+    z-index: 1400;
+    display: none;
+}
+.comment-drawer-backdrop.visible {
+    display: block;
+}
+
+.selected-text-quote {
+    padding: 10px;
+    background: rgba(255,255,255,0.05);
+    border-left: 3px solid #2cbb5d;
+    margin-bottom: 20px;
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+/* EasyMDE Dark Mode Customization */
+.EasyMDEContainer {
+    background: transparent;
+}
+.editor-toolbar {
+    background-color: rgba(255,255,255,0.05) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 8px !important;
+}
+.editor-toolbar button {
+    color: var(--text-main) !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 4px !important;
+    margin: 2px !important;
+    font-size: 16px !important;
+}
+.editor-toolbar button:hover, .editor-toolbar button.active {
+    background-color: rgba(255,255,255,0.1) !important;
+    border: none !important;
+}
+.editor-toolbar i.separator {
+    border-left: 1px solid rgba(255,255,255,0.1) !important;
+    border-right: none !important;
+    margin: 0 8px !important;
+}
+.CodeMirror {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    min-height: 400px;
+}
+.CodeMirror-cursor {
+    border-color: var(--text-main) !important;
+}
+.editor-statusbar {
+    color: var(--text-secondary) !important;
+}
+.editor-preview {
+    background-color: var(--card-bg) !important;
+}
+.editor-preview-side {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Custom Fullscreen Exit Button */
+#exit-preview-btn {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    z-index: 2000;
+    padding: 10px 20px;
+    background: rgba(44, 187, 93, 0.9);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+#exit-preview-btn:hover {
+    background: #2cbb5d;
+}
+
+/* Markdown Content Styling */
+.markdown-body {
+    color: var(--text-main);
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+/* Headers */
+.markdown-body h1, .markdown-body h2, .markdown-body h3, 
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+    color: var(--text-main);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 0.3em;
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+}
+
+.markdown-body h1 { font-size: 2em; }
+.markdown-body h2 { font-size: 1.5em; }
+
+/* Links */
+.markdown-body a {
+    color: #2cbb5d;
+    text-decoration: none;
+}
+.markdown-body a:hover {
+    text-decoration: underline;
+}
+
+/* Lists */
+.markdown-body ul, .markdown-body ol {
+    padding-left: 2em;
+    margin-bottom: 1em;
+}
+
+/* Blockquotes */
+.markdown-body blockquote {
+    padding: 0 1em;
+    color: var(--text-secondary);
+    border-left: 0.25em solid #2cbb5d;
+    background: rgba(255,255,255,0.05);
+    margin: 0 0 1em 0;
+}
+
+/* Tables */
+.markdown-body table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+}
+.markdown-body table th, .markdown-body table td {
+    padding: 6px 13px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.markdown-body table th {
+    font-weight: 600;
+    background-color: rgba(255,255,255,0.05);
+}
+.markdown-body table tr:nth-child(2n) {
+    background-color: rgba(255,255,255,0.02);
+}
+
+/* Images */
+.markdown-body img {
+    max-width: 100%;
+    box-sizing: border-box;
+    background-color: transparent;
+    border-radius: 4px;
+}
+
+/* Code Blocks */
+.markdown-body code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+
+.markdown-body pre {
+    padding: 16px;
+    overflow: auto;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #282c34; /* Atom One Dark background */
+    border-radius: 6px;
+    margin-bottom: 1em;
+}
+
+.markdown-body pre code {
+    display: inline;
+    max-width: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    line-height: inherit;
+    word-wrap: normal;
+    background-color: transparent;
+    border: 0;
+}
+
+/* Fix for highlight.js */
+.markdown-body pre code.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 0; /* padding is handled by pre */
+}
+
+
+/* Editor Footer */
+.editor-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--card-bg); /* Use theme background */
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 15px 40px; /* Adjust padding */
+    text-align: right;
+    z-index: 1000; /* Ensure it's above other content but below modals/drawers */
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+    box-sizing: border-box;
+}
+
+.editor-footer-spacer {
+    height: 80px; /* Match footer height + margin */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .editor-footer {
+        padding: 10px 20px;
+    }
+}
+
+/* Styles extracted from discussion.html */
+.tag-solution {
+    background: #8e44ad;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-right: 6px;
+}
+
+.problem-link-badge {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.problem-link-badge a {
+    color: var(--text-secondary);
+    text-decoration: underline;
+}
+
+.solution-info-box {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(44, 187, 93, 0.1);
+    border-left: 4px solid #2cbb5d;
+    border-radius: 4px;
+}
+
+.solution-info-title {
+    font-weight: 600;
+    color: #2cbb5d;
+}
+
+.solution-info-link {
+    color: var(--text-main);
+    text-decoration: underline;
+}
+
+/* User Avatar Styles */
+.user-info {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.user-avatar-img:hover {
+    transform: scale(1.05);
+    border-color: var(--accent-color, #2cbb5d);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.3;
+}
+
+.user-details .username {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    display: block;
+}
+
+.user-details .date {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-top: 2px;
+}
+
+/* Responsive adjustments for avatar */
+@media (max-width: 480px) {
+    .user-avatar-img {
+        width: 36px;
+        height: 36px;
+    }
+    .user-details .username {
+        font-size: 0.9rem;
+    }
+    .user-details .date {
+        font-size: 0.75rem;
+    }
+}
