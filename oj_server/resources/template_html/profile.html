@@ -72,6 +72,7 @@
 
         async function submitEditProfile(event) {
             event.preventDefault();
+            let avatarUpdated = false;
             
             // Upload avatar if selected
             if (selectedAvatarFile) {
@@ -88,6 +89,7 @@
                         alert('头像上传失败: ' + res.reason);
                         return;
                     }
+                    avatarUpdated = true;
                 } catch (e) {
                     alert('头像上传请求失败');
                     return;
@@ -112,12 +114,23 @@
                 const result = await response.json();
                 if (result.status === 0) {
                     alert('保存成功');
-                    window.location.reload();
+                    // Force reload with timestamp to bypass cache
+                    window.location.href = window.location.pathname + '?t=' + new Date().getTime();
                 } else {
-                    alert('保存失败：' + (result.reason || '未知错误'));
+                    if (avatarUpdated) {
+                        alert('头像已更新，但个人信息保存失败：' + (result.reason || '未知错误'));
+                        window.location.href = window.location.pathname + '?t=' + new Date().getTime();
+                    } else {
+                        alert('保存失败：' + (result.reason || '未知错误'));
+                    }
                 }
             } catch (e) {
-                alert('请求失败，请稍后重试');
+                if (avatarUpdated) {
+                    alert('头像已更新，但个人信息请求失败');
+                    window.location.href = window.location.pathname + '?t=' + new Date().getTime();
+                } else {
+                    alert('请求失败，请稍后重试');
+                }
             }
         }
     </script>

@@ -382,9 +382,11 @@ namespace ns_control
             u.id = user_id;
             u.avatar = avatar_url;
             if (model_.UpdateUser(u)) {
+                LOG(INFO) << "User " << user_id << " avatar updated in DB to " << avatar_url << "\n";
                 // Update Session Cache
                 std::unique_lock<std::mutex> lock(session_mtx_);
                 bool old_avatar_deleted = false;
+                int updated_sessions = 0;
                 for (auto &kv : sessions_) {
                     if (kv.second.user.id == user_id) {
                         // Delete old avatar file if exists and not default
@@ -399,9 +401,11 @@ namespace ns_control
                         }
                         
                         kv.second.user.avatar = avatar_url;
+                        updated_sessions++;
                         // Do NOT break here! Update ALL sessions for this user.
                     }
                 }
+                LOG(INFO) << "Updated " << updated_sessions << " sessions for user " << user_id << "\n";
                 
                 Json::Value res;
                 res["status"] = 0;
