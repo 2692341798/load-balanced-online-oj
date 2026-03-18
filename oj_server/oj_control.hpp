@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <ctime>
 #include <cstdio>
+#include <thread>
+#include <chrono>
 
 #include "../comm/util.hpp"
 #include "../comm/log.hpp"
@@ -120,15 +122,23 @@ namespace ns_control
         // 保证LoadBlance它的数据安全
         std::mutex mtx;
 
+        bool is_running_;
+        std::thread heartbeat_thread_;
+
     public:
-        LoadBlance()
+        LoadBlance() : is_running_(true)
         {
             assert(LoadConf(service_machine));
             LOG(INFO) << "加载 " << service_machine << " 成功"
                       << "\n";
+            heartbeat_thread_ = std::thread(&LoadBlance::Heartbeat, this);
         }
         ~LoadBlance()
         {
+            is_running_ = false;
+            if (heartbeat_thread_.joinable()) {
+                heartbeat_thread_.join();
+            }
         }
 
     public:
@@ -230,6 +240,58 @@ namespace ns_control
 
             LOG(INFO) << "所有的主机有上线啦!" << "\n";
         }
+        
+        void Heartbeat() {
+            while (is_running_) {
+                std::vector<int> current_offline;
+                std::vector<int> current_online;
+                {
+                    std::lock_guard<std::mutex> lock(mtx);
+                    current_offline = offline;
+                    current_online = online;
+                }
+
+                // Check offline machines
+                for (int id : current_offline) {
+                    Machine& m = machines[id];
+                    httplib::Client cli(m.ip, m.port);
+                    cli.set_connection_timeout(1);
+                    cli.set_read_timeout(1);
+                    auto res = cli.Get("/ping");
+                    if (res && res->status == 200) {
+                        std::lock_guard<std::mutex> lock(mtx);
+                        auto it = std::find(offline.begin(), offline.end(), id);
+                        if (it != offline.end()) {
+                            offline.erase(it);
+                            online.push_back(id);
+                            LOG(INFO) << "编译服务器 " << m.ip << ":" << m.port << " 恢复在线" << "\n";
+                        }
+                    }
+                }
+
+                // Check online machines
+                for (int id : current_online) {
+                    Machine& m = machines[id];
+                    httplib::Client cli(m.ip, m.port);
+                    cli.set_connection_timeout(1);
+                    cli.set_read_timeout(1);
+                    auto res = cli.Get("/ping");
+                    if (!res || res->status != 200) {
+                        std::lock_guard<std::mutex> lock(mtx);
+                        auto it = std::find(online.begin(), online.end(), id);
+                        if (it != online.end()) {
+                            machines[id].ResetLoad();
+                            online.erase(it);
+                            offline.push_back(id);
+                            LOG(WARNING) << "编译服务器 " << m.ip << ":" << m.port << " 心跳检测失败，已下线" << "\n";
+                        }
+                    }
+                }
+
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+            }
+        }
+        
         //for test
         void ShowMachines()
         {

@@ -41,6 +41,11 @@ int main(int argc, char *argv[])
 
     Server svr;
 
+    // 心跳检测接口
+    svr.Get("/ping", [](const Request &req, Response &resp){
+        resp.set_content("pong", "text/plain;charset=utf-8");
+    });
+
     // svr.Get("/hello",[](const Request &req, Response &resp){
     //     // 用来进行基本测试
     //     resp.set_content("hello httplib,你好 httplib!", "text/plain;charset=utf-8");

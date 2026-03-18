@@ -18,7 +18,7 @@ if [ ! -f "$KEY_PATH" ]; then
 fi
 
 # 1. Check SSH Connection
-echo "[1/5] Checking SSH connection..."
+echo "[1/4] Checking SSH connection..."
 ssh -i "$KEY_PATH" -o BatchMode=yes -o ConnectTimeout=5 "$USER@$SERVER_IP" echo "SSH Connected" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "Error: SSH connection failed."
@@ -30,7 +30,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 1.5. Check Remote Dependencies
-echo "[1.5/5] Checking remote build environment..."
+echo "[1.5/4] Checking remote build environment..."
 CHECK_CMD="
 MISSING=\"\"
 if [ ! -d /usr/include/jsoncpp ]; then MISSING=\"\$MISSING libjsoncpp-dev\"; fi
@@ -57,7 +57,7 @@ if [ ! -z "$MISSING_DEPS" ]; then
 fi
 
 # 2. Sync Code
-echo "[2/5] Syncing code..."
+echo "[2/4] Syncing code..."
 # Ensure remote directory exists and pull latest code
 ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "mkdir -p $REMOTE_DIR && cd $REMOTE_DIR && git pull origin main && make output"
 if [ $? -ne 0 ]; then
@@ -65,35 +65,16 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 3. Sync Database (oj_questions)
-echo "[3/5] Syncing database (oj_questions)..."
-# Dump local oj_questions
-mysqldump -u "$LOCAL_DB_USER" -p"$LOCAL_DB_PASS" "$LOCAL_DB_NAME" oj_questions > oj_questions_dump.sql
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to dump local database."
-    exit 1
-fi
-
-# Upload dump
-scp -i "$KEY_PATH" oj_questions_dump.sql "$USER@$SERVER_IP:$REMOTE_DIR/"
-
-# Import remote
-# Using default db credentials for remote (oj_client/123456/oj)
-ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "mysql -u oj_client -p123456 oj < $REMOTE_DIR/oj_questions_dump.sql && rm $REMOTE_DIR/oj_questions_dump.sql"
-
-# Clean up local dump
-rm oj_questions_dump.sql
-
-# 4. Sync Files (questions directory)
-echo "[4/5] Syncing questions directory..."
+# 3. Sync Files (questions directory)
+echo "[3/4] Syncing questions directory..."
 if [ -d "oj_server/questions" ]; then
     rsync -avz -e "ssh -i $KEY_PATH" oj_server/questions/ "$USER@$SERVER_IP:$REMOTE_DIR/oj_server/questions/"
 else
     echo "Warning: Local oj_server/questions directory not found. Skipping file sync."
 fi
 
-# 5. Restart Services
-echo "[5/5] Restarting remote services..."
+# 4. Restart Services
+echo "[4/4] Restarting remote services..."
 ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "cd $REMOTE_DIR && ./scripts/stop.sh && ./scripts/start.sh"
 
 echo "=== Deployment Complete! ==="

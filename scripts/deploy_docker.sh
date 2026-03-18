@@ -18,7 +18,7 @@ if [ ! -f "$KEY_PATH" ]; then
 fi
 
 # 1. Check SSH Connection
-echo "[1/6] Checking SSH connection..."
+echo "[1/4] Checking SSH connection..."
 ssh -i "$KEY_PATH" -o BatchMode=yes -o ConnectTimeout=5 "$USER@$SERVER_IP" echo "SSH Connected" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "Error: SSH connection failed."
@@ -27,7 +27,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 2. Check Remote Docker Environment
-echo "[2/6] Checking remote Docker environment..."
+echo "[2/4] Checking remote Docker environment..."
 ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "docker --version && docker compose version" > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "Error: Docker or Docker Compose not found on remote server."
@@ -35,18 +35,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 3. Prepare Local Data
-echo "[3/6] Preparing local data..."
-# 3.1 Dump Database
-echo "  - Dumping local database..."
-mysqldump -u "$LOCAL_DB_USER" -p"$LOCAL_DB_PASS" --databases "$LOCAL_DB_NAME" --add-drop-database --hex-blob > full_db_dump.sql
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to dump local database."
-    exit 1
-fi
-
-# 4. Sync Code and Data
-echo "[4/6] Syncing code and data to remote..."
+# 3. Sync Code
+echo "[3/4] Syncing code to remote..."
 # Create remote directory if not exists
 ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "mkdir -p $REMOTE_DIR"
 
@@ -69,8 +59,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 5. Deploy with Docker Compose
-echo "[5/6] Deploying with Docker Compose..."
+# 4. Deploy with Docker Compose
+echo "[4/4] Deploying with Docker Compose..."
 DEPLOY_CMD="
 cd $REMOTE_DIR/docker
 # Stop existing services
@@ -84,47 +74,6 @@ if [ $? -ne 0 ]; then
     echo "Error: Docker deployment failed."
     exit 1
 fi
-
-# 6. Restore Database
-echo "[6/6] Restoring database..."
-echo "  - Waiting for database to initialize (15s)..."
-sleep 15
-
-RESTORE_CMD="
-# Check if db container is running
-if [ \$(docker inspect -f '{{.State.Running}}' oj_db) != 'true' ]; then
-    echo 'Error: Database container is not running.'
-    exit 1
-fi
-
-# Backup existing remote database (Safety First)
-echo '  - Backing up existing remote database...'
-docker exec oj_db mysqldump -u root -proot_password --databases oj > $REMOTE_DIR/oj_backup_\$(date +%Y%m%d_%H%M%S).sql 2>/dev/null
-if [ \$? -eq 0 ]; then
-    echo '    Backup created.'
-else
-    echo '    No existing database or backup failed (first run?). Continuing.'
-fi
-
-# Restore data
-echo '  - Importing new data...'
-cat $REMOTE_DIR/full_db_dump.sql | docker exec -i oj_db mysql -u root -proot_password
-"
-
-ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "$RESTORE_CMD"
-
-if [ $? -ne 0 ]; then
-    echo "Error: Database restore failed."
-    # Don't exit, just warn, maybe just needs more time
-    echo "Warning: Check if database was ready."
-else
-    echo "Database restored successfully."
-fi
-
-# Cleanup local dump
-rm full_db_dump.sql
-# Cleanup remote dump
-ssh -i "$KEY_PATH" "$USER@$SERVER_IP" "rm $REMOTE_DIR/full_db_dump.sql"
 
 echo "=== Deployment Complete! ==="
 echo "Access your service at: http://$SERVER_IP:8094"
