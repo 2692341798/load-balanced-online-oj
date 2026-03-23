@@ -25,6 +25,9 @@ void Recovery(int signo)
 
 int main()
 {
+    // Initialize random seed
+    srand(time(nullptr));
+
     // Disable stdout buffering
     setbuf(stdout, NULL);
     std::cout << "[INFO] Server starting..." << std::endl;
@@ -40,8 +43,12 @@ int main()
 
     signal(SIGQUIT, Recovery);
 
-    //用户请求的服务路由功能
+    // 用户请求的服务路由功能
     Server svr;
+    
+    // Configure httplib thread pool for I/O bound application
+    // Set to a larger value (e.g. 500 threads) to handle concurrent connections effectively
+    svr.new_task_queue = [] { return new httplib::ThreadPool(500); };
 
     Control ctrl;
     ctrl_ptr = &ctrl;
@@ -713,7 +720,7 @@ int main()
     svr.set_base_dir("./resources/wwwroot");
     svr.set_mount_point("/css", "./resources/css");
     svr.set_mount_point("/uploads", "./uploads");
-    std::cout << "[INFO] Server binding to 0.0.0.0:8094..." << std::endl;
-    svr.listen("0.0.0.0", 8094);
+    std::cout << "[INFO] Server binding to 0.0.0.0:8097..." << std::endl;
+    svr.listen("0.0.0.0", 8097);
     return 0;
 } 

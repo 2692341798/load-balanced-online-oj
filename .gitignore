@@ -55,3 +55,18 @@ output/
 cookies.txt
 page*.html
 backup/
+
+# Log files
+*.log
+
+# Node.js
+node_modules/
+
+# Playwright & E2E Tests
+playwright-report/
+test-results/
+allure-results/
+test-results.json
+tests/e2e/test_limit
+tests/e2e/test_malloc
+tests/e2e/test_rusage

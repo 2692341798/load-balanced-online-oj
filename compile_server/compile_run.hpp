@@ -21,6 +21,8 @@ namespace ns_compile_and_run
     public:
         static void RemoveTempFile(const std::string &file_name, const std::string &language = "C++")
         {
+            if (file_name.empty()) return; // 防止空文件名导致误删 temp 目录
+            
             //清理文件的个数是不确定的，但是有哪些我们是知道的
             std::string _src = PathUtil::Src(file_name, language);
             if(FileUtil::IsFileExists(_src)) unlink(_src.c_str());
@@ -71,6 +73,12 @@ namespace ns_compile_and_run
             case SIGABRT: // 6
                 desc = "内存超过范围";
                 break;
+            case SIGKILL: // 9
+                desc = "被系统强制终止(可能内存超限)";
+                break;
+            case SIGSEGV: // 11
+                desc = "段错误(非法内存访问或栈溢出)";
+                break;
             case SIGXCPU: // 24
                 desc = "CPU使用超时";
                 break;
@@ -92,8 +100,10 @@ namespace ns_compile_and_run
             if (code == -3) return "编译错误";
             if (code == -4) return "答案错误";
             if (code == SIGABRT) return "内存超限";
+            if (code == SIGKILL) return "内存超限"; // 被系统 OOM Kill
             if (code == SIGXCPU) return "时间超限";
             if (code == SIGFPE) return "浮点溢出";
+            if (code == SIGSEGV) return "运行时错误"; // 也可以视情况归类为内存超限，但通常是运行时错误
             if (code > 0) return "运行时错误";
             return "未知错误";
         }
@@ -153,6 +163,12 @@ namespace ns_compile_and_run
             // 形成的文件名只具有唯一性，没有目录没有后缀
             // 毫秒级时间戳+原子性递增唯一值: 来保证唯一性
             file_name = FileUtil::UniqFileName();
+            
+            // 确保 temp 目录存在
+            if (!FileUtil::IsFileExists(ns_util::temp_path)) {
+                mkdir(ns_util::temp_path.c_str(), 0755);
+            }
+            
             // Create directory
             dir = ns_util::temp_path + file_name;
             if (mkdir(dir.c_str(), 0755) != 0) {

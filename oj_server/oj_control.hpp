@@ -179,34 +179,40 @@ namespace ns_control
         // m : 输出型参数
         bool SmartChoice(int *id, Machine **m)
         {
-            // 1. 使用选择好的主机(更新该主机的负载)
-            // 2. 我们需要可能离线该主机
             mtx.lock();
-            // 负载均衡的算法
-            // 1. 随机数+hash
-            // 2. 轮询+hash
             int online_num = online.size();
             if (online_num == 0)
             {
                 mtx.unlock();
-                LOG(FATAL) << " 所有的后端编译主机已经离线, 请运维的同事尽快查看"
-                           << "\n";
+                LOG(FATAL) << " 所有的后端编译主机已经离线, 请运维的同事尽快查看\n";
                 return false;
             }
-            // 通过遍历的方式，找到所有负载最小的机器
-            *id = online[0];
-            *m = &machines[online[0]];
+            
+            // 找到所有负载最小的机器，使用数组记录所有拥有最小负载的主机下标
             uint64_t min_load = machines[online[0]].Load();
+            std::vector<int> min_load_machines;
+            min_load_machines.push_back(online[0]);
+
             for (int i = 1; i < online_num; i++)
             {
                 uint64_t curr_load = machines[online[i]].Load();
-                if (min_load > curr_load)
+                if (curr_load < min_load)
                 {
                     min_load = curr_load;
-                    *id = online[i];
-                    *m = &machines[online[i]];
+                    min_load_machines.clear();
+                    min_load_machines.push_back(online[i]);
+                }
+                else if (curr_load == min_load)
+                {
+                    min_load_machines.push_back(online[i]);
                 }
             }
+            
+            // 如果有多个最小负载相同的机器，随机选一个以避免并发请求聚集在同一台机器
+            int random_idx = rand() % min_load_machines.size();
+            *id = min_load_machines[random_idx];
+            *m = &machines[*id];
+            
             mtx.unlock();
             return true;
         }
@@ -1382,44 +1388,68 @@ namespace ns_control
                     }
                     
                     Client cli(m->ip, m->port);
-                    m->IncLoad();
-                    auto res = cli.Post("/compile_and_run", compile_string, "application/json;charset=utf-8");
-                    m->DecLoad();
+                    // Add appropriate timeouts to avoid indefinite blocking
+                    cli.set_connection_timeout(1);
+                    cli.set_read_timeout(5);
+                    cli.set_write_timeout(2);
+
+                    // Add simple retry logic at the request level
+                    bool request_success = false;
+                    int retry_count = 0;
+                    bool case_completed = false;
                     
-                    if(res) {
-                        if(res->status == 200) {
-                            Json::Reader resp_reader;
-                            Json::Value resp_val;
-                            resp_reader.parse(res->body, resp_val);
-                            
-                            // Check if compile error or runtime error
-                            if (resp_val["status"].asInt() != 0) {
-                                *out_json = res->body; // Return error immediately
-                                return;
+                    while (retry_count < 3) {
+                        m->IncLoad();
+                        auto res = cli.Post("/compile_and_run", compile_string, "application/json;charset=utf-8");
+                        m->DecLoad();
+                        if (res) {
+                            request_success = true;
+                            if(res->status == 200) {
+                                Json::Reader resp_reader;
+                                Json::Value resp_val;
+                                resp_reader.parse(res->body, resp_val);
+                                
+                                // Check if compile error or runtime error
+                                if (resp_val["status"].asInt() != 0) {
+                                    *out_json = res->body; // Return error immediately
+                                    return;
+                                }
+                                
+                                // Check output
+                                std::string stdout_str = resp_val["stdout"].asString();
+                                std::string trim_stdout = stdout_str; 
+                                while(!trim_stdout.empty() && isspace(trim_stdout.back())) trim_stdout.pop_back();
+                                std::string trim_expect = expected_output;
+                                while(!trim_expect.empty() && isspace(trim_expect.back())) trim_expect.pop_back();
+                                
+                                bool pass = (trim_stdout == trim_expect);
+                                if (!pass) all_passed = false;
+                                
+                                Json::Value case_res;
+                                case_res["name"] = "Case " + std::to_string(i+1);
+                                case_res["pass"] = pass;
+                                case_res["input"] = input_data;
+                                case_res["output"] = trim_stdout;
+                                case_res["expected"] = trim_expect;
+                                // Add time/mem if available in future
+                                
+                                result_cases.append(case_res);
+                                case_completed = true;
                             }
-                            
-                            // Check output
-                            std::string stdout_str = resp_val["stdout"].asString();
-                            std::string trim_stdout = stdout_str; 
-                            while(!trim_stdout.empty() && isspace(trim_stdout.back())) trim_stdout.pop_back();
-                            std::string trim_expect = expected_output;
-                            while(!trim_expect.empty() && isspace(trim_expect.back())) trim_expect.pop_back();
-                            
-                            bool pass = (trim_stdout == trim_expect);
-                            if (!pass) all_passed = false;
-                            
-                            Json::Value case_res;
-                            case_res["name"] = "Case " + std::to_string(i+1);
-                            case_res["pass"] = pass;
-                            case_res["input"] = input_data;
-                            case_res["output"] = trim_stdout;
-                            case_res["expected"] = trim_expect;
-                            // Add time/mem if available in future
-                            
-                            result_cases.append(case_res);
-                            break; // Success for this case
+                            break; // Received response, stop retrying this machine
                         }
+                        retry_count++;
+                    }
+                    
+                    if (!request_success) {
+                        load_blance_.OfflineMachine(id);
+                    } else if (case_completed) {
+                        break; // Success for this case, move to next case
                     } else {
+                        // Received response but status != 200 (e.g. 500 Internal Server Error)
+                        // It's a server error, we should probably try another machine.
+                        // Or if it's the only machine, we might want to return an error eventually.
+                        // For now, let's offline it temporarily or just retry another machine.
                         load_blance_.OfflineMachine(id);
                     }
                 }

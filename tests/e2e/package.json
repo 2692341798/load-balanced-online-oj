@@ -1,0 +1,24 @@
+{
+  "name": "e2e",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "allure:generate": "allure generate ./allure-results --clean",
+    "allure:open": "allure open ./allure-report",
+    "test:allure": "playwright test && npm run allure:generate && npm run allure:open",
+    "test:report": "playwright test && node generate_report.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "allure-commandline": "^2.38.1",
+    "allure-playwright": "^3.6.0",
+    "jest": "^30.3.0"
+  }
+}

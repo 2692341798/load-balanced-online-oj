@@ -23,7 +23,7 @@ nohup ./compile_server 8083 > ../logs/compile_server_8083.log 2>&1 &
 cd ../..
 
 # Start OJ Server
-echo "Starting OJ Server on 8094..."
+echo "Starting OJ Server on 8096..."
 cd output/oj_server
 nohup ./oj_server > ../logs/oj_server.log 2>&1 &
 

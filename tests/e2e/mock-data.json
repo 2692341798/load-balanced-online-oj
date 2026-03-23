@@ -1,0 +1,29 @@
+{
+  "languageDistribution": {
+    "C++": 140,
+    "Python": 34,
+    "Java": 20
+  },
+  "compilePhase": {
+    "times": [120, 150, 180, 140, 160, 200, 110, 130, 190, 170]
+  },
+  "runPhase": {
+    "times": [45, 55, 60, 40, 50, 65, 35, 70, 48, 52]
+  },
+  "errorDiscoveryTime": {
+    "CE": 250,
+    "RE": 400,
+    "WA": 450
+  },
+  "errorTypes": {
+    "CE": 15,
+    "RE": 10,
+    "WA": 25,
+    "TLE": 5,
+    "MLE": 2
+  },
+  "gradientStressTest": {
+    "concurrency": [10, 14, 15, 16, 20, 40, 60],
+    "p95Delays": [1915, 1950, 1980, 2010, 2500, 3800, 4500]
+  }
+}

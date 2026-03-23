@@ -1,0 +1,74 @@
+{
+  "throughput": {
+    "totalSubmissions": 198,
+    "submitsPerSec": "6.60",
+    "languageDistribution": {
+      "C++": 140,
+      "Python": 34,
+      "Java": 20
+    }
+  },
+  "judgingSpeed": {
+    "endToEnd": {
+      "min": 1006,
+      "p50": 1241,
+      "p95": 1487,
+      "p99": 1984,
+      "max": 2300
+    },
+    "compile": {
+      "mean": 155,
+      "stdDev": 29
+    },
+    "run": {
+      "mean": 52,
+      "stdDev": 10
+    }
+  },
+  "errorInterception": {
+    "avgTime": {
+      "CE": 250,
+      "RE": 400,
+      "WA": 450
+    },
+    "types": {
+      "CE": 15,
+      "RE": 10,
+      "WA": 25,
+      "TLE": 5,
+      "MLE": 2
+    }
+  },
+  "concurrency": {
+    "users": 10,
+    "durationMs": 30000,
+    "errors5xx": 0,
+    "eqQPS": "7.95",
+    "gradient": {
+      "concurrency": [
+        10,
+        14,
+        15,
+        16,
+        20,
+        40,
+        60
+      ],
+      "p95Delays": [
+        1915,
+        1950,
+        1980,
+        2010,
+        2500,
+        3800,
+        4500
+      ]
+    }
+  },
+  "environment": {
+    "node": "v22.17.1",
+    "cpus": 10,
+    "mem": "24.00 GB",
+    "docker": "Unknown"
+  }
+}

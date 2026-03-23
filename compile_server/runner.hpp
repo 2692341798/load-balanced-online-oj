@@ -146,10 +146,25 @@ namespace ns_runner
                 close(_stdout_fd);
                 close(_stderr_fd);
                 int status = 0;
-                waitpid(pid, &status, 0);
-                // 程序运行异常，一定是因为因为收到了信号！
-                LOG(INFO) << "运行完毕, info: " << (status & 0x7F) << "\n"; 
-                // return status & 0x7F;
+                struct rusage ru;
+                wait4(pid, &status, 0, &ru);
+                
+                // 检查物理内存使用峰值
+                long maxrss_kb;
+                #ifdef __APPLE__
+                maxrss_kb = ru.ru_maxrss / 1024; // macOS 返回 bytes
+                #else
+                maxrss_kb = ru.ru_maxrss; // Linux 返回 KB
+                #endif
+                
+                LOG(INFO) << "运行完毕, info: " << (status & 0x7F) << ", maxrss: " << maxrss_kb << " KB\n"; 
+
+                // 如果物理内存超限，直接返回 SIGKILL(9) 作为内存超限的标识
+                if (maxrss_kb > mem_limit) {
+                    LOG(WARNING) << "进程物理内存超限: " << maxrss_kb << " KB > " << mem_limit << " KB\n";
+                    return 9; // 9 对应 SIGKILL，在 compile_run.hpp 中被映射为内存超限
+                }
+
                 // Fix: Check exit code as well
                 if (WIFEXITED(status)) {
                     int exit_code = WEXITSTATUS(status);
@@ -157,8 +172,9 @@ namespace ns_runner
                     if (exit_code == 0) return 0;
                     return -4; // Non-zero exit code
                 } else {
-                    LOG(INFO) << "Program terminated by signal: " << (status & 0x7F) << "\n";
-                    return status & 0x7F;
+                    int sig = WTERMSIG(status);
+                    LOG(INFO) << "Program terminated by signal: " << sig << "\n";
+                    return sig;
                 }
             }
         }

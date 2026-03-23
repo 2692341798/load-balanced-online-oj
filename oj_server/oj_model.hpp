@@ -15,7 +15,10 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
-
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <memory>
 
 // 根据题目list文件，加载所有的题目信息到内存中
 // model: 主要用来和数据进行交互，对外提供访问数据的接口
@@ -197,6 +200,156 @@ namespace ns_model
     const std::string passwd = GetEnv("MYSQL_PASSWORD", "123456");
     const std::string db = GetEnv("MYSQL_DB", "oj");
     const int port = std::stoi(GetEnv("MYSQL_PORT", "3306"));
+
+    class MySQLConnectionPool {
+    private:
+        std::queue<MYSQL*> pool;
+        std::mutex mtx;
+        std::condition_variable cv;
+        int current_size;
+        int min_size;
+        int max_size;
+
+        MYSQL* CreateConnection() {
+            MYSQL *my = mysql_init(nullptr);
+            // Reconnect is important for long running process
+            bool reconnect = true;
+            mysql_options(my, MYSQL_OPT_RECONNECT, &reconnect);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(), db.c_str(), port, nullptr, 0)){
+                LOG(ERROR) << "Failed to connect to database in pool" << "\n";
+                mysql_close(my);
+                return nullptr;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) {
+                LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n";
+            }
+            return my;
+        }
+
+    public:
+        MySQLConnectionPool(int min_s = 5, int max_s = 20)
+            : min_size(min_s), max_size(max_s), current_size(0) {
+            for (int i = 0; i < min_size; ++i) {
+                MYSQL* conn = CreateConnection();
+                if (conn) {
+                    pool.push(conn);
+                    current_size++;
+                }
+            }
+        }
+
+        ~MySQLConnectionPool() {
+            std::lock_guard<std::mutex> lock(mtx);
+            while (!pool.empty()) {
+                MYSQL* conn = pool.front();
+                pool.pop();
+                mysql_close(conn);
+            }
+        }
+
+        MYSQL* GetConnection() {
+            std::unique_lock<std::mutex> lock(mtx);
+            if (pool.empty()) {
+                if (current_size < max_size) {
+                    MYSQL* conn = CreateConnection();
+                    if (conn) {
+                        current_size++;
+                        return conn;
+                    }
+                }
+                cv.wait(lock, [this] { return !pool.empty(); });
+            }
+            MYSQL* conn = pool.front();
+            pool.pop();
+            return conn;
+        }
+
+        void ReleaseConnection(MYSQL* conn) {
+            if (!conn) return;
+            // Check if connection is still alive, ping it. If dead, close it and decrement current_size
+            if (mysql_ping(conn) != 0) {
+                mysql_close(conn);
+                std::lock_guard<std::mutex> lock(mtx);
+                current_size--;
+            } else {
+                std::lock_guard<std::mutex> lock(mtx);
+                pool.push(conn);
+            }
+            cv.notify_one();
+        }
+        
+        static MySQLConnectionPool& GetInstance() {
+            static MySQLConnectionPool instance(5, 20);
+            return instance;
+        }
+    };
+
+    class ConnectionGuard {
+    private:
+        MYSQL* conn;
+    public:
+        ConnectionGuard() {
+            conn = MySQLConnectionPool::GetInstance().GetConnection();
+        }
+        ~ConnectionGuard() {
+            MySQLConnectionPool::GetInstance().ReleaseConnection(conn);
+        }
+        MYSQL* get() { return conn; }
+    };
+
+    class Cache {
+    private:
+        std::unordered_map<std::string, Question> question_cache;
+        std::vector<Question> all_questions_cache;
+        bool all_questions_cached = false;
+        std::mutex mtx;
+
+    public:
+        void SetQuestion(const std::string& number, const Question& q) {
+            std::lock_guard<std::mutex> lock(mtx);
+            question_cache[number] = q;
+        }
+
+        bool GetQuestion(const std::string& number, Question* q) {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (question_cache.count(number)) {
+                *q = question_cache[number];
+                return true;
+            }
+            return false;
+        }
+
+        void SetAllQuestions(const std::vector<Question>& qs) {
+            std::lock_guard<std::mutex> lock(mtx);
+            all_questions_cache = qs;
+            all_questions_cached = true;
+        }
+
+        bool GetAllQuestions(std::vector<Question>* qs) {
+            std::lock_guard<std::mutex> lock(mtx);
+            if (all_questions_cached) {
+                *qs = all_questions_cache;
+                return true;
+            }
+            return false;
+        }
+
+        void InvalidateAllQuestions() {
+            std::lock_guard<std::mutex> lock(mtx);
+            all_questions_cached = false;
+        }
+
+        void InvalidateQuestion(const std::string& number) {
+            std::lock_guard<std::mutex> lock(mtx);
+            question_cache.erase(number);
+            all_questions_cached = false; // also invalidate all questions
+        }
+        
+        static Cache& GetInstance() {
+            static Cache instance;
+            return instance;
+        }
+    };
 
     class Model
     {
@@ -385,12 +538,11 @@ namespace ns_model
         }
 
         bool UpsertContest(const Contest &c) {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -418,10 +570,10 @@ namespace ns_model
 
             if(0 != mysql_query(my, sql.c_str())) {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
-                mysql_close(my);
+
                 return false;
             }
-            mysql_close(my);
+
             return true;
         }
 
@@ -441,15 +593,14 @@ namespace ns_model
 
             // Count
             std::string count_sql = "SELECT COUNT(*) FROM " + oj_contests + where;
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -472,7 +623,7 @@ namespace ns_model
                               + oj_contests + where + order_by + " LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -495,15 +646,15 @@ namespace ns_model
                 out->push_back(c);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
         void CheckAndUpgradeTable() {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(), db.c_str(), port, nullptr, 0)){
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 LOG(ERROR) << "Upgrade Check: Connect failed" << "\n";
-                mysql_close(my);
                 return;
             }
 
@@ -732,50 +883,31 @@ namespace ns_model
                 }
             }
 
-            mysql_close(my);
         }
 
         bool ExecuteSql(const std::string &sql) {
-             MYSQL *my = mysql_init(nullptr);
-             if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                 LOG(ERROR) << "连接数据库失败!" << "\n";
-                 mysql_close(my);
-                 return false;
-             }
-             if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+             ConnectionGuard guard;
+             MYSQL *my = guard.get();
+             if (!my) return false;
              if(0 != mysql_query(my, sql.c_str())) {
                  std::string err_msg = mysql_error(my);
                  LOG(WARNING) << sql << " execute error: " << err_msg << "\n";
                  std::cerr << "SQL Execute Error: " << err_msg << "\nSQL: " << sql << std::endl;
-                 mysql_close(my);
                  return false;
              }
-             mysql_close(my);
              return true;
         }
 
         bool QueryMySql(const std::string &sql, vector<Question> *out)
         {
-            // 创建mysql句柄
-            MYSQL *my = mysql_init(nullptr);
-
-            // 连接数据库
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                LOG(ERROR) << "连接数据库失败!" << "\n";
-                mysql_close(my);
-                return false;
-            }
-
-            // 一定要设置该链接的编码格式, 要不然会出现乱码问题
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
-
-            // LOG(INFO) << "连接数据库成功!" << "\n";
+             ConnectionGuard guard;
+             MYSQL *my = guard.get();
+             if (!my) return false;
 
             // 执行sql语句
             if(0 != mysql_query(my, sql.c_str()))
             {
                 LOG(WARNING) << sql << " execute error!" << "\n";
-                mysql_close(my);
                 return false;
             }
 
@@ -800,10 +932,6 @@ namespace ns_model
                 q.mem_limit = row[4] ? atoi(row[4]) : 0;
                 q.desc = row[5] ? row[5] : "";
                 q.tail = row[6] ? row[6] : "";
-                // If fields > 7, assume status is the 8th column if we used SELECT * or specific order
-                // But caller might pass custom SQL. 
-                // However, GetAllQuestions and GetOneQuestion are the main callers.
-                // I will update them to use specific columns.
                 if(fields > 7) q.status = row[7] ? atoi(row[7]) : 1;
                 else q.status = 1; // Default visible
 
@@ -811,26 +939,19 @@ namespace ns_model
             }
             // 释放结果空间
             mysql_free_result(res);
-            // 关闭mysql连接
-            mysql_close(my);
 
             return true;
         }
 
         bool QueryUserMySql(const std::string &sql, vector<User> *out)
         {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                LOG(ERROR) << "连接数据库失败!" << "\n";
-                mysql_close(my);
-                return false;
-            }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+             ConnectionGuard guard;
+             MYSQL *my = guard.get();
+             if (!my) return false;
 
             if(0 != mysql_query(my, sql.c_str()))
             {
                 LOG(WARNING) << sql << " execute error!" << "\n";
-                mysql_close(my);
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -858,7 +979,6 @@ namespace ns_model
                 out->push_back(u);
             }
             mysql_free_result(res);
-            mysql_close(my);
             return true;
         }
 
@@ -867,23 +987,22 @@ namespace ns_model
             // First check if the comment belongs to the user or user is admin
             // Role: 1 is admin
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             std::string check_sql = "SELECT user_id FROM " + oj_inline_comments + " WHERE id=" + comment_id;
             if(0 != mysql_query(my, check_sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
             MYSQL_RES *res = mysql_store_result(my);
             if(mysql_num_rows(res) == 0) {
                 mysql_free_result(res);
-                mysql_close(my);
+
                 return false; // Not found
             }
             
@@ -892,17 +1011,16 @@ namespace ns_model
             mysql_free_result(res);
             
             if (role != 1 && owner_id != user_id) {
-                mysql_close(my);
+
                 return false; // Not authorized
             }
             
             std::string sql = "DELETE FROM " + oj_inline_comments + " WHERE id=" + comment_id;
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
-            
-            mysql_close(my);
+
             return true;
         }
 
@@ -912,12 +1030,11 @@ namespace ns_model
             // We need a connection to escape string, or just use a simple escape manually or use a prepared statement (C API doesn't make prepared statements easy with simple query strings)
             // For now, let's just do a basic connection to escape, or trust the caller? No, must escape.
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                 mysql_close(my);
-                 return false;
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
+                return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             char* escaped_content = new char[sub.content.length() * 2 + 1];
             mysql_real_escape_string(my, escaped_content, sub.content.c_str(), sub.content.length());
@@ -938,10 +1055,10 @@ namespace ns_model
             
             if(0 != mysql_query(my, sql.c_str())) {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
-                mysql_close(my);
+
                 return false;
             }
-            mysql_close(my);
+
             return true;
         }
         
@@ -972,15 +1089,14 @@ namespace ns_model
             // Count total first
             std::string count_sql = "SELECT count(*) FROM " + oj_submissions + " s " + where_clause;
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -996,7 +1112,7 @@ namespace ns_model
                               + where_clause + " ORDER BY s.created_at DESC LIMIT " + std::to_string(offset) + ", " + std::to_string(limit);
             
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -1023,19 +1139,18 @@ namespace ns_model
                 out->push_back(s);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
 
         bool AddInlineComment(const InlineComment &comment)
         {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                 mysql_close(my);
-                 return false;
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
+                return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1056,10 +1171,10 @@ namespace ns_model
             
             if(0 != mysql_query(my, sql.c_str())) {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
-                mysql_close(my);
+
                 return false;
             }
-            mysql_close(my);
+
             return true;
         }
 
@@ -1069,15 +1184,14 @@ namespace ns_model
                               + oj_inline_comments + " c LEFT JOIN " + oj_users + " u ON c.user_id = u.id " 
                               + "WHERE c.post_id='" + post_id + "' ORDER BY c.created_at ASC";
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -1104,7 +1218,7 @@ namespace ns_model
                 out->push_back(c);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -1118,17 +1232,16 @@ namespace ns_model
                               "WHERE s.user_id='" + user_id + "' AND s.result='0' "
                               "GROUP BY q.star";
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, sql.c_str()))
             {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
-                mysql_close(my);
+
                 return false;
             }
 
@@ -1145,17 +1258,24 @@ namespace ns_model
             }
             
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
         bool GetAllQuestions(vector<Question> *out)
         {
+            if (Cache::GetInstance().GetAllQuestions(out)) {
+                return true;
+            }
             // Only show visible questions for normal users
             std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from ";
             sql += oj_questions;
             sql += " where status=1";
-            return QueryMySql(sql, out);
+            bool ret = QueryMySql(sql, out);
+            if (ret) {
+                Cache::GetInstance().SetAllQuestions(*out);
+            }
+            return ret;
         }
 
         bool GetQuestionsByPage(int page, int page_size, vector<Question> *out, int *total)
@@ -1165,15 +1285,14 @@ namespace ns_model
 
             // 1. Get total count
             std::string count_sql = "select count(*) from " + oj_questions + " where status=1";
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -1188,7 +1307,7 @@ namespace ns_model
             std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from " + oj_questions + " where status=1 ORDER BY CAST(number AS UNSIGNED) ASC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
             
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -1215,7 +1334,7 @@ namespace ns_model
                 out->push_back(q);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -1226,15 +1345,14 @@ namespace ns_model
 
             // 1. Get total count
             std::string count_sql = "select count(*) from " + oj_questions;
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -1249,7 +1367,7 @@ namespace ns_model
             std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from " + oj_questions + " ORDER BY CAST(number AS UNSIGNED) ASC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
             
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -1276,12 +1394,15 @@ namespace ns_model
                 out->push_back(q);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
         bool GetOneQuestion(const std::string &number, Question *q)
         {
+            if (Cache::GetInstance().GetQuestion(number, q)) {
+                return true;
+            }
             bool res = false;
             std::string sql = "select number, title, star, cpu_limit, mem_limit, description, tail_code, status from ";
             sql += oj_questions;
@@ -1293,6 +1414,7 @@ namespace ns_model
                 if(result.size() == 1){
                     *q = result[0];
                     res = true;
+                    Cache::GetInstance().SetQuestion(number, *q);
                 }
             }
             return res;
@@ -1300,12 +1422,9 @@ namespace ns_model
 
         bool AddQuestion(const Question &q)
         {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
-                return false;
-            }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if (!my) return false;
 
             // Escape strings
             auto escape = [&](const std::string &s) -> std::string {
@@ -1327,21 +1446,17 @@ namespace ns_model
 
             if(0 != mysql_query(my, sql.c_str())) {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
-                mysql_close(my);
                 return false;
             }
-            mysql_close(my);
+            Cache::GetInstance().InvalidateAllQuestions();
             return true;
         }
 
         bool UpdateQuestion(const Question &q)
         {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
-                return false;
-            }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if (!my) return false;
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1357,23 +1472,26 @@ namespace ns_model
                 + "cpu_limit=" + std::to_string(q.cpu_limit) + ", "
                 + "mem_limit=" + std::to_string(q.mem_limit) + ", "
                 + "description='" + escape(q.desc) + "', "
-                + "tail='" + escape(q.tail) + "', "
+                + "tail_code='" + escape(q.tail) + "', "
                 + "status=" + std::to_string(q.status)
                 + " WHERE number=" + q.number;
 
             if(0 != mysql_query(my, sql.c_str())) {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
-                mysql_close(my);
                 return false;
             }
-            mysql_close(my);
+            Cache::GetInstance().InvalidateQuestion(q.number);
             return true;
         }
 
         bool DeleteQuestion(const std::string &number)
         {
             std::string sql = "DELETE FROM " + oj_questions + " WHERE number=" + number;
-            return ExecuteSql(sql);
+            bool ret = ExecuteSql(sql);
+            if (ret) {
+                Cache::GetInstance().InvalidateQuestion(number);
+            }
+            return ret;
         }
 
         // User Auth Methods
@@ -1464,12 +1582,11 @@ namespace ns_model
 
         bool AddDiscussion(const Discussion &d)
         {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1488,10 +1605,10 @@ namespace ns_model
 
             if(0 != mysql_query(my, sql.c_str())) {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
-                mysql_close(my);
+
                 return false;
             }
-            mysql_close(my);
+
             return true;
         }
 
@@ -1505,15 +1622,14 @@ namespace ns_model
                               "LEFT JOIN " + oj_questions + " q ON d.question_id = q.number "
                               "ORDER BY d.created_at DESC";
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -1544,7 +1660,7 @@ namespace ns_model
                 out->push_back(d);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -1558,15 +1674,14 @@ namespace ns_model
                               "WHERE d.question_id=" + qid + " "
                               "ORDER BY d.created_at DESC";
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -1597,7 +1712,7 @@ namespace ns_model
                 out->push_back(d);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -1610,15 +1725,14 @@ namespace ns_model
                               "LEFT JOIN " + oj_questions + " q ON d.question_id = q.number "
                               "WHERE d.id=" + id;
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -1642,24 +1756,23 @@ namespace ns_model
                     d->author_avatar = (fields > 12 && row[12]) ? row[12] : "";
                     
                     mysql_free_result(res);
-                    mysql_close(my);
+
                     return true;
                 }
             }
             
             mysql_free_result(res);
-            mysql_close(my);
+
             return false;
         }
 
         bool AddArticleComment(const ArticleComment &c)
         {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1676,10 +1789,10 @@ namespace ns_model
             
             if(0 != mysql_query(my, sql.c_str())) {
                 LOG(WARNING) << sql << " execute error: " << mysql_error(my) << "\n";
-                mysql_close(my);
+
                 return false;
             }
-            mysql_close(my);
+
             return true;
         }
 
@@ -1689,15 +1802,14 @@ namespace ns_model
                               + oj_article_comments + " c LEFT JOIN " + oj_users + " u ON c.user_id = u.id " 
                               + "WHERE c.post_id='" + post_id + "' ORDER BY c.created_at DESC";
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
             
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -1723,7 +1835,7 @@ namespace ns_model
                 out->push_back(c);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -1735,13 +1847,12 @@ namespace ns_model
                 return false;
             }
 
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 std::cerr << "Connect failed: " << mysql_error(my) << std::endl;
-                mysql_close(my);
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1763,22 +1874,21 @@ namespace ns_model
                 std::string err_msg = mysql_error(my);
                 LOG(WARNING) << sql << " execute error: " << err_msg << "\n";
                 std::cerr << "SQL Error in CreateTrainingList: " << err_msg << "\nSQL: " << sql << std::endl;
-                mysql_close(my);
+
                 return false;
             }
             
             *new_id = (int)mysql_insert_id(my);
-            mysql_close(my);
+
             return true;
         }
 
         bool UpdateTrainingList(const TrainingList &list) {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -1800,10 +1910,10 @@ namespace ns_model
                 std::string err_msg = mysql_error(my);
                 LOG(WARNING) << sql << " execute error: " << err_msg << "\n";
                 std::cerr << "SQL Error in UpdateTrainingList: " << err_msg << "\nSQL: " << sql << std::endl;
-                mysql_close(my);
+
                 return false;
             }
-            mysql_close(my);
+
             return true;
         }
 
@@ -1819,15 +1929,14 @@ namespace ns_model
                               "LEFT JOIN " + oj_users + " u ON t.author_id = u.id "
                               "WHERE t.id=" + id;
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
 
@@ -1851,12 +1960,12 @@ namespace ns_model
                     list->problem_count = row[13] ? atoi(row[13]) : 0;
                     
                     mysql_free_result(res);
-                    mysql_close(my);
+
                     return true;
                 }
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return false;
         }
 
@@ -1874,15 +1983,14 @@ namespace ns_model
 
             // Count
             std::string count_sql = "SELECT COUNT(*) FROM " + oj_training_lists + " t " + where;
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -1900,7 +2008,7 @@ namespace ns_model
                               + where + " ORDER BY t.created_at DESC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
 
@@ -1928,7 +2036,7 @@ namespace ns_model
                 out->push_back(list);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -1949,12 +2057,11 @@ namespace ns_model
         bool ReorderTrainingListProblems(const std::string &list_id, const std::vector<std::string> &problem_ids) {
             // This is tricky. Multiple updates.
             // Transaction recommended.
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             mysql_autocommit(my, 0); // Start transaction
 
@@ -1963,13 +2070,13 @@ namespace ns_model
                                   " WHERE training_list_id=" + list_id + " AND question_id=" + problem_ids[i];
                 if(0 != mysql_query(my, sql.c_str())) {
                     mysql_rollback(my);
-                    mysql_close(my);
+                    mysql_autocommit(my, 1); // Reset autocommit
                     return false;
                 }
             }
 
             mysql_commit(my);
-            mysql_close(my);
+            mysql_autocommit(my, 1); // Reset autocommit
             return true;
         }
 
@@ -1992,15 +2099,14 @@ namespace ns_model
                               "WHERE i.training_list_id=" + list_id + " "
                               "ORDER BY i.order_index ASC";
 
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
 
@@ -2023,7 +2129,7 @@ namespace ns_model
                 out->push_back(item);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -2038,15 +2144,14 @@ namespace ns_model
 
             // Count
             std::string count_sql = "SELECT COUNT(*) FROM " + oj_users + where;
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -2061,7 +2166,7 @@ namespace ns_model
                               + oj_users + where + " ORDER BY created_at DESC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -2085,7 +2190,7 @@ namespace ns_model
                 out->push_back(u);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -2116,12 +2221,11 @@ namespace ns_model
 
         // Invitation Code Methods
         bool VerifyAndUseInvitationCode(const std::string &code, const std::string &user_id) {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -2135,7 +2239,7 @@ namespace ns_model
             std::string sql_check = "SELECT id, is_used FROM " + oj_invitation_codes + " WHERE code='" + safe_code + "'";
             
             if(0 != mysql_query(my, sql_check.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
 
@@ -2143,7 +2247,7 @@ namespace ns_model
             int rows = mysql_num_rows(res);
             if (rows == 0) {
                 mysql_free_result(res);
-                mysql_close(my);
+
                 return false; // Code not found
             }
 
@@ -2153,28 +2257,26 @@ namespace ns_model
             mysql_free_result(res);
 
             if (is_used) {
-                mysql_close(my);
+
                 return false; // Code already used
             }
 
             // Mark as used
             std::string sql_update = "UPDATE " + oj_invitation_codes + " SET is_used=1, used_by=" + user_id + " WHERE id=" + id;
             if(0 != mysql_query(my, sql_update.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
 
-            mysql_close(my);
             return true;
         }
 
         bool GenerateInvitationCode(const std::string &code) {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -2190,18 +2292,17 @@ namespace ns_model
             if(0 != mysql_query(my, sql.c_str())) {
                 ret = false;
             }
-            mysql_close(my);
+
             return ret;
         }
 
         // Operation Log Methods
         bool LogOperation(const OperationLog &log) {
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             auto escape = [&](const std::string &s) -> std::string {
                 char *buf = new char[s.length() * 2 + 1];
@@ -2223,7 +2324,7 @@ namespace ns_model
                 LOG(WARNING) << "LogOperation failed: " << mysql_error(my) << "\n";
                 ret = false;
             }
-            mysql_close(my);
+
             return ret;
         }
 
@@ -2238,15 +2339,14 @@ namespace ns_model
 
             // Count
             std::string count_sql = "SELECT COUNT(*) FROM " + oj_operation_logs + where;
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, count_sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -2262,7 +2362,7 @@ namespace ns_model
                               + where + " ORDER BY l.created_at DESC LIMIT " + std::to_string(offset) + ", " + std::to_string(page_size);
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -2284,20 +2384,21 @@ namespace ns_model
                 out->push_back(l);
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
         // Statistics Methods
         bool GetTotalUserCount(int *count) {
             std::string sql = "SELECT COUNT(*) FROM " + oj_users;
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
+
                 return false;
             }
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -2306,19 +2407,19 @@ namespace ns_model
                 if (row) *count = atoi(row[0]);
                 mysql_free_result(res);
             }
-            mysql_close(my);
+
             return true;
         }
 
         bool GetTotalProblemCount(int *count) {
             std::string sql = "SELECT COUNT(*) FROM " + oj_questions;
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -2327,19 +2428,19 @@ namespace ns_model
                 if (row) *count = atoi(row[0]);
                 mysql_free_result(res);
             }
-            mysql_close(my);
+
             return true;
         }
 
         bool GetTotalSubmissionCount(int *count) {
             std::string sql = "SELECT COUNT(*) FROM " + oj_submissions;
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             MYSQL_RES *res = mysql_store_result(my);
@@ -2348,7 +2449,7 @@ namespace ns_model
                 if (row) *count = atoi(row[0]);
                 mysql_free_result(res);
             }
-            mysql_close(my);
+
             return true;
         }
 
@@ -2356,15 +2457,13 @@ namespace ns_model
             std::string sql = "SELECT DATE(created_at) as date, COUNT(*) FROM " + oj_users + 
                               " WHERE created_at >= DATE_SUB(NOW(), INTERVAL " + std::to_string(days) + " DAY) GROUP BY date";
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
                 return false;
             }
             
@@ -2379,22 +2478,21 @@ namespace ns_model
                 (*stats)[date] = count;
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
         bool GetSubmissionStats(std::map<std::string, int>* stats) {
             std::string sql = "SELECT result, COUNT(*) FROM " + oj_submissions + " GROUP BY result";
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -2409,7 +2507,7 @@ namespace ns_model
                 (*stats)[result] = count;
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
@@ -2417,15 +2515,14 @@ namespace ns_model
             std::string sql = "SELECT DATE(created_at) as date, COUNT(DISTINCT user_id) FROM " + oj_submissions + 
                               " WHERE created_at >= DATE_SUB(NOW(), INTERVAL " + std::to_string(days) + " DAY) GROUP BY date";
             
-            MYSQL *my = mysql_init(nullptr);
-            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
-                mysql_close(my);
+            ConnectionGuard guard;
+            MYSQL *my = guard.get();
+            if(!my){
                 return false;
             }
-            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
 
             if(0 != mysql_query(my, sql.c_str())) {
-                mysql_close(my);
+
                 return false;
             }
             
@@ -2440,7 +2537,7 @@ namespace ns_model
                 (*stats)[date] = count;
             }
             mysql_free_result(res);
-            mysql_close(my);
+
             return true;
         }
 
