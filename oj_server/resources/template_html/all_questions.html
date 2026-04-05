@@ -116,8 +116,15 @@
                     const post = res.data;
                     const renderedHTML = DOMPurify.sanitize(marked.parse(String(post.content || '')));
                     currentPostRenderedHTML = renderedHTML;
+                    
+                    const isOwner = (currentUser && currentUser.username === post.author) || (currentUser && currentUser.role === 1);
+                    const deleteBtnHtml = isOwner ? `<button onclick="deletePost('${post.id}')" style="background:none; border:none; color:#ff4d4f; cursor:pointer; font-size:0.9em; padding:4px 8px; border-radius:4px; border:1px solid #ff4d4f; margin-left:auto;">删除帖子</button>` : '';
+                    
                     document.getElementById('post-detail-content').innerHTML = `
-                        <h1>${escapeHtml(post.title)}</h1>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h1>${escapeHtml(post.title)}</h1>
+                            ${deleteBtnHtml}
+                        </div>
                         <div class="post-meta">${escapeHtml(post.author)} · ${post.date} · 👁 ${post.views}</div>
                         <div class="markdown-body" id="post-markdown-content">
                             ${renderedHTML} 
@@ -515,6 +522,31 @@
                     
                     await loadInlineComments();
                     if(text) openCommentDrawer(text);
+                } else {
+                    alert('删除失败: ' + res.reason);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('删除失败');
+            }
+        }
+
+        async function deletePost(id) {
+            if(!confirm('确定要删除这篇帖子吗？删除后相关的评论也会被删除。')) return;
+            
+            try {
+                const response = await fetch('/api/discussion/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        discussion_id: id
+                    })
+                });
+                const res = await response.json();
+                if (res.status === 0) {
+                    alert('删除成功');
+                    switchView('view-discussion-feed');
+                    initDiscussion();
                 } else {
                     alert('删除失败: ' + res.reason);
                 }

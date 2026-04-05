@@ -1844,6 +1844,25 @@ namespace ns_control
             }
         }
 
+        bool DeleteDiscussion(const std::string &discussion_id, const std::string &user_id, int role, std::string *json_out)
+        {
+            if (model_.DeleteDiscussion(discussion_id, user_id, role)) {
+                Json::Value res;
+                res["status"] = 0;
+                res["reason"] = "Success";
+                
+                *json_out = SerializeJson(res);
+                return true;
+            } else {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Failed to delete (Permission Denied or Not Found)";
+                
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
         bool GetDiscussionsByQuestionId(const std::string &qid, std::string *json_out)
         {
             std::vector<Discussion> posts;

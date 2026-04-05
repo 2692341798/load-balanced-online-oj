@@ -78,9 +78,9 @@
                 // Fallback for demo if API fails
                 /*
                 renderCharts({
-                    user_growth: [5, 8, 12, 15, 20, 25, 30],
+                    user_growth: { 'Day 1': 5, 'Day 2': 8, 'Day 3': 12, 'Day 4': 15, 'Day 5': 20, 'Day 6': 25, 'Day 7': 30 },
                     submission_stats: { 'Accepted': 40, 'Wrong Answer': 20, 'Time Limit': 10, 'Others': 5 },
-                    activity: [10, 15, 8, 20, 25, 18, 30]
+                    daily_activity: { 'Mon': 10, 'Tue': 15, 'Wed': 8, 'Thu': 20, 'Fri': 25, 'Sat': 18, 'Sun': 30 }
                 });
                 */
             }
@@ -88,13 +88,15 @@
 
         function renderCharts(data) {
             // User Growth Chart
+            const userGrowthLabels = Object.keys(data.user_growth || {});
+            const userGrowthData = Object.values(data.user_growth || {});
             new Chart(document.getElementById('userGrowthChart'), {
                 type: 'line',
                 data: {
-                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+                    labels: userGrowthLabels.length > 0 ? userGrowthLabels : ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
                     datasets: [{
                         label: 'New Users',
-                        data: data.user_growth || [],
+                        data: userGrowthData.length > 0 ? userGrowthData : [0, 0, 0, 0, 0, 0, 0],
                         borderColor: '#007bff',
                         tension: 0.1
                     }]
@@ -116,13 +118,15 @@
             });
 
             // Activity Chart
+            const activityLabels = Object.keys(data.daily_activity || {});
+            const activityData = Object.values(data.daily_activity || {});
             new Chart(document.getElementById('activityChart'), {
                 type: 'bar',
                 data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    labels: activityLabels.length > 0 ? activityLabels : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
                     datasets: [{
                         label: 'Submissions',
-                        data: data.activity || [],
+                        data: activityData.length > 0 ? activityData : [0, 0, 0, 0, 0, 0, 0],
                         backgroundColor: '#17a2b8'
                     }]
                 }

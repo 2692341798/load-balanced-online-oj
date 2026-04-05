@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>添加/编辑题目 - 管理后台</title>
     <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
     <style>
         .diff-easy { color: #28a745; font-weight: bold; }
         .diff-medium { color: #ffc107; font-weight: bold; }
@@ -28,52 +29,52 @@
             <div class="card">
                 <form id="question-form" onsubmit="saveQuestion(event)">
                     <div class="form-group">
-                        <label>标题</label>
-                        <input type="text" id="title" required>
+                        <label>题目名称</label>
+                        <input type="text" id="title" class="form-control" placeholder="例如: 两数之和" required>
                     </div>
                     
                     <div class="row">
                         <div class="col form-group">
-                            <label>难度</label>
-                            <select id="star">
+                            <label>难度级别</label>
+                            <select id="star" class="form-control">
                                 <option value="简单">简单</option>
                                 <option value="中等">中等</option>
                                 <option value="困难">困难</option>
                             </select>
                         </div>
                         <div class="col form-group">
-                            <label>状态</label>
-                            <select id="status">
-                                <option value="1">公开</option>
-                                <option value="0">隐藏</option>
+                            <label>发布状态</label>
+                            <select id="status" class="form-control">
+                                <option value="1">公开 (对用户可见)</option>
+                                <option value="0">隐藏 (仅管理员可见)</option>
                             </select>
                         </div>
                     </div>
-        
+
                     <div class="row">
                         <div class="col form-group">
-                            <label>时间限制 (s)</label>
-                            <input type="number" id="cpu_limit" value="1" required>
+                            <label>时间限制 (秒)</label>
+                            <input type="number" id="cpu_limit" class="form-control" value="1" placeholder="默认: 1" required>
                         </div>
                         <div class="col form-group">
                             <label>空间限制 (KB)</label>
-                            <input type="number" id="mem_limit" value="30000" required>
+                            <input type="number" id="mem_limit" class="form-control" value="30000" placeholder="默认: 30000" required>
                         </div>
                     </div>
-        
-                    <div class="form-group">
-                        <label>描述 (支持Markdown)</label>
-                        <textarea id="description" required></textarea>
+
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label>题目描述 <span style="color: var(--text-secondary); font-size: 0.85em; font-weight: normal; margin-left: 5px;">(支持 Markdown 语法，实时预览)</span></label>
+                        <textarea id="description" class="form-control"></textarea>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label>测试用例 <span style="color: var(--text-secondary); font-size: 0.85em; font-weight: normal; margin-left: 5px;">(严格遵守 JSON 数组格式)</span></label>
+                        <textarea id="tail" class="form-control" style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; min-height: 250px; line-height: 1.5; background-color: #1e1e1e;" required></textarea>
                     </div>
         
-                    <div class="form-group">
-                        <label>测试用例 (JSON格式: [{"input":"...", "expect":"..."}, ...])</label>
-                        <textarea id="tail" required></textarea>
-                    </div>
-        
-                    <div class="form-group" style="margin-bottom: 0; text-align: right;">
-                        <button type="button" class="btn btn-secondary" onclick="window.history.back()" style="margin-right: 10px;">取消</button>
-                        <button type="submit" class="btn btn-primary">保存</button>
+                    <div class="form-group" style="margin-bottom: 0; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 15px;">
+                        <button type="button" class="btn btn-secondary" onclick="window.history.back()" style="padding: 10px 30px; height: 44px; line-height: 1.5;">取消返回</button>
+                        <button type="submit" id="submit-btn" class="btn btn-primary" style="padding: 10px 40px; height: 44px; line-height: 1.5; box-shadow: 0 4px 15px rgba(255, 161, 22, 0.4); background: linear-gradient(90deg, #ffa116 0%, #ff8c00 100%);">保存题目</button>
                     </div>
                 </form>
             </div>
@@ -81,11 +82,13 @@
     </div>
 
     <script src="js/sidebar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
     <script>
         renderSidebar('problems');
         
         const urlParams = new URLSearchParams(window.location.search);
         const id = urlParams.get('id');
+        let easyMDE;
 
         function updateDifficultyColor() {
             const select = document.getElementById('star');
@@ -112,6 +115,14 @@
                 return;
             }
 
+            // Initialize EasyMDE
+            easyMDE = new EasyMDE({
+                element: document.getElementById('description'),
+                spellChecker: false,
+                status: false,
+                minHeight: "300px"
+            });
+
             if (id) {
                 document.getElementById('page-title').textContent = '编辑题目';
                 loadQuestion(id);
@@ -125,49 +136,59 @@
         }
 
         async function loadQuestion(id) {
-            const res = await fetch(`/question/${id}`); // Reuse existing API? No, that returns HTML. 
-            // I need an API to get raw question data. 
-            // I created AllQuestionsAdmin but not GetOneQuestionAdmin (raw JSON).
-            // Actually, I can assume if I'm admin, I can iterate the list from AllQuestionsAdmin to find it, 
-            // or I should add GetOneQuestion API that returns JSON.
-            // Currently /question/{id} returns HTML.
-            // I should add GET /api/admin/question/{id} or just use the list.
-            // Let's use the list for simplicity for now, or fetch all and find.
-            
-            const listRes = await fetch('/api/admin/questions');
-            const listData = await listRes.json();
-            if (listData.status === 0) {
-                const q = listData.data.find(item => item.number == id);
-                if (q) {
-                    document.getElementById('title').value = q.title;
-                    document.getElementById('star').value = q.star;
-                    document.getElementById('status').value = q.status;
-                    document.getElementById('cpu_limit').value = q.cpu_limit;
-                    document.getElementById('mem_limit').value = q.mem_limit;
-                    document.getElementById('description').value = q.description;
-                    document.getElementById('tail').value = q.tail;
-                    updateDifficultyColor();
+            try {
+                const listRes = await fetch('/api/admin/questions');
+                const listData = await listRes.json();
+                if (listData.status === 0) {
+                    const q = listData.data.find(item => item.number == id);
+                    if (q) {
+                        document.getElementById('title').value = q.title;
+                        document.getElementById('star').value = q.star;
+                        document.getElementById('status').value = q.status;
+                        document.getElementById('cpu_limit').value = q.cpu_limit;
+                        document.getElementById('mem_limit').value = q.mem_limit;
+                        easyMDE.value(q.description);
+                        document.getElementById('tail').value = q.tail;
+                        updateDifficultyColor();
+                    }
                 }
+            } catch (e) {
+                console.error("Failed to load question", e);
             }
         }
 
         async function saveQuestion(e) {
             e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = '保存中...';
+
+            const description = easyMDE.value();
+            if (!description.trim()) {
+                alert('题目描述不能为空');
+                submitBtn.disabled = false;
+                submitBtn.innerText = '保存题目';
+                return;
+            }
+
             const data = {
                 title: document.getElementById('title').value,
                 star: document.getElementById('star').value,
                 status: parseInt(document.getElementById('status').value),
                 cpu_limit: parseInt(document.getElementById('cpu_limit').value),
                 mem_limit: parseInt(document.getElementById('mem_limit').value),
-                description: document.getElementById('description').value,
+                description: description,
                 tail: document.getElementById('tail').value
             };
 
             // Validate JSON
             try {
                 JSON.parse(data.tail);
-            } catch (e) {
+            } catch (err) {
                 alert('测试用例JSON格式错误');
+                submitBtn.disabled = false;
+                submitBtn.innerText = '保存题目';
                 return;
             }
 
@@ -188,9 +209,14 @@
                     window.location.href = '/admin/problems.html';
                 } else {
                     alert('错误: ' + result.reason);
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = '保存题目';
                 }
-            } catch (e) {
-                alert('请求失败');
+            } catch (err) {
+                console.error(err);
+                alert('请求失败，请检查网络连接或控制台日志');
+                submitBtn.disabled = false;
+                submitBtn.innerText = '保存题目';
             }
         }
 

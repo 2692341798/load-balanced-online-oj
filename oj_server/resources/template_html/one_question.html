@@ -11,6 +11,7 @@
     <!-- ACE Editor -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-language_tools.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ext-snippets.js"></script>
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
     <!-- Markdown Libraries -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
@@ -161,7 +162,7 @@
                         });
 
                         // Trigger MathJax
-                        if (typeof MathJax !== 'undefined') {
+                        if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
                              MathJax.typesetPromise([renderEl]).catch(function (err) {
                                 console.log('MathJax error:', err);
                             });
@@ -181,6 +182,7 @@
             //     .catch(() => updateNavAuth({status: -1}));
 
             // 初始化 ACE 编辑器
+            ace.require("ace/ext/language_tools");
             var editor = ace.edit("code");
             editor.setTheme("ace/theme/monokai");
             // Mode set by changeLanguage
@@ -191,6 +193,59 @@
                 enableSnippets: true,
                 enableLiveAutocompletion: true
             });
+
+            // 添加自定义代码提示
+            var langTools = ace.require("ace/ext/language_tools");
+            var customCompleter = {
+                getCompletions: function(editor, session, pos, prefix, callback) {
+                    if (prefix.length === 0) { callback(null, []); return; }
+                    var mode = session.getMode().$id;
+                    var suggestions = [];
+                    
+                    if (mode.includes("c_cpp")) {
+                        suggestions = [
+                            {value: "#include <iostream>", score: 1000, meta: "C++", caption: "#include <iostream>"},
+                            {value: "#include <vector>", score: 1000, meta: "C++", caption: "#include <vector>"},
+                            {value: "#include <string>", score: 1000, meta: "C++", caption: "#include <string>"},
+                            {value: "#include <map>", score: 1000, meta: "C++", caption: "#include <map>"},
+                            {value: "#include <algorithm>", score: 1000, meta: "C++", caption: "#include <algorithm>"},
+                            {value: "using namespace std;", score: 1000, meta: "C++", caption: "using namespace std;"},
+                            {value: "int main() {\n    \n    return 0;\n}", score: 1000, meta: "C++", caption: "int main()"},
+                            {value: "vector<int>", score: 1000, meta: "C++", caption: "vector<int>"},
+                            {value: "string", score: 1000, meta: "C++", caption: "string"},
+                            {value: "cout << ", score: 1000, meta: "C++", caption: "cout"},
+                            {value: "cin >> ", score: 1000, meta: "C++", caption: "cin"}
+                        ];
+                    } else if (mode.includes("java")) {
+                        suggestions = [
+                            {value: "import java.util.*;", score: 1000, meta: "Java", caption: "import java.util.*;"},
+                            {value: "public class Main {\n    public static void main(String[] args) {\n        \n    }\n}", score: 1000, meta: "Java", caption: "public class Main"},
+                            {value: "System.out.println();", score: 1000, meta: "Java", caption: "System.out.println"},
+                            {value: "Scanner scanner = new Scanner(System.in);", score: 1000, meta: "Java", caption: "Scanner"},
+                            {value: "String", score: 1000, meta: "Java", caption: "String"},
+                            {value: "ArrayList<>", score: 1000, meta: "Java", caption: "ArrayList"},
+                            {value: "HashMap<>", score: 1000, meta: "Java", caption: "HashMap"}
+                        ];
+                    } else if (mode.includes("python")) {
+                        suggestions = [
+                            {value: "import sys", score: 1000, meta: "Python", caption: "import sys"},
+                            {value: "def main():\n    ", score: 1000, meta: "Python", caption: "def main()"},
+                            {value: "if __name__ == '__main__':\n    main()", score: 1000, meta: "Python", caption: "if __name__ == '__main__'"},
+                            {value: "print()", score: 1000, meta: "Python", caption: "print"},
+                            {value: "input()", score: 1000, meta: "Python", caption: "input"},
+                            {value: "sys.stdin.read().split()", score: 1000, meta: "Python", caption: "sys.stdin.read"}
+                        ];
+                    }
+                    
+                    // Filter matching prefix
+                    var filtered = suggestions.filter(function(item) {
+                        return item.value.toLowerCase().includes(prefix.toLowerCase());
+                    });
+                    
+                    callback(null, filtered);
+                }
+            };
+            langTools.addCompleter(customCompleter);
             
             // Restore language selection
             var savedLang = localStorage.getItem("selected_language") || "C++";

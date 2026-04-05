@@ -20,7 +20,7 @@ function renderSidebar(activePage) {
 async function logout(event) {
     if(event) event.preventDefault();
     try {
-        await fetch('/api/logout');
+        await fetch('/api/logout', { method: 'GET' });
         window.location.href = '/admin/login.html';
     } catch (e) {
         console.error('Logout failed', e);

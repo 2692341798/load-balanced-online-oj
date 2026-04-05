@@ -4,22 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - Load Balanced OJ</title>
-    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="/css/common.css?v=2">
+    <link rel="stylesheet" href="/css/login.css?v=2">
 </head>
 <body>
-    <div class="login-wrapper">
-        <div class="login-container">
-            <h2>Admin Login</h2>
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="username" required>
+    <div class="login-page" style="min-height: 100vh; margin-top: 0;">
+        <!-- 背景装饰 -->
+        <div class="bg-shape shape-1"></div>
+        <div class="bg-shape shape-2"></div>
+
+        <div class="login-card">
+            <h2 style="text-align: center; margin-bottom: 30px; color: var(--text-main);">Admin Login</h2>
+            <div id="login-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" placeholder="Enter admin username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="Enter password" required>
+                </div>
+                <div class="error" id="error-msg"></div>
+                <button onclick="login()" type="submit" style="width: 100%;">Login</button>
             </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="password" required>
-            </div>
-            <button onclick="login()" class="btn btn-primary" style="width: 100%">Login</button>
-            <div id="error-msg" class="error-msg"></div>
         </div>
     </div>
 

@@ -96,7 +96,7 @@
         }
 
         async function logout() {
-            await fetch('/api/logout');
+            await fetch('/api/logout', { method: 'GET' });
             window.location.href = '/admin/login.html';
         }
 

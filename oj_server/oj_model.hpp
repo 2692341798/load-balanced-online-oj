@@ -1612,6 +1612,54 @@ namespace ns_model
             return true;
         }
 
+        bool DeleteDiscussion(const std::string &discussion_id, const std::string &user_id, int role)
+        {
+            MYSQL *my = mysql_init(nullptr);
+            if(nullptr == mysql_real_connect(my, host.c_str(), user.c_str(), passwd.c_str(),db.c_str(),port, nullptr, 0)){
+                mysql_close(my);
+                return false;
+            }
+            if(0 != mysql_set_character_set(my, "utf8mb4")) { LOG(WARNING) << "mysql_set_character_set error: " << mysql_error(my) << "\n"; }
+            
+            std::string check_sql = "SELECT author_id FROM " + oj_discussions + " WHERE id=" + discussion_id;
+            if(0 != mysql_query(my, check_sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            MYSQL_RES *res = mysql_store_result(my);
+            if(mysql_num_rows(res) == 0) {
+                mysql_free_result(res);
+                mysql_close(my);
+                return false; // Not found
+            }
+            
+            MYSQL_ROW row = mysql_fetch_row(res);
+            std::string author_id = row[0] ? row[0] : "";
+            mysql_free_result(res);
+            
+            if (role != 1 && author_id != user_id) {
+                mysql_close(my);
+                return false; // Not authorized
+            }
+            
+            std::string sql = "DELETE FROM " + oj_discussions + " WHERE id=" + discussion_id;
+            if(0 != mysql_query(my, sql.c_str())) {
+                mysql_close(my);
+                return false;
+            }
+            
+            // Also delete associated comments
+            std::string del_inline_comments_sql = "DELETE FROM " + oj_inline_comments + " WHERE post_id=" + discussion_id;
+            mysql_query(my, del_inline_comments_sql.c_str());
+            
+            std::string del_article_comments_sql = "DELETE FROM " + oj_article_comments + " WHERE post_id=" + discussion_id;
+            mysql_query(my, del_article_comments_sql.c_str());
+            
+            mysql_close(my);
+            return true;
+        }
+
         bool GetAllDiscussions(std::vector<Discussion> *out)
         {
             // Join with users to get author name and questions to get title

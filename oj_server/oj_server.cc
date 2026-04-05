@@ -637,6 +637,28 @@ int main()
         resp.set_content(json, "application/json;charset=utf-8");
     });
     
+    // Delete Discussion
+    svr.Post("/api/discussion/delete", [&ctrl](const Request &req, Response &resp){
+        User user;
+        Json::Value res_json;
+        if (!ctrl.AuthCheck(req, &user)) {
+             res_json["status"] = 401;
+             res_json["reason"] = "Unauthorized";
+             
+             resp.set_content(SerializeJson(res_json), "application/json;charset=utf-8");
+             return;
+        }
+        
+        Json::Reader reader;
+        Json::Value root;
+        reader.parse(req.body, root);
+        std::string discussion_id = root["discussion_id"].asString();
+        
+        std::string json;
+        ctrl.DeleteDiscussion(discussion_id, user.id, user.role, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+    
     // Get Discussions by Question ID
     svr.Get(R"(/api/discussions/question/(\d+))", [&ctrl](const Request &req, Response &resp){
         std::string qid = req.matches[1];
@@ -720,7 +742,7 @@ int main()
     svr.set_base_dir("./resources/wwwroot");
     svr.set_mount_point("/css", "./resources/css");
     svr.set_mount_point("/uploads", "./uploads");
-    std::cout << "[INFO] Server binding to 0.0.0.0:8097..." << std::endl;
-    svr.listen("0.0.0.0", 8097);
+    std::cout << "[INFO] Server binding to 0.0.0.0:8095..." << std::endl;
+    svr.listen("0.0.0.0", 8095);
     return 0;
 } 
