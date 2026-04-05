@@ -137,23 +137,24 @@
 
         async function loadQuestion(id) {
             try {
-                const listRes = await fetch('/api/admin/questions');
-                const listData = await listRes.json();
-                if (listData.status === 0) {
-                    const q = listData.data.find(item => item.number == id);
-                    if (q) {
-                        document.getElementById('title').value = q.title;
-                        document.getElementById('star').value = q.star;
-                        document.getElementById('status').value = q.status;
-                        document.getElementById('cpu_limit').value = q.cpu_limit;
-                        document.getElementById('mem_limit').value = q.mem_limit;
-                        easyMDE.value(q.description);
-                        document.getElementById('tail').value = q.tail;
-                        updateDifficultyColor();
-                    }
+                const res = await fetch(`/api/admin/question/${id}`);
+                const data = await res.json();
+                if (data.status === 0) {
+                    const q = data.data;
+                    document.getElementById('title').value = q.title;
+                    document.getElementById('star').value = q.star;
+                    document.getElementById('status').value = q.status;
+                    document.getElementById('cpu_limit').value = q.cpu_limit;
+                    document.getElementById('mem_limit').value = q.mem_limit;
+                    easyMDE.value(q.description);
+                    document.getElementById('tail').value = q.tail;
+                    updateDifficultyColor();
+                } else {
+                    alert('加载题目详情失败: ' + data.reason);
                 }
             } catch (e) {
                 console.error("Failed to load question", e);
+                alert('加载题目详情出错');
             }
         }
 

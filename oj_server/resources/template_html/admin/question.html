@@ -120,20 +120,12 @@
         }
 
         async function loadQuestion(id) {
-            const res = await fetch(`/question/${id}`); // Reuse existing API? No, that returns HTML. 
-            // I need an API to get raw question data. 
-            // I created AllQuestionsAdmin but not GetOneQuestionAdmin (raw JSON).
-            // Actually, I can assume if I'm admin, I can iterate the list from AllQuestionsAdmin to find it, 
-            // or I should add GetOneQuestion API that returns JSON.
-            // Currently /question/{id} returns HTML.
-            // I should add GET /api/admin/question/{id} or just use the list.
-            // Let's use the list for simplicity for now, or fetch all and find.
-            
-            const listRes = await fetch('/api/admin/questions');
-            const listData = await listRes.json();
-            if (listData.status === 0) {
-                const q = listData.data.find(item => item.number == id);
-                if (q) {
+            try {
+                // Now using GET /api/admin/question/{id}
+                const res = await fetch(`/api/admin/question/${id}`);
+                const data = await res.json();
+                if (data.status === 0) {
+                    const q = data.data;
                     document.getElementById('title').value = q.title;
                     document.getElementById('star').value = q.star;
                     document.getElementById('status').value = q.status;
@@ -142,7 +134,12 @@
                     document.getElementById('description').value = q.description;
                     document.getElementById('tail').value = q.tail;
                     updateDifficultyColor();
+                } else {
+                    alert('加载题目详情失败: ' + data.reason);
                 }
+            } catch (e) {
+                console.error("Failed to load question", e);
+                alert('加载题目详情出错');
             }
         }
 

@@ -546,6 +546,13 @@ int main()
         resp.set_content(json, "application/json;charset=utf-8");
     });
 
+    svr.Get(R"(/api/admin/question/(\d+))", [&ctrl](const Request &req, Response &resp){
+        std::string number = req.matches[1];
+        std::string json;
+        ctrl.GetOneQuestionAdmin(number, req, &json);
+        resp.set_content(json, "application/json;charset=utf-8");
+    });
+
     svr.Post("/api/admin/question", [&ctrl](const Request &req, Response &resp){
         std::string json;
         ctrl.AddQuestion(req, &json);

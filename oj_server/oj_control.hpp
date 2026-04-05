@@ -643,6 +643,48 @@ namespace ns_control
             }
         }
 
+        bool GetOneQuestionAdmin(const string &number, const Request &req, string *json_out)
+        {
+            User user;
+            if (!AdminAuthCheck(req, &user)) {
+                Json::Value root;
+                root["status"] = 403;
+                root["reason"] = "Permission Denied";
+                
+                *json_out = SerializeJson(root);
+                return false;
+            }
+
+            struct Question q;
+            if (model_.GetOneQuestion(number, &q))
+            {
+                Json::Value root;
+                root["status"] = 0;
+                Json::Value item;
+                item["number"] = q.number;
+                item["title"] = q.title;
+                item["star"] = q.star;
+                item["cpu_limit"] = q.cpu_limit;
+                item["mem_limit"] = q.mem_limit;
+                item["description"] = q.desc;
+                item["tail"] = q.tail;
+                item["status"] = q.status;
+                root["data"] = item;
+                
+                *json_out = SerializeJson(root);
+                return true;
+            }
+            else
+            {
+                Json::Value res;
+                res["status"] = 1;
+                res["reason"] = "Not Found";
+                
+                *json_out = SerializeJson(res);
+                return false;
+            }
+        }
+
         bool AddQuestion(const Request &req, string *json)
         {
             User user;
