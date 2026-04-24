@@ -614,7 +614,7 @@ namespace ns_control
                 root["page"] = page;
                 root["page_size"] = page_size;
 
-                Json::Value list;
+                Json::Value list(Json::arrayValue);
                 for (const auto &q : all) {
                     Json::Value item;
                     item["number"] = q.number;
@@ -1077,7 +1077,7 @@ namespace ns_control
                 root["page"] = page;
                 root["page_size"] = page_size;
                 
-                Json::Value list;
+                Json::Value list(Json::arrayValue);
                 for (const auto &l : logs) {
                     Json::Value item;
                     item["id"] = l.id;
@@ -1280,7 +1280,7 @@ namespace ns_control
                  root["total_pages"] = (total + page_size - 1) / page_size;
                  root["page"] = page;
                  
-                 Json::Value list;
+                 Json::Value list(Json::arrayValue);
                  for(const auto& c : contests) {
                      Json::Value item;
                      item["name"] = c.name;
@@ -1619,7 +1619,7 @@ namespace ns_control
                 root["page"] = page;
                 root["page_size"] = page_size;
                 
-                Json::Value list;
+                Json::Value list(Json::arrayValue);
                 for (const auto &s : submissions) {
                     Json::Value item;
                     item["id"] = s.id;
@@ -1744,7 +1744,7 @@ namespace ns_control
             if (model_.GetInlineComments(post_id, &comments)) {
                 Json::Value root;
                 root["status"] = 0;
-                Json::Value list;
+                Json::Value list(Json::arrayValue);
                 for (const auto &c : comments) {
                     Json::Value item;
                     item["id"] = c.id;
@@ -1797,7 +1797,7 @@ namespace ns_control
             if (model_.GetAllDiscussions(&discussions)) {
                 Json::Value root;
                 root["status"] = 0;
-                Json::Value list;
+                Json::Value list(Json::arrayValue);
                 for (const auto &d : discussions) {
                     Json::Value item;
                     item["id"] = d.id;
@@ -1911,7 +1911,7 @@ namespace ns_control
             if (model_.GetDiscussionsByQuestionId(qid, &posts)) {
                 Json::Value root;
                 root["status"] = 0;
-                Json::Value list;
+                Json::Value list(Json::arrayValue);
                 for (const auto &d : posts) {
                     Json::Value item;
                     item["id"] = d.id;
@@ -1972,7 +1972,7 @@ namespace ns_control
             if (model_.GetArticleComments(post_id, &comments)) {
                 Json::Value root;
                 root["status"] = 0;
-                Json::Value list;
+                Json::Value list(Json::arrayValue);
                 for (const auto &c : comments) {
                     Json::Value item;
                     item["id"] = c.id;
@@ -2509,7 +2509,7 @@ namespace ns_control
                 root["total"] = total;
                 root["page"] = page;
                 
-                Json::Value data;
+                Json::Value data(Json::arrayValue);
                 for (const auto &l : lists) {
                     Json::Value item;
                     item["id"] = l.id;
@@ -2574,7 +2574,7 @@ namespace ns_control
             data["author_name"] = list.author_name;
             data["visibility"] = list.visibility;
             
-            Json::Value problems;
+            Json::Value problems(Json::arrayValue);
             for (const auto &item : items) {
                 Json::Value p;
                 p["id"] = item.question_id;
@@ -2615,7 +2615,7 @@ namespace ns_control
                 root["page"] = page;
                 root["page_size"] = page_size;
                 
-                Json::Value list;
+                Json::Value list(Json::arrayValue);
                 for (const auto &u : users) {
                     Json::Value item;
                     item["id"] = u.id;

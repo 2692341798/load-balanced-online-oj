@@ -18,7 +18,7 @@ output: all
 	@if [ -d compile_server/include ]; then cp -rf compile_server/include output/compile_server/; fi
 	@cp -rf oj_server/conf output/oj_server/
 	@cp -rf oj_server/resources output/oj_server/
-	@cp -rf oj_server/questions output/oj_server/
+	@if [ -d oj_server/questions ]; then cp -rf oj_server/questions output/oj_server/; fi
 	@cp -rf oj_server/oj_server output/oj_server/
 	@mkdir -p output/oj_server/uploads/avatars
 	@cp -rf crawler/contest_crawler output/crawler/
