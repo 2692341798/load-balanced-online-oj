@@ -1576,7 +1576,8 @@ namespace ns_control
 
             // 4. Call DeepSeek
             std::string hint;
-            if (deepseek_api_.GenerateHint(q.desc, code, error_msg, test_cases, &hint)) {
+            std::string error_detail;
+            if (deepseek_api_.GenerateHint(q.desc, code, error_msg, test_cases, &hint, &error_detail)) {
                  Json::Value res;
                  res["status"] = 0;
                  res["hint"] = hint;
@@ -1584,7 +1585,7 @@ namespace ns_control
             } else {
                  Json::Value res;
                  res["status"] = 1;
-                 res["reason"] = "AI Service Unavailable";
+                 res["reason"] = "AI Service Unavailable" + (error_detail.empty() ? "" : ": " + error_detail);
                  *json_out = SerializeJson(res);
             }
         }

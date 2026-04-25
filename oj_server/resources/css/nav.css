@@ -50,6 +50,12 @@
     position: relative;
 }
 
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
 /* User Menu */
 .user-profile {
     display: flex;

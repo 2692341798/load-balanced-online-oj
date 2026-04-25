@@ -20,5 +20,8 @@
     "allure-commandline": "^2.38.1",
     "allure-playwright": "^3.6.0",
     "jest": "^30.3.0"
+  },
+  "dependencies": {
+    "playwright": "^1.59.1"
   }
 }

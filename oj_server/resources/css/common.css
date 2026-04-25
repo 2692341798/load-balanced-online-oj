@@ -64,6 +64,44 @@ a {
     pointer-events: none;
 }
 
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-icon:hover {
+    background-color: rgba(128, 128, 128, 0.2);
+}
+
+.btn-icon svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+/* Hide/show specific icons based on current theme */
+html[data-theme="light"] .icon-moon {
+    display: block;
+}
+html[data-theme="light"] .icon-sun {
+    display: none;
+}
+
+html[data-theme="dark"] .icon-moon {
+    display: none;
+}
+html[data-theme="dark"] .icon-sun {
+    display: block;
+}
+
 .btn-primary {
     display: inline-block;
     background-color: var(--success); /* Default to green or accent? index.css had override */

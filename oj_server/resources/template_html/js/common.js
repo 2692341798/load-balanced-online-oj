@@ -1,3 +1,14 @@
+// Theme Initialization (Prevents FOUC)
+(function() {
+    const savedTheme = localStorage.getItem("theme");
+    let theme = "dark";
+    if (savedTheme === "light" || savedTheme === "dark") {
+        theme = savedTheme;
+    } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+        theme = "light";
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+})();
 // Common Frontend Logic for OJ
 
 // XSS Protection
@@ -119,4 +130,20 @@ window.addEventListener('DOMContentLoaded', () => {
             if(username) avatarEl.innerText = username.charAt(0).toUpperCase();
         }
     });
+
+    // Theme Toggle Logic
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            let newTheme = 'dark';
+            if (currentTheme !== 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                newTheme = 'light';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+            localStorage.setItem('theme', newTheme);
+        });
+    }
 });

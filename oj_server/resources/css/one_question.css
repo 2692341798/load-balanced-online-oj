@@ -13,14 +13,14 @@
     padding: 20px;
     overflow-y: auto;
     background-color: var(--bg-color);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid var(--border-color);
     color: var(--text-main);
 }
 
 .problem-header {
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .problem-title {
@@ -44,7 +44,7 @@
 
 /* Markdown Styles */
 .markdown-body {
-    color: #eff1f6;
+    color: var(--text-main);
     font-size: 16px;
     line-height: 1.6;
 }
@@ -55,11 +55,11 @@
     margin-bottom: 16px;
     font-weight: 600;
     line-height: 1.25;
-    color: #eff1f6;
+    color: var(--text-main);
 }
 
-.markdown-body h1 { font-size: 1.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.3em; }
-.markdown-body h2 { font-size: 1.3em; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.3em; }
+.markdown-body h1 { font-size: 1.5em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.3em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
 .markdown-body h3 { font-size: 1.1em; }
 
 .markdown-body p {
@@ -68,17 +68,17 @@
 
 .markdown-body strong {
     font-weight: 600;
-    color: #fff;
+    color: var(--text-main);
 }
 
 .markdown-body code {
     padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: var(--bg-secondary);
     border-radius: 4px;
     font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
-    color: #eff1f6;
+    color: var(--text-main);
 }
 
 .markdown-body pre {
@@ -86,7 +86,7 @@
     overflow: auto;
     font-size: 85%;
     line-height: 1.45;
-    background-color: rgba(255, 255, 255, 0.07);
+    background-color: var(--card-bg);
     border-radius: 8px;
     margin-bottom: 16px;
     border: none;
@@ -100,14 +100,14 @@
     white-space: pre;
     background: transparent;
     border: 0;
-    color: #eff1f6;
+    color: var(--text-main);
 }
 
 .markdown-body blockquote {
     padding: 10px 20px;
-    color: #c4c4c4;
-    border-left: 4px solid rgba(255, 255, 255, 0.15);
-    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border-left: 4px solid var(--border-color);
+    background-color: var(--bg-secondary);
     margin: 0 0 16px 0;
     border-radius: 0 4px 4px 0;
 }
@@ -131,16 +131,16 @@
 .markdown-body table th,
 .markdown-body table td {
     padding: 8px 13px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
 }
 
 .markdown-body table th {
     font-weight: 600;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--bg-secondary);
 }
 
 .markdown-body table tr:nth-child(2n) {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--card-bg);
 }
 
 .markdown-body img {
@@ -166,7 +166,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: #1e1e1e; /* Ace editor monokai bg match */
+    background-color: var(--bg-color);
 }
 
 .editor-header {
@@ -174,18 +174,17 @@
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
-    background-color: #252526; /* VS Code style header bg */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);}
 
 .drag-handle {
     height: 6px;
-    background-color: #1e1e1e;
+    background-color: var(--bg-color);
     cursor: row-resize;
     width: 100%;
     z-index: 10;
     transition: background-color 0.2s;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--border-color);
     flex-shrink: 0;
 }
 
@@ -197,7 +196,7 @@
     padding: 6px 12px;
     border-radius: 4px;
     border: 1px solid #3c3c3c;
-    background-color: #3c3c3c;
+    background-color: var(--bg-secondary);
     color: #cccccc;
     font-size: 0.9rem;
     cursor: pointer;
@@ -225,7 +224,7 @@
 }
 
 .language-select option {
-    background-color: #252526;
+    background-color: var(--card-bg);
     color: #cccccc;
 }
 
@@ -246,109 +245,24 @@
 .editor-footer {
     height: 180px;
     background-color: var(--card-bg);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     padding: 15px;
     position: relative; /* For absolute positioning of tooltip */
 }
 
-/* Result Tabs and Content */
-.result-area-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    margin-bottom: 10px;
-    background-color: #252526;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 4px;
-}
-
-.result-tabs {
-    display: flex;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background-color: #2d2d2d;
-}
-
-.result-tab-item {
-    padding: 8px 16px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.2s;
-}
-
-.result-tab-item:hover {
-    color: var(--text-main);
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-.result-tab-item.active {
-    color: var(--text-main);
-    background-color: #252526;
-    font-weight: 600;
-    border-top: 2px solid var(--accent-color);
-}
-
-.result-content-wrapper {
-    flex: 1;
-    overflow-y: auto;
-    position: relative;
-}
-
-.result-content {
-    display: none;
-    height: 100%;
-}
-
-.result-content.active {
-    display: block;
-}
-
-/* Adjust original result-area style since it is now nested */
 .result-area {
-    border: none;
-    background: transparent;
-    margin-bottom: 0;
-    padding: 15px;
-    height: 100%;
-    box-sizing: border-box;
-}
-
-#ai-hint-container {
-    padding: 15px;
-    height: 100%;
-    box-sizing: border-box;
-}
-
-/* AI Hint Button */
-.btn-ai-hint {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: all 0.2s;
-}
-
-.btn-ai-hint:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px -1px rgba(0, 0, 0, 0.2);
-    filter: brightness(1.1);
-}
-
-.btn-ai-hint:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none;
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    position: relative;
 }
 
 /* Result Header */
@@ -361,8 +275,7 @@
 
 .status-text {
     font-size: 1.2rem;
-    font-weight: bold;
-}
+    font-weight: bold;}
 
 .status-passed { color: var(--success); }
 .status-failed { color: #ff4d4f; }
@@ -379,7 +292,7 @@
     gap: 10px;
     margin-bottom: 20px;
     flex-wrap: wrap;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 10px;
 }
 
@@ -398,7 +311,7 @@
 }
 
 .case-tab:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--bg-secondary);
     color: var(--text-main);
 }
 
@@ -449,14 +362,14 @@
 }
 
 .detail-content {
-    background-color: #333333;
+    background-color: var(--card-bg);
     padding: 12px 15px;
     border-radius: 8px;
     font-family: 'Consolas', monospace;
     font-size: 0.95rem;
     color: var(--text-main);
     white-space: pre-wrap;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
     line-height: 1.5;
 }
 
@@ -494,7 +407,7 @@
     .problem-desc {
         height: 50vh;
         border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--border-color);
     }
     
     .problem-editor {
@@ -524,7 +437,7 @@
     width: 24px;
     height: 24px;
     border-radius: 4px;
-    background-color: #555; /* Default Gray */
+    background-color: var(--text-secondary); /* Default Gray */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -547,16 +460,16 @@
 
 .btn-case {
     padding: 6px 16px;
-    background-color: #3c3c3c;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #eee;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .btn-case:hover {
-    background-color: #4c4c4c;
+    background-color: var(--border-color);
 }
 
 .draggable-tooltip {
@@ -564,8 +477,8 @@
     top: 50px;
     left: 20px;
     width: 300px;
-    background-color: #2d2d2d;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     z-index: 100;
@@ -576,8 +489,8 @@
 
 .tooltip-header {
     padding: 10px 15px;
-    background-color: #383838;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
     cursor: grab;
     font-weight: 600;
     user-select: none;
@@ -624,14 +537,14 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: var(--modal-backdrop, rgba(0,0,0,0.5));
     z-index: 2000;
     display: none;
     justify-content: center;
     align-items: center;
 }
 .modal-content {
-    background: #1e1e1e;
+    background: var(--bg-color);
     width: 90%;
     max-width: 1000px;
     height: 90%;
@@ -640,7 +553,7 @@
     flex-direction: column;
     padding: 20px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    border: 1px solid #333;
+    border: 1px solid var(--border-color);
 }
 .modal-header {
     display: flex;
@@ -651,7 +564,7 @@
 .modal-title {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-main);
 }
 .modal-body {
     flex: 1;
@@ -661,9 +574,9 @@
     gap: 15px;
 }
 .form-input {
-    background: rgba(0,0,0,0.2);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #ddd;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
     padding: 10px;
     border-radius: 4px;
     font-size: 16px;
@@ -693,88 +606,122 @@
 }
 /* EasyMDE Dark Theme Overrides */
 .editor-toolbar {
-    background-color: #2d2d2d;
-    border-color: #444;
-    color: #fff;
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-main);
 }
 .editor-toolbar i {
-    color: #ccc;
+    color: var(--text-secondary);
 }
 .editor-toolbar i:hover {
-    color: #fff;
+    color: var(--text-main);
     background: #444;
 }
 .CodeMirror {
-    background-color: #1e1e1e;
-    color: #ccc;
-    border-color: #444;
+    background-color: var(--bg-color);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
 }
 .editor-preview {
-    background-color: #1e1e1e;
+    background-color: var(--bg-color);
 }
 
 /* Secondary Solution Button */
 .btn-solution.secondary {
-    background-color: #444;
+    background-color: var(--border-color);
     text-decoration: none;
 }
 .btn-solution.secondary:hover {
-    background-color: #555;
+    background-color: var(--text-secondary);
 }
 
-/* BM Symbol Styles */
-.bm-symbol {
-    font-weight: bold;
-    font-style: italic;
-    font-family: 'Times New Roman', serif;
-    color: #e5c07b;
-    padding: 0 1px;
-    cursor: help;
+/* AI Hint & Result Tabs Styles */
+.result-area-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.result-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 10px;
+}
+
+.result-tab-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
     transition: all 0.2s;
+    font-size: 0.95rem;
 }
 
-.bm-symbol:hover {
-    color: #ffd700;
-    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+.result-tab-item:hover {
+    color: var(--text-main);
 }
 
-/* Highlight.js Line Numbers */
-.hljs-ln-numbers {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-
-    text-align: center;
-    color: #5c6370;
-    border-right: 1px solid #4b5263;
-    vertical-align: top;
-    padding-right: 10px !important;
-    min-width: 30px;
+.result-tab-item.active {
+    color: var(--text-main);
+    border-bottom: 2px solid var(--accent-color);
+    font-weight: 600;
 }
 
-.hljs-ln-code {
-    padding-left: 15px !important;
+.result-content-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Fix duplicated label issue */
-.markdown-body pre code::before,
-.markdown-body pre code::after,
-.hljs::before, 
-.hljs::after { 
-    content: none !important; 
-}
-code[class*="language-"]::before { content: none !important; }
-
-/* Table styles for line numbers */
-table.hljs-ln {
-    border-collapse: collapse;
-    border: none;
+.result-content {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    overflow-y: auto;
 }
-table.hljs-ln td {
-    border: none;
-    padding: 0;
+
+.result-content.active {
+    opacity: 1;
+    pointer-events: auto;
+    position: relative;
+}
+
+.btn-ai-hint {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.btn-ai-hint:hover {
+    background: var(--bg-secondary);
+    border-color: var(--text-secondary);
+}
+
+.btn-ai-hint:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Add spinning animation for loading icon */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.animate-spin {
+    animation: spin 1s linear infinite;
 }
