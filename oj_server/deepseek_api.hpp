@@ -14,10 +14,10 @@ using namespace ns_log;
 
 class DeepSeekApi {
 public:
-    DeepSeekApi() : api_key_("sk-ec8f7b7814974227a6ca9b0eecd2e678"), base_url_("https://api.deepseek.com/chat/completions") {}
+    DeepSeekApi() : api_key_("sk-b08fa66ed94e4aaaacb219d7ee2fcbb9"), base_url_("https://api.deepseek.com/chat/completions") {}
 
     // Generic method to call Chat Completion API
-    bool CreateChatCompletion(const Json::Value& messages, std::string* out_content) {
+    bool CreateChatCompletion(const Json::Value& messages, std::string* out_content, std::string* out_error) {
         Json::Value root;
         root["model"] = "deepseek-chat";
         root["messages"] = messages;
@@ -47,6 +47,7 @@ public:
         FILE* pipe = popen(command.c_str(), "r");
         if (!pipe) {
             LOG(ERROR) << "Failed to run curl command" << std::endl;
+            if (out_error) *out_error = "Failed to run curl command";
             return false;
         }
 
@@ -58,6 +59,7 @@ public:
 
         if (return_code != 0) {
              LOG(ERROR) << "Curl command failed with code " << return_code << std::endl;
+             if (out_error) *out_error = "Curl command failed with code " + std::to_string(return_code);
              return false;
         }
 
@@ -66,11 +68,13 @@ public:
         Json::Value response_json;
         if (!reader.parse(response_str, response_json)) {
             LOG(ERROR) << "Failed to parse API response: " << response_str << std::endl;
+            if (out_error) *out_error = "Failed to parse API response";
             return false;
         }
 
         if (response_json.isMember("error")) {
              LOG(ERROR) << "API Error: " << response_json["error"]["message"].asString() << std::endl;
+             if (out_error) *out_error = response_json["error"]["message"].asString();
              return false;
         }
 
@@ -80,6 +84,7 @@ public:
         }
 
         LOG(ERROR) << "Unexpected API response format: " << response_str << std::endl;
+        if (out_error) *out_error = "Unexpected API response format";
         return false;
     }
 
@@ -88,7 +93,8 @@ public:
                      const std::string& user_code, 
                      const std::string& error_msg, 
                      const std::string& test_cases, 
-                     std::string* out_hint) {
+                     std::string* out_hint,
+                     std::string* out_error = nullptr) {
         
         Json::Value messages(Json::arrayValue);
         
@@ -116,7 +122,7 @@ public:
         user_msg["content"] = user_content;
         messages.append(user_msg);
 
-        return CreateChatCompletion(messages, out_hint);
+        return CreateChatCompletion(messages, out_hint, out_error);
     }
 
 private:

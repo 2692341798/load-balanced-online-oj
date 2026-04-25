@@ -21,7 +21,7 @@ DB_CONFIG = {
 }
 
 # DeepSeek API 配置
-DEEPSEEK_API_KEY = 'sk-ec8f7b7814974227a6ca9b0eecd2e678'
+DEEPSEEK_API_KEY = 'sk-b08fa66ed94e4aaaacb219d7ee2fcbb9'
 DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
 
 # 进度保存文件与相关配置
