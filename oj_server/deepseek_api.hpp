@@ -7,6 +7,9 @@
 #include <cstdio>
 #include <memory>
 #include <array>
+#include <cstdlib>
+#include <cctype>
+#include <sys/wait.h>
 
 namespace ns_deepseek {
 
@@ -14,10 +17,38 @@ using namespace ns_log;
 
 class DeepSeekApi {
 public:
-    DeepSeekApi() : api_key_("sk-b08fa66ed94e4aaaacb219d7ee2fcbb9"), base_url_("https://api.deepseek.com/chat/completions") {}
+    DeepSeekApi()
+    {
+        const char* key = std::getenv("DEEPSEEK_API_KEY");
+        api_key_ = key ? std::string(key) : "";
+
+        const char* url = std::getenv("DEEPSEEK_API_URL");
+        base_url_ = url ? std::string(url) : "https://api.deepseek.com/chat/completions";
+
+        auto trim = [](std::string* s) {
+            if (!s) return;
+            size_t start = 0;
+            while (start < s->size() && std::isspace(static_cast<unsigned char>((*s)[start]))) start++;
+            if (start > 0) s->erase(0, start);
+            while (!s->empty() && std::isspace(static_cast<unsigned char>(s->back()))) s->pop_back();
+        };
+        trim(&api_key_);
+        trim(&base_url_);
+
+        while (!base_url_.empty() && base_url_.back() == '/') base_url_.pop_back();
+    }
 
     // Generic method to call Chat Completion API
     bool CreateChatCompletion(const Json::Value& messages, std::string* out_content, std::string* out_error) {
+        if (api_key_.empty()) {
+            if (out_error) *out_error = "未配置 DeepSeek API Key";
+            return false;
+        }
+        if (base_url_.empty()) {
+            if (out_error) *out_error = "未配置 DeepSeek API URL";
+            return false;
+        }
+
         Json::Value root;
         root["model"] = "deepseek-chat";
         root["messages"] = messages;
@@ -36,10 +67,14 @@ public:
         // Construct curl command
         // Note: In production, consider using a proper HTTP client library to avoid shell injection risks
         // or ensure strict validation of inputs. Here we assume internal usage is relatively safe.
-        std::string command = "curl -s -X POST " + base_url_ + 
+        std::string command = "curl -sS -X POST '" + base_url_ + "'" +
+                              " --connect-timeout 5 --max-time 30" +
+                              " --retry 2 --retry-all-errors --retry-delay 0" +
+                              " -w '\n%{http_code}'" +
                               " -H 'Content-Type: application/json'" + 
                               " -H 'Authorization: Bearer " + api_key_ + "'" + 
-                              " -d '" + escaped_body + "'";
+                              " -d '" + escaped_body + "'" +
+                              " 2>&1";
 
         LOG(INFO) << "Calling DeepSeek API..." << std::endl;
 
@@ -55,20 +90,62 @@ public:
         while (fgets(buffer, 128, pipe) != NULL) {
             response_str += buffer;
         }
-        int return_code = pclose(pipe);
+        int status = pclose(pipe);
+        int exit_code = status;
+        if (WIFEXITED(status)) exit_code = WEXITSTATUS(status);
+        else if (WIFSIGNALED(status)) exit_code = 128 + WTERMSIG(status);
 
-        if (return_code != 0) {
-             LOG(ERROR) << "Curl command failed with code " << return_code << std::endl;
-             if (out_error) *out_error = "Curl command failed with code " + std::to_string(return_code);
+        if (exit_code != 0) {
+             LOG(ERROR) << "Curl command failed with exit code " << exit_code << std::endl;
+             if (out_error) {
+                 std::string snippet = response_str;
+                 while (!snippet.empty() && (snippet.back() == '\n' || snippet.back() == '\r')) snippet.pop_back();
+                 if (snippet.size() > 512) snippet = snippet.substr(snippet.size() - 512);
+                 *out_error = "Curl command failed (exit " + std::to_string(exit_code) + ")" + (snippet.empty() ? "" : ": " + snippet);
+             }
              return false;
+        }
+
+        std::string body_str;
+        std::string http_code_str;
+        {
+            size_t pos = response_str.rfind('\n');
+            if (pos != std::string::npos) {
+                body_str = response_str.substr(0, pos);
+                http_code_str = response_str.substr(pos + 1);
+            } else {
+                body_str = response_str;
+            }
+
+            while (!body_str.empty() && (body_str.back() == '\n' || body_str.back() == '\r')) body_str.pop_back();
+            while (!http_code_str.empty() && (http_code_str.back() == '\n' || http_code_str.back() == '\r')) http_code_str.pop_back();
+        }
+
+        if (body_str.empty()) {
+            if (out_error) {
+                if (!http_code_str.empty()) *out_error = "DeepSeek API 返回为空 (HTTP " + http_code_str + ")";
+                else *out_error = "DeepSeek API 返回为空";
+            }
+            return false;
         }
 
         // Parse response
         Json::Reader reader;
         Json::Value response_json;
-        if (!reader.parse(response_str, response_json)) {
-            LOG(ERROR) << "Failed to parse API response: " << response_str << std::endl;
+        if (!reader.parse(body_str, response_json)) {
+            std::string snippet = body_str;
+            if (snippet.size() > 512) snippet = snippet.substr(0, 512);
+            LOG(ERROR) << "Failed to parse API response: " << snippet << std::endl;
             if (out_error) *out_error = "Failed to parse API response";
+            return false;
+        }
+
+        if (!http_code_str.empty() && http_code_str != "200") {
+            if (response_json.isMember("error") && response_json["error"].isMember("message")) {
+                if (out_error) *out_error = response_json["error"]["message"].asString();
+            } else {
+                if (out_error) *out_error = "DeepSeek API HTTP 状态 " + http_code_str;
+            }
             return false;
         }
 
