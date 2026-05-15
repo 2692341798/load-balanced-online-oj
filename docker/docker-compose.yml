@@ -62,6 +62,7 @@ services:
       - MYSQL_DB=oj
     volumes:
       - ../oj_server/conf/service_machine_docker.conf:/app/output/oj_server/conf/service_machine.conf
+      - uploads_data:/app/output/oj_server/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -98,3 +99,4 @@ networks:
 
 volumes:
   db_data:
+  uploads_data:
