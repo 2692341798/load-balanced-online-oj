@@ -14,12 +14,12 @@ if [ ! -d "output/compile_server" ]; then
 fi
 
 cd output/compile_server
-nohup ./compile_server 8081 > compile_8081.log 2>&1 &
-echo "Compile Server 8081 started (pid $!)"
-nohup ./compile_server 8082 > compile_8082.log 2>&1 &
-echo "Compile Server 8082 started (pid $!)"
 nohup ./compile_server 8083 > compile_8083.log 2>&1 &
 echo "Compile Server 8083 started (pid $!)"
+nohup ./compile_server 8084 > compile_8084.log 2>&1 &
+echo "Compile Server 8084 started (pid $!)"
+nohup ./compile_server 8085 > compile_8085.log 2>&1 &
+echo "Compile Server 8085 started (pid $!)"
 
 cd "$curr_dir"
 

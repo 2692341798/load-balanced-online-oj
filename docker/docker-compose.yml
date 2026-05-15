@@ -52,6 +52,8 @@ services:
     container_name: oj_server
     ports:
       - "8094:8094"
+    env_file:
+      - .env
     environment:
       - MYSQL_HOST=db
       - MYSQL_PORT=3306
