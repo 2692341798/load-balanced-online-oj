@@ -6,6 +6,17 @@
     <title>添加/编辑题目 - 管理后台</title>
     <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        } else if (prefersLight) {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
     <style>
         .diff-easy { color: #28a745; font-weight: bold; }
         .diff-medium { color: #ffc107; font-weight: bold; }

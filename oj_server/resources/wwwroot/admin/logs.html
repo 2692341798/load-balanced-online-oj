@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系统日志 - 管理后台</title>
     <link rel="stylesheet" href="css/admin.css">
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        } else if (prefersLight) {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
 </head>
 <body>
     <div class="main-content">

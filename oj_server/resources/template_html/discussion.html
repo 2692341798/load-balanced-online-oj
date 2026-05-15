@@ -798,7 +798,7 @@
                 if (res.status === 0) {
                     alert('删除成功');
                     switchView('view-discussion-feed');
-                    loadDiscussions();
+                    initDiscussion();
                 } else {
                     alert('删除失败: ' + res.reason);
                 }
