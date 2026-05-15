@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>仪表盘 - 管理后台</title>
     <link rel="stylesheet" href="css/admin.css">
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        } else if (prefersLight) {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -87,6 +98,10 @@
         }
 
         function renderCharts(data) {
+            const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+            Chart.defaults.color = isDark ? '#8c8c8c' : '#666';
+            Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
             // User Growth Chart
             const userGrowthLabels = Object.keys(data.user_growth || {});
             const userGrowthData = Object.values(data.user_growth || {});

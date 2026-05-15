@@ -70,3 +70,11 @@ test-results.json
 tests/e2e/test_limit
 tests/e2e/test_malloc
 tests/e2e/test_rusage
+
+.env
+docker/.env
+
+__pycache__/
+*.pyc
+oj_server/uploads/
+*.pptx

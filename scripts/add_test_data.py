@@ -21,8 +21,8 @@ DB_CONFIG = {
 }
 
 # DeepSeek API 配置
-DEEPSEEK_API_KEY = 'sk-b08fa66ed94e4aaaacb219d7ee2fcbb9'
-DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions'
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY', '')
+DEEPSEEK_API_URL = os.getenv('DEEPSEEK_API_URL', 'https://api.deepseek.com/chat/completions').rstrip('/')
 
 # 进度保存文件与相关配置
 PROGRESS_FILE = 'scripts/add_test_progress.json'
@@ -70,6 +70,10 @@ def extract_json_from_text(text):
 
 def call_deepseek_api(description):
     """调用 DeepSeek API 生成测试用例，包含重试机制"""
+    if not DEEPSEEK_API_KEY:
+        logging.error("未配置 DEEPSEEK_API_KEY 环境变量。")
+        return None
+
     headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {DEEPSEEK_API_KEY}'

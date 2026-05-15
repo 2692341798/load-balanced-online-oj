@@ -71,32 +71,4 @@
 **执行人**: Trae AI Agent
 **时间**: 2026-02-15
 
-```
-graph TD
-    User((客户端/浏览器))
-    
-    subgraph OJ主服务器 MVC架构
-        Controller[Controller 控制层\n oj_server.cc / oj_control.hpp]
-        Model[Model 模型层\n oj_model.hpp]
-        View[View 视图层\n oj_view.hpp / CTemplate]
-    end
-    
-    DB[(MySQL 数据库)]
-    CS[Compile Server 集群]
 
-    User -->|1. 发送 HTTP 请求\n(如访问主页/提交代码)| Controller
-    Controller -->|2. 请求读写数据| Model
-    Model -->|3. 执行 SQL 语句| DB
-    DB -->|4. 返回数据集| Model
-    Model -->|5. 返回结构化对象| Controller
-    
-    Controller -.->|6. (可选) RPC调度分发任务| CS
-    CS -.->|7. 返回编译与运行结果| Controller
-    
-    Controller -->|8. 注入字典数据| View
-    View -->|9. 结合HTML模板渲染| Controller
-    Controller -->|10. 返回 HTTP 响应| User
-
-    classDef core fill:#e1f5fe,stroke:#3b82f6,stroke-width:2px;
-    class Controller,Model,View core;
-  ```

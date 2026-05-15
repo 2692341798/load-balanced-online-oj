@@ -196,13 +196,54 @@
             else strengthBar.classList.add('strong');
         }
 
+        function isValidEmail(email) {
+            if (!email) return false;
+            if (email.length > 100) return false;
+            if (/\s/.test(email)) return false;
+            if (email.includes('..')) return false;
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function setFieldValidation(fieldId, ok, message) {
+            const el = document.getElementById(fieldId);
+            if (!el) return;
+            el.textContent = message || '';
+            el.classList.remove('error', 'success');
+            if (message) el.classList.add(ok ? 'success' : 'error');
+        }
+
+        function validateRegEmail() {
+            const emailInput = document.getElementById('reg-email');
+            const email = (emailInput.value || '').trim();
+            if (!email) {
+                setFieldValidation('reg-email-validation', false, '');
+                return false;
+            }
+            if (isValidEmail(email)) {
+                setFieldValidation('reg-email-validation', true, '邮箱格式正确');
+                return true;
+            }
+            setFieldValidation('reg-email-validation', false, '请输入有效的邮箱地址');
+            return false;
+        }
+
+        document.getElementById('reg-email').addEventListener('input', validateRegEmail);
+
         async function handleRegister() {
-            const username = document.getElementById('reg-username').value;
+            const username = document.getElementById('reg-username').value.trim();
             const password = document.getElementById('reg-password').value;
             const confirm = document.getElementById('reg-confirm-password').value;
-            const email = document.getElementById('reg-email').value;
+            const email = document.getElementById('reg-email').value.trim();
             const error = document.getElementById('reg-error');
             
+            error.classList.remove('visible');
+
+            if (!validateRegEmail()) {
+                error.textContent = "请输入有效的邮箱地址";
+                error.classList.add('visible');
+                return;
+            }
+
             if(password !== confirm) {
                 error.textContent = "密码不一致";
                 error.classList.add('visible');
